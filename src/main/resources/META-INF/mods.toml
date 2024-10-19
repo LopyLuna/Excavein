@@ -1,12 +1,12 @@
 modLoader="javafml"
 loaderVersion="[43,)"
 license="MIT"
-issueTrackerURL="https://github.com/DrMango14/Create-Design-n-Decor/issues"
+#issueTrackerURL="NA"
 
 [[mods]]
-    modId="sweepsnap"
+    modId="excavein"
     version="${file.jarVersion}"
-    displayName="SweepSnap"
+    displayName="ExcaVein"
     updateJSONURL="https://api.modrinth.com/updates/MOD/forge_updates.json"
     displayURL="https://modrinth.com/mod/MOD"
     logoFile="pack.png"
@@ -15,14 +15,14 @@ issueTrackerURL="https://github.com/DrMango14/Create-Design-n-Decor/issues"
 INFO ABOUT MOD
 '''
 
-[[dependencies.sweepsnap]]
+[[dependencies.excavein]]
     modId="forge"
     mandatory=true
     versionRange="[43,)"
     ordering="NONE"
     side="BOTH"
 
-[[dependencies.sweepsnap]]
+[[dependencies.excavein]]
     modId="minecraft"
     mandatory=true
     versionRange="[1.19.2,1.20)"

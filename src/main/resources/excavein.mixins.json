@@ -3,9 +3,9 @@
   "required": true,
   "minVersion": "0.8",
   "priority": 1500,
-  "package": "uwu.lopyluna.sweepsnap.mixins",
+  "package": "uwu.lopyluna.excavein.mixins",
   "compatibilityLevel": "JAVA_17",
-  "refmap": "sweepsnap.refmap.json",
+  "refmap": "excavein.refmap.json",
   "mixins": [
   ],
   "injectors": {

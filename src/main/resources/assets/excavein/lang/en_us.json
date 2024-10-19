@@ -1,0 +1,19 @@
+{
+  "excavein.overlay.mode": "Mode:_",
+  "excavein.overlay.selecting": "Selecting:_",
+  "excavein.overlay.cooldown": "Cooldown:_",
+  "excavein.overlay.blocks": "_Blocks",
+  "excavein.overlay.scroll_up": "_____↑_",
+  "excavein.overlay.scroll_down": "_____↓_",
+  "excavein.overlay.current_mode": "Current_Mode:_",
+
+  "excavein.modes.selection": "Selection",
+  "excavein.modes.vein": "Vein",
+  "excavein.modes.excavate": "Excavate",
+  "excavein.modes.tunnel": "Tunnel",
+  "excavein.modes.large_tunnel": "Large Tunnel",
+  "excavein.modes.diagonal_tunnel": "Diagonal Tunnel",
+  "excavein.modes.side_selection": "Side Selection",
+  "excavein.modes.side_vein": "Side Vein",
+  "excavein.modes.side_excavate": "Side Excavate"
+}

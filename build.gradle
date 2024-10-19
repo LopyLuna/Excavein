@@ -21,8 +21,8 @@ apply plugin: 'org.spongepowered.mixin'
 
 jarJar.enable()
 
-group = 'uwu.lopyluna.sweepsnap'
-archivesBaseName = "SweepSnap-${artifact_minecraft_version}"
+group = 'uwu.lopyluna.excavein'
+archivesBaseName = "ExcaVein-${artifact_minecraft_version}"
 version = mod_version
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
@@ -42,33 +42,34 @@ minecraft {
             property 'mixin.env.remapRefMap', 'true'
             property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
             property 'mixin.debug.countInjections', 'true'
-            arg '-mixin.config=sweepsnap.mixins.json'
+            args '-Xmx4G', '-Xms2G', '-XX:+UseG1GC', '-Dlog4j2.formatMsgNoLookups=true'
+            arg '-mixin.config=excavein.mixins.json'
 
             mods {
-                sweepsnap {
+                excavein {
                     source sourceSets.main
                 }
             }
         }
 
         client {
-            property 'forge.enabledGameTestNamespaces', 'sweepsnap'
+            property 'forge.enabledGameTestNamespaces', 'excavein'
         }
 
         server {
             workingDirectory project.file('run-server')
-            property 'forge.enabledGameTestNamespaces', 'sweepsnap'
+            property 'forge.enabledGameTestNamespaces', 'excavein'
             args '--nogui'
         }
 
         gameTestServer {
-            property 'forge.enabledGameTestNamespaces', 'sweepsnap'
+            property 'forge.enabledGameTestNamespaces', 'excavein'
         }
 
         data {
             workingDirectory project.file('run-data')
 
-            args '--mod', "sweepsnap", '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/'), '--existing-mod', 'create'
+            args '--mod', "excavein", '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/'), '--existing-mod', 'create'
         }
     }
 }
@@ -111,21 +112,21 @@ sourceSets.main.resources {
 }
 
 mixin {
-    config 'sweepsnap.mixins.json'
-    add sourceSets.main, 'sweepsnap.refmap.json'
+    config 'excavein.mixins.json'
+    add sourceSets.main, 'excavein.refmap.json'
 }
 
 jar {
     manifest {
         attributes([
-                "Specification-Title"     : "sweepsnap",
+                "Specification-Title"     : "excavein",
                 "Specification-Vendor"    : "lopyluna",
                 "Specification-Version"   : "1",
                 'Implementation-Title'    : project.jar.baseName,
                 "Implementation-Version"  : project.jar.archiveVersion,
                 "Implementation-Vendor"   : "lopyluna",
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                "MixinConfigs"            : "sweepsnap.mixins.json"
+                "MixinConfigs"            : "excavein.mixins.json"
         ])
     }
     finalizedBy 'reobfJar'
