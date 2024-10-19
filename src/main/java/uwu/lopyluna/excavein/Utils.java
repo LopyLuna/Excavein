@@ -26,7 +26,6 @@ import java.util.*;
 import static uwu.lopyluna.excavein.Excavein.MOD_ID;
 import static uwu.lopyluna.excavein.config.ServerConfig.SELECTION_MAX_BLOCK;
 
-@SuppressWarnings({"unused"})
 public class Utils {
 
     public static boolean randomChance(int chance, Level level) {
@@ -89,18 +88,14 @@ public class Utils {
         return false;
     }
 
-    public static String getName(Level world, BlockPos pos) {
-        return world.getBlockState(pos).getBlock().getDescriptionId();
-    }
-
     public static boolean isValidForMining(BlockState state, ServerPlayer player) {
         if (ServerConfig.REQUIRES_TOOLS.get())
             return isBlockInTag(state, getBlockTagFromTool(player.getMainHandItem())) && ForgeHooks.isCorrectToolForDrops(state, player);
-        return true;
+        return ForgeHooks.isCorrectToolForDrops(state, player);
     }
 
     public static boolean isNotValidBlock(Level world, ServerPlayer player, BlockPos pos) {
-        return (!isBlockWhitelisted(world.getBlockState(pos)) || !isValidForMining(world.getBlockState(pos), player) || world.getBlockState(pos).isAir() || ((world.getBlockState(pos).getDestroySpeed(world, pos) < 0) && !player.isCreative()));
+        return (!isBlockWhitelisted(world.getBlockState(pos)) || !world.getWorldBorder().isWithinBounds(pos) || !isValidForMining(world.getBlockState(pos), player) || world.getBlockState(pos).isAir() || ((world.getBlockState(pos).getDestroySpeed(world, pos) < 0) && !player.isCreative()));
     }
 
     public static Set<BlockPos> selectionInspection(Level world, ServerPlayer player, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, SelectionMode mode) {
@@ -127,7 +122,6 @@ public class Utils {
 
             if (isNotValidBlock(world, player, currentPos) || startState.isAir() || ((startState.getDestroySpeed(world, startPos) < 0) && !player.isCreative()))
                 continue;
-
 
             switch (mode) {
                 case SELECTION:
@@ -344,7 +338,6 @@ public class Utils {
         MINUTES,
         HOURS,
         DAYS,
-        MONTHS,
-        YEARS
+        MONTHS
     }
 }

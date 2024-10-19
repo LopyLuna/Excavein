@@ -10,8 +10,11 @@ public class ServerConfig {
     public static final ForgeConfigSpec.IntValue SELECTION_ADD_COOLDOWN;
     public static final ForgeConfigSpec.IntValue SELECTION_ADD_RANGE;
     public static final ForgeConfigSpec.IntValue SELECTION_MAX_BLOCK;
+    public static final ForgeConfigSpec.DoubleValue FOOD_EXHAUSTION_MULTIPLIER;
+    public static final ForgeConfigSpec.IntValue ITEM_PICKUP_DELAY;
     public static final ForgeConfigSpec.BooleanValue INVERT_WHITELIST;
     public static final ForgeConfigSpec.BooleanValue REQUIRES_TOOLS;
+    public static final ForgeConfigSpec.BooleanValue REQUIRES_HUNGER;
     public static final ForgeConfigSpec.BooleanValue BLOCKS_AT_PLAYER;
     public static final ForgeConfigSpec.BooleanValue BLOCK_PLACING;
     public static final ForgeConfigSpec.BooleanValue HAND_INTERACTION;
@@ -25,11 +28,11 @@ public class ServerConfig {
 
         SELECTION_COOLDOWN = builder
                 .comment("Amount of ticks for block selection cooldown (default = " + (20 * 5) + ")")
-                .defineInRange("SelectionCooldown", 20 * 5, 0, Integer.MAX_VALUE);
+                .defineInRange("SelectionCooldown", 20 * 5, 0, 20 * 60 * 60 * 24 * 7);
 
         SELECTION_ADD_COOLDOWN = builder
                 .comment("Amount of ticks that get added to the block selection cooldown (default = 0)")
-                .defineInRange("SelectionAddedCooldown", 0, 0, Integer.MAX_VALUE);
+                .defineInRange("SelectionAddedCooldown", 0, 0, 20 * 60 * 60 * 24 * 7);
 
         SELECTION_ADD_RANGE = builder
                 .comment("Add range for block selection (default = 12)")
@@ -39,13 +42,25 @@ public class ServerConfig {
                 .comment("Maximum number of blocks that can be selected (default = 64)")
                 .defineInRange("SelectionMaxBlock", 64, 1, 2048);
 
+        FOOD_EXHAUSTION_MULTIPLIER = builder
+                .comment("Causes Food Exhaustion to be Multiplied when mining blocks (default = 2)")
+                .defineInRange("FoodExhaustionMultiplier", 2.0, 0.0, 1000);
+
+        ITEM_PICKUP_DELAY = builder
+                .comment("Amount of ticks for till you are able to pick up items after blocks drops from selection (default = 10)")
+                .defineInRange("ItemPickupDelay", 10, 0, 30000);
+
         INVERT_WHITELIST = builder
                 .comment("Invert the whitelist behavior (default = true)")
                 .define("InvertWhitelist", true);
         
         REQUIRES_TOOLS = builder
-                .comment("Require Tool for Said block (default = false)")
+                .comment("Require Tools for said selected blocks (default = false)")
                 .define("RequiresTools", false);
+
+        REQUIRES_HUNGER = builder
+                .comment("Require Hunger for said selected blocks (default = true)")
+                .define("RequiresHunger", true);
 
         BLOCKS_AT_PLAYER = builder
                 .comment("Sends all dropped Items from Blocks to the Player (default = false)")
@@ -64,7 +79,7 @@ public class ServerConfig {
                 .define("ItemInteraction", true);
 
         VEIN_BLOCK_TAGS = builder
-                .comment("List of block tags for vein mining. Example: 'forge:ores', 'minecraft:logs'")
+                .comment("List of block tags for vein mining as in Start Pos Block Tag needs to match said block in selection with the same tag.")
                 .defineList("VeinBlockTags", defaultVeinTags(), obj -> obj instanceof String);
 
         SERVER_SPEC = builder.build();

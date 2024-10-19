@@ -1,6 +1,7 @@
 package uwu.lopyluna.excavein;
 
 import com.mojang.logging.LogUtils;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -72,7 +73,7 @@ public class Excavein {
                 CooldownPacket::handle);
         CHANNEL.registerMessage(packetId++, KeybindPacket.class,
                 KeybindPacket::encode,
-                KeybindPacket::decode,
+                (FriendlyByteBuf t) -> KeybindPacket.decode(),
                 KeybindPacket::handle);
 
     }

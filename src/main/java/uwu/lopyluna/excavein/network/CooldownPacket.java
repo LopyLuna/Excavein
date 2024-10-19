@@ -7,7 +7,6 @@ import uwu.lopyluna.excavein.client.ClientCooldownHandler;
 import java.util.function.Supplier;
 
 public class CooldownPacket {
-
     private final int cooldownTicks;
 
     public CooldownPacket(int cooldownTicks) {

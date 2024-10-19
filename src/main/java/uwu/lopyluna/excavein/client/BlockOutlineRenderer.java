@@ -40,7 +40,7 @@ public class BlockOutlineRenderer {
     @SubscribeEvent
     public static void onRenderWorld(net.minecraftforge.client.event.RenderLevelLastEvent event) {
         PoseStack poseStack = event.getPoseStack();
-        if (!shouldRenderOutline || outlineBlocks.isEmpty() || outlineBlocks.size() > MAX_BLOCK_VIEW.get() || ClientCooldownHandler.isCooldownActive()) {
+        if (mc.getConnection() == null || !shouldRenderOutline || outlineBlocks.isEmpty() || outlineBlocks.size() > MAX_BLOCK_VIEW.get() || ClientCooldownHandler.isCooldownActive()) {
             return;
         }
 
@@ -72,7 +72,7 @@ public class BlockOutlineRenderer {
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
+        if (mc.getConnection() != null || event.phase == TickEvent.Phase.END) {
             shouldRenderOutline = KeybindHandler.SELECTION_ACTIVATION.isDown();
         }
     }

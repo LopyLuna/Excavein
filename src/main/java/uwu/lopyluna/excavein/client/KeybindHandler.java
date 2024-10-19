@@ -39,14 +39,14 @@ public class KeybindHandler {
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && !Minecraft.getInstance().isPaused()) {
+        if (mc.getConnection() != null && event.phase == TickEvent.Phase.END && !Minecraft.getInstance().isPaused()) {
             tickCounter++;
             if (tickCounter >= TICK_INTERVAL) {
                 tickCounter = 0;
                 if (SELECTION_ACTIVATION.isDown()) {
                     Excavein.CHANNEL.sendToServer(SelectionInspectionPacket.INSTANCE);
                 }
-                Excavein.CHANNEL.sendToServer(new KeybindPacket(SELECTION_ACTIVATION.isDown()));
+                Excavein.CHANNEL.sendToServer(new KeybindPacket());
             }
         }
     }

@@ -26,7 +26,7 @@ public class ModeOverlay {
     @SubscribeEvent
     public static void onRenderGuiOverlay(RenderGuiOverlayEvent event) {
         PoseStack poseStack = event.getPoseStack();
-        if (mc.options.hideGui || mc.noRender || mc.options.reducedDebugInfo().get() || mc.options.renderDebug || mc.options.renderFpsChart || mc.options.renderDebugCharts || !KeybindHandler.SELECTION_ACTIVATION.isDown())
+        if (mc.getConnection() == null || mc.options.hideGui || mc.noRender || mc.options.reducedDebugInfo().get() || mc.options.renderDebug || mc.options.renderFpsChart || mc.options.renderDebugCharts || !KeybindHandler.SELECTION_ACTIVATION.isDown())
             return;
 
         poseStack.pushPose();

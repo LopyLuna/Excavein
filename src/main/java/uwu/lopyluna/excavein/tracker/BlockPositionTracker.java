@@ -23,6 +23,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeHooks;
@@ -61,7 +62,7 @@ public class BlockPositionTracker {
 
     private static ServerPlayer player;
     private static BlockHitResult cursorRayTrace;
-    private static boolean keyIsDown;
+    private static boolean keyIsDown = false;
 
     public static void setSavedBlocks(Set<BlockPos> blocks) {
         savedBlockPositions = blocks;
@@ -118,10 +119,24 @@ public class BlockPositionTracker {
                 for (BlockPos pos : savedBlockPositions) {
                     if (pos.equals(savedStartPos) && savedStartPos.equals(event.getPos()))
                         continue;
+                    if (REQUIRES_HUNGER.get() && player.getFoodData().getFoodLevel() == 0)
+                        continue;
                     BlockState blockState = level.getBlockState(pos);
                     Block block = blockState.getBlock();
                     BlockEntity be = level.getBlockEntity(pos);
                     destroyBlock(level, player, pos, blockState, be, player.getMainHandItem(), BLOCKS_AT_PLAYER.get());
+                }
+                if (BLOCKS_AT_PLAYER.get()) {
+                    List<ItemStack> stack = getDrops(event.getState(), level, event.getPos(), level.getBlockEntity(event.getPos()), player, player.getMainHandItem());
+                    for (ItemStack pStack : stack) {
+                        level.getEntities(EntityType.ITEM, new AABB(event.getPos()).inflate(1), EntitySelector.NO_SPECTATORS).forEach(entity -> {
+                            if (entity.getItem().equals(pStack)) {
+                                entity.setPickUpDelay(ITEM_PICKUP_DELAY.get());
+                                Vec3 pos = player.position();
+                                entity.teleportTo(pos.x, pos.y, pos.z);
+                            }
+                        });
+                    }
                 }
                 CooldownTracker.resetCooldown(player, savedBlockPositions.size());
                 resetTick();
@@ -140,10 +155,13 @@ public class BlockPositionTracker {
                 for (BlockPos pos : savedBlockPositions) {
                     if (pos.equals(savedStartPos) && savedStartPos.equals(event.getPos()))
                         continue;
+                    if (REQUIRES_HUNGER.get() && player.getFoodData().getFoodLevel() == 0)
+                        continue;
                     BlockState blockState = pLevel.getBlockState(pos);
                     interaction(player, (LocalPlayer) pPlayer, pos);
                 }
-                CooldownTracker.resetCooldown(player, savedBlockPositions.size());
+                if (pPlayer.getItemInHand(pPlayer.getUsedItemHand()).getItem() instanceof BlockItem && BLOCK_PLACING.get())
+                    CooldownTracker.resetCooldown(player, savedBlockPositions.size());
                 resetTick();
                 savedBlockPositions.clear();
             }
@@ -179,7 +197,13 @@ public class BlockPositionTracker {
         ItemStack pTool1 = pTool.copy();
 
         pPlayer.awardStat(Stats.BLOCK_MINED.get(pState.getBlock()));
-        pPlayer.causeFoodExhaustion(0.005F);
+        pPlayer.causeFoodExhaustion((float) (0.005F * (savedBlockPositions.size() * FOOD_EXHAUSTION_MULTIPLIER.get())));
+        if (pState.getDestroySpeed(pLevel, pPos) != 0.0F && !pTool.isEmpty() && randomChance(15, pLevel))
+            pTool.hurtAndBreak(1, pPlayer, (flag) -> flag.broadcastBreakEvent(EquipmentSlot.MAINHAND));
+        pState.spawnAfterBreak(pLevel, pPos, pTool, true);
+
+        pLevel.setBlock(pPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL_IMMEDIATE);
+        pLevel.removeBlock(pPos, false);
         pTool.mineBlock(pLevel, pState, pPos, pPlayer);
         if (pTool.isEmpty() && !pTool1.isEmpty())
             ForgeEventFactory.onPlayerDestroyItem(pPlayer, pTool1, InteractionHand.MAIN_HAND);
@@ -195,12 +219,6 @@ public class BlockPositionTracker {
                     ExperienceOrb.award(pLevel, vec, exp);
                 }
         }
-        if (pState.getDestroySpeed(pLevel, pPos) != 0.0F && !pTool.isEmpty() && randomChance(15, pLevel))
-            pTool.hurtAndBreak(1, pPlayer, (flag) -> flag.broadcastBreakEvent(EquipmentSlot.MAINHAND));
-        pState.spawnAfterBreak(pLevel, pPos, pTool, true);
-
-        pLevel.setBlock(pPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL_IMMEDIATE);
-        pLevel.removeBlock(pPos, false);
     }
 
     public static List<ItemStack> getDrops(BlockState pState, ServerLevel pLevel, BlockPos pPos, @Nullable BlockEntity pBlockEntity, @Nullable Entity pEntity, ItemStack pTool) {
@@ -218,7 +236,9 @@ public class BlockPositionTracker {
         double d0 = (double)((float)pPos.x() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25D, 0.25D);
         double d1 = (double)((float)pPos.y() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25D, 0.25D) - (double)f;
         double d2 = (double)((float)pPos.z() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25D, 0.25D);
-        popResource(pLevel, () -> new ItemEntity(pLevel, d0, d1, d2, pStack), pStack);
+        ItemEntity item = new ItemEntity(pLevel, d0, d1, d2, pStack);
+        item.setPickUpDelay(ITEM_PICKUP_DELAY.get());
+        popResource(pLevel, () -> item, pStack);
     }
 
     private static void popResource(Level pLevel, Supplier<ItemEntity> pItemEntitySupplier, ItemStack pStack) {
