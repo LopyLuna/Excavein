@@ -41,14 +41,11 @@ public class ModeOverlay {
         SelectionMode previousMode = SelectionMode.getPreviousMode();
         SelectionMode nextMode = SelectionMode.getNextMode();
 
-        int r = ClientConfig.OUTLINE_COLOR_R.get();
-        int g = ClientConfig.OUTLINE_COLOR_G.get();
-        int b = ClientConfig.OUTLINE_COLOR_B.get();
-        int alpha = (int) ((ClientConfig.OUTLINE_ALPHA.get() / 100.0f) * 255);
-        int alphaH = (int) (((ClientConfig.OUTLINE_ALPHA.get() * 0.5) / 100.0f) * 255);
+        int r = ClientConfig.SELECTION_COLOR_R.get();
+        int g = ClientConfig.SELECTION_COLOR_G.get();
+        int b = ClientConfig.SELECTION_COLOR_B.get();
 
-        int color = (alpha << 24) | (r << 16) | (g << 8) | b;
-        int colorH = (alphaH << 24) | (r << 16) | (g << 8) | b;
+        int color = (255 << 24) | (r << 16) | (g << 8) | b;
 
 
         if (currentMode != null) {
@@ -68,10 +65,10 @@ public class ModeOverlay {
         float scale = 0.75f;
         poseStackScale.scale(scale, scale, scale);
         if (previousMode != null) {
-            fontRenderer.drawShadow(poseStackScale, translateText("scroll_up") + previousMode.getName(), xPos + 8, yPos - 5, colorH, true);
+            fontRenderer.drawShadow(poseStackScale, translateText("scroll_up") + previousMode.getName(), xPos + 8, yPos - 5, color, true);
         }
         if (nextMode != null) {
-            fontRenderer.drawShadow(poseStackScale, translateText("scroll_down") + nextMode.getName(), xPos + 8, yPos + 15, colorH, true);
+            fontRenderer.drawShadow(poseStackScale, translateText("scroll_down") + nextMode.getName(), xPos + 8, yPos + 15, color, true);
         }
         poseStackScale.popPose();
     }

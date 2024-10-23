@@ -46,13 +46,14 @@ public class Excavein {
         modLoadingContext.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_SPEC);
         modLoadingContext.registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_SPEC);
 
+        modEventBus.addListener(KeybindHandler::register);
         modEventBus.addListener(this::clientSetup);
         modEventBus.addListener(this::commonSetup);
         MinecraftForge.EVENT_BUS.register(this);
     }
 
     private void clientSetup(final FMLClientSetupEvent event) {
-        KeybindHandler.register();
+        MinecraftForge.EVENT_BUS.register(KeybindHandler.class);
         MinecraftForge.EVENT_BUS.register(BlockOutlineRenderer.class);
     }
 

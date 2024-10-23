@@ -1,19 +1,15 @@
 package uwu.lopyluna.excavein.tracker;
 
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
@@ -30,7 +26,6 @@ import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -44,8 +39,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static uwu.lopyluna.excavein.Utils.getValidTools;
 import static uwu.lopyluna.excavein.Utils.randomChance;
-import static uwu.lopyluna.excavein.client.KeybindHandler.SELECTION_ACTIVATION;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 import static uwu.lopyluna.excavein.tracker.CooldownTracker.getCoolDownCheck;
 import static uwu.lopyluna.excavein.tracker.CooldownTracker.getRemainingCooldown;
@@ -60,9 +55,9 @@ public class BlockPositionTracker {
     private static final int MAX_TICK_DELAY = 1;
     private static int currentTickDelay = 0;
 
-    private static ServerPlayer player;
-    private static BlockHitResult cursorRayTrace;
-    private static boolean keyIsDown = false;
+    public static ServerPlayer player;
+    public static BlockHitResult cursorRayTrace;
+    public static boolean keyIsDown = false;
 
     public static void setSavedBlocks(Set<BlockPos> blocks) {
         savedBlockPositions = blocks;
@@ -119,7 +114,12 @@ public class BlockPositionTracker {
                 for (BlockPos pos : savedBlockPositions) {
                     if (pos.equals(savedStartPos) && savedStartPos.equals(event.getPos()))
                         continue;
-                    if (REQUIRES_HUNGER.get() && player.getFoodData().getFoodLevel() == 0)
+                    if (REQUIRES_HUNGER.get() && !player.isCreative() && player.getFoodData().getFoodLevel() == 0)
+                        continue;
+                    if (player.getMainHandItem().isDamageableItem() && (player.getMainHandItem().getMaxDamage() - player.getMainHandItem().getDamageValue()) == 1)
+                        continue;
+                    if (BLOCK_PLACING.get() && ((player.getMainHandItem().getItem() instanceof BlockItem) ||
+                            (!(!player.getMainHandItem().isEmpty() && getValidTools(player.getMainHandItem())) && player.getOffhandItem().getItem() instanceof BlockItem)))
                         continue;
                     BlockState blockState = level.getBlockState(pos);
                     Block block = blockState.getBlock();
@@ -131,62 +131,16 @@ public class BlockPositionTracker {
                     for (ItemStack pStack : stack) {
                         level.getEntities(EntityType.ITEM, new AABB(event.getPos()).inflate(1), EntitySelector.NO_SPECTATORS).forEach(entity -> {
                             if (entity.getItem().equals(pStack)) {
-                                entity.setPickUpDelay(ITEM_PICKUP_DELAY.get());
+                                entity.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
                                 Vec3 pos = player.position();
                                 entity.teleportTo(pos.x, pos.y, pos.z);
                             }
                         });
                     }
                 }
-                CooldownTracker.resetCooldown(player, savedBlockPositions.size());
+                CooldownTracker.resetCooldown(player, player.isCreative() ? 0 : savedBlockPositions.size());
                 resetTick();
                 savedBlockPositions.clear();
-            }
-        }
-    }
-
-    @SubscribeEvent
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (event.getEntity() != null && !(event.getEntity() instanceof FakePlayer) && !(player instanceof FakePlayer) && (keyIsDown || SELECTION_ACTIVATION.isDown())) {
-            if (CooldownTracker.isCooldownNotActive(player)) {
-                Player pPlayer = event.getEntity();
-                Level pLevel = event.getLevel();
-
-                for (BlockPos pos : savedBlockPositions) {
-                    if (pos.equals(savedStartPos) && savedStartPos.equals(event.getPos()))
-                        continue;
-                    if (REQUIRES_HUNGER.get() && player.getFoodData().getFoodLevel() == 0)
-                        continue;
-                    BlockState blockState = pLevel.getBlockState(pos);
-                    interaction(player, (LocalPlayer) pPlayer, pos);
-                }
-                if (pPlayer.getItemInHand(pPlayer.getUsedItemHand()).getItem() instanceof BlockItem && BLOCK_PLACING.get())
-                    CooldownTracker.resetCooldown(player, savedBlockPositions.size());
-                resetTick();
-                savedBlockPositions.clear();
-            }
-        }
-    }
-
-
-    public static void interaction(ServerPlayer pPlayer, LocalPlayer localPlayer, BlockPos pPos) {
-        InteractionHand hand = pPlayer.getUsedItemHand();
-        ItemStack stack = pPlayer.getItemInHand(hand);
-        InteractionHand handClient = pPlayer.getUsedItemHand();
-        ItemStack stackClient = pPlayer.getItemInHand(hand);
-        boolean clientSideUse = localPlayer.getLevel().getBlockState(pPos).use(localPlayer.getLevel(), localPlayer, handClient, cursorRayTrace.withPosition(pPos)) == InteractionResult.sidedSuccess(true);
-        boolean clientUse = localPlayer.getLevel().getBlockState(pPos).use(localPlayer.getLevel(), localPlayer, handClient, cursorRayTrace.withPosition(pPos)).consumesAction();
-        boolean serverUse = pPlayer.getLevel().getBlockState(pPos).use(pPlayer.getLevel(), pPlayer, hand, cursorRayTrace.withPosition(pPos)).consumesAction();
-        boolean clientSideUseOn = stack.useOn(new UseOnContext(localPlayer, handClient, cursorRayTrace.withPosition(pPos))) == InteractionResult.sidedSuccess(true);
-        boolean clientUseOn = stack.useOn(new UseOnContext(localPlayer, handClient, cursorRayTrace.withPosition(pPos))).consumesAction();
-        boolean serverUseOn = stack.useOn(new UseOnContext(pPlayer, hand, cursorRayTrace.withPosition(pPos))).consumesAction();
-        if (pPlayer.getLevel().mayInteract(pPlayer, pPos) || localPlayer.getLevel().mayInteract(pPlayer, pPos)) {
-            if (HAND_INTERACTION.get() && clientSideUse || clientUse || serverUse) {
-                pPlayer.closeContainer();
-            } else if ((stack.getItem() instanceof BlockItem && BLOCK_PLACING.get()) != (!(stack.getItem() instanceof BlockItem) && ITEM_INTERACTION.get())) {
-                if (clientSideUseOn || clientUseOn || serverUseOn) {
-                    pPlayer.closeContainer();
-                }
             }
         }
     }
@@ -237,7 +191,7 @@ public class BlockPositionTracker {
         double d1 = (double)((float)pPos.y() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25D, 0.25D) - (double)f;
         double d2 = (double)((float)pPos.z() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25D, 0.25D);
         ItemEntity item = new ItemEntity(pLevel, d0, d1, d2, pStack);
-        item.setPickUpDelay(ITEM_PICKUP_DELAY.get());
+        item.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
         popResource(pLevel, () -> item, pStack);
     }
 

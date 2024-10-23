@@ -13,6 +13,7 @@ public class ServerConfig {
     public static final ForgeConfigSpec.DoubleValue FOOD_EXHAUSTION_MULTIPLIER;
     public static final ForgeConfigSpec.IntValue ITEM_PICKUP_DELAY;
     public static final ForgeConfigSpec.BooleanValue INVERT_WHITELIST;
+    public static final ForgeConfigSpec.BooleanValue REQUIRES_MINEABLE;
     public static final ForgeConfigSpec.BooleanValue REQUIRES_TOOLS;
     public static final ForgeConfigSpec.BooleanValue REQUIRES_HUNGER;
     public static final ForgeConfigSpec.BooleanValue BLOCKS_AT_PLAYER;
@@ -53,6 +54,10 @@ public class ServerConfig {
         INVERT_WHITELIST = builder
                 .comment("Invert the whitelist behavior (default = true)")
                 .define("InvertWhitelist", true);
+
+        REQUIRES_MINEABLE = builder
+                .comment("Require Hand/Tools for said selected blocks that requires hand/tools to drop (default = true)")
+                .define("RequiresMineable", true);
         
         REQUIRES_TOOLS = builder
                 .comment("Require Tools for said selected blocks (default = false)")

@@ -4,11 +4,14 @@ import net.minecraftforge.common.ForgeConfigSpec;
 
 public class ClientConfig {
 
-    public static final ForgeConfigSpec.IntValue OUTLINE_COLOR_R;
-    public static final ForgeConfigSpec.IntValue OUTLINE_COLOR_G;
-    public static final ForgeConfigSpec.IntValue OUTLINE_COLOR_B;
+    public static final ForgeConfigSpec.IntValue SELECTION_COLOR_R;
+    public static final ForgeConfigSpec.IntValue SELECTION_COLOR_G;
+    public static final ForgeConfigSpec.IntValue SELECTION_COLOR_B;
+    public static final ForgeConfigSpec.IntValue SELECTION_ALPHA;
     public static final ForgeConfigSpec.DoubleValue OUTLINE_THICKNESS;
-    public static final ForgeConfigSpec.IntValue OUTLINE_ALPHA;
+    public static final ForgeConfigSpec.BooleanValue RENDER_OUTLINE;
+    public static final ForgeConfigSpec.BooleanValue RENDER_FACE;
+    public static final ForgeConfigSpec.BooleanValue BLUR_FACE;
     public static final ForgeConfigSpec.IntValue SELECTION_OFFSET_Y;
     public static final ForgeConfigSpec.IntValue SELECTION_OFFSET_X;
     public static final ForgeConfigSpec.BooleanValue DISPLAY_SELECTION_CHAT;
@@ -19,25 +22,37 @@ public class ClientConfig {
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
-        OUTLINE_COLOR_R = builder
+        SELECTION_COLOR_R = builder
                 .comment("Outline Red color value (default = 187)")
-                .defineInRange("outlineColorR", 187, 1, 255);
+                .defineInRange("SelectionColorR", 187, 1, 255);
 
-        OUTLINE_COLOR_G = builder
+        SELECTION_COLOR_G = builder
                 .comment("Outline Green color value (default = 247)")
-                .defineInRange("outlineColorG", 247, 1, 255);
+                .defineInRange("SelectionColorG", 247, 1, 255);
 
-        OUTLINE_COLOR_B = builder
+        SELECTION_COLOR_B = builder
                 .comment("Outline Blue color value (default = 252)")
-                .defineInRange("outlineColorB", 252, 1, 255);
+                .defineInRange("SelectionColorB", 252, 1, 255);
 
-        OUTLINE_ALPHA = builder
-                .comment("Outline alpha value (default = 75)")
-                .defineInRange("outlineAlpha", 75, 1, 100);
+        SELECTION_ALPHA = builder
+                .comment("Outline alpha value (default = 64)")
+                .defineInRange("SelectionAlpha", 64, 1, 255);
 
         OUTLINE_THICKNESS = builder
-                .comment("Outline thickness (default = 0.03125)")
-                .defineInRange("outlineThickness", 2.0 / 16.0, 0.1 / 16.0, 5.0);
+                .comment("Outline thickness (default = 1.0)")
+                .defineInRange("OutlineThickness", 1.0, 0.1, 16.0);
+
+        RENDER_OUTLINE = builder
+                .comment("Whether to render the Outline of the Selection (default = true)")
+                .define("RenderOutline", true);
+
+        RENDER_FACE = builder
+                .comment("Whether to render the Face Texture of the Selection (default = true)")
+                .define("RenderFace", true);
+
+        BLUR_FACE = builder
+                .comment("Whether to blur the Face Texture of the Selection (default = false)")
+                .define("BlurFace", false);
 
         SELECTION_OFFSET_Y = builder
                 .comment("Offset Y position of Selection Text (default = 0)")

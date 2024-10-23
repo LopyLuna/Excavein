@@ -6,7 +6,9 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.settings.KeyConflictContext;
+import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -21,16 +23,19 @@ import static uwu.lopyluna.excavein.config.ClientConfig.DISPLAY_SELECTION_CHAT;
 @Mod.EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
 public class KeybindHandler {
 
-    @SuppressWarnings("all")
-    public static final KeyMapping SELECTION_ACTIVATION = new KeyMapping(
-            "key.excavein.selection_activation",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_GRAVE_ACCENT,
-            "key.categories.excavein"
-    );
+    public static KeyMapping SELECTION_ACTIVATION;
 
-    public static void register() {
-        MinecraftForge.EVENT_BUS.register(KeybindHandler.class);
+    public static void register(RegisterKeyMappingsEvent event) {
+        SELECTION_ACTIVATION = new KeyMapping(
+                "key.excavein.selection_activation",
+                KeyConflictContext.IN_GAME,
+                KeyModifier.NONE,
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_GRAVE_ACCENT,
+                "key.categories.excavein"
+        );
+
+        event.register(SELECTION_ACTIVATION);
     }
 
     private static final Minecraft mc = Minecraft.getInstance();

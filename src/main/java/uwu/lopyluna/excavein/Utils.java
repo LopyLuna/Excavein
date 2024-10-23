@@ -7,10 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
-import net.minecraft.world.item.AxeItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.PickaxeItem;
-import net.minecraft.world.item.ShovelItem;
+import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -24,7 +21,7 @@ import uwu.lopyluna.excavein.config.ServerConfig;
 import java.util.*;
 
 import static uwu.lopyluna.excavein.Excavein.MOD_ID;
-import static uwu.lopyluna.excavein.config.ServerConfig.SELECTION_MAX_BLOCK;
+import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
 public class Utils {
 
@@ -57,6 +54,10 @@ public class Utils {
         return null;
     }
 
+    public static boolean getValidTools(ItemStack stack) {
+        return stack.isDamageableItem() || stack.is(Tags.Items.TOOLS) || stack.getItem() instanceof AxeItem || stack.getItem() instanceof PickaxeItem || stack.getItem() instanceof ShovelItem || stack.getItem() instanceof HoeItem ||
+                stack.is(Tags.Items.TOOLS_AXES) || stack.is(Tags.Items.TOOLS_PICKAXES) || stack.is(Tags.Items.TOOLS_SHOVELS) || stack.is(Tags.Items.TOOLS_HOES);
+    }
 
     public static boolean isBlockWhitelisted(BlockState currentState) {
         boolean isWhitelisted = currentState.is(VEIN_MINE_WHITELIST);
@@ -89,9 +90,14 @@ public class Utils {
     }
 
     public static boolean isValidForMining(BlockState state, ServerPlayer player) {
-        if (ServerConfig.REQUIRES_TOOLS.get())
-            return isBlockInTag(state, getBlockTagFromTool(player.getMainHandItem())) && ForgeHooks.isCorrectToolForDrops(state, player);
-        return ForgeHooks.isCorrectToolForDrops(state, player);
+        if (!(player.isCreative() || (BLOCK_PLACING.get() && ((player.getMainHandItem().getItem() instanceof BlockItem) ||
+                (!(!player.getMainHandItem().isEmpty() && !(player.getMainHandItem().getItem() instanceof BlockItem)) && player.getOffhandItem().getItem() instanceof BlockItem))))) {
+            if (REQUIRES_TOOLS.get())
+                return isBlockInTag(state, getBlockTagFromTool(player.getMainHandItem())) && (!REQUIRES_MINEABLE.get() || ForgeHooks.isCorrectToolForDrops(state, player));
+            if (REQUIRES_MINEABLE.get())
+                return ForgeHooks.isCorrectToolForDrops(state, player);
+        }
+        return true;
     }
 
     public static boolean isNotValidBlock(Level world, ServerPlayer player, BlockPos pos) {

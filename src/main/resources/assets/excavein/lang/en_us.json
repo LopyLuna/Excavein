@@ -1,4 +1,7 @@
 {
+  "key.excavein.selection_activation": "Selection Activation",
+  "key.categories.excavein": "ExcaVein",
+
   "excavein.overlay.mode": "Mode:_",
   "excavein.overlay.selecting": "Selecting:_",
   "excavein.overlay.cooldown": "Cooldown:_",
