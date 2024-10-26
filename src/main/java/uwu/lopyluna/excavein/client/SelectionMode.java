@@ -37,6 +37,10 @@ public enum SelectionMode {
         return SelectionMode.values()[index];
     }
 
+    public static void setMode(int mode) {
+        currentIndex = mode;
+    }
+
     public static void nextMode() {
         currentIndex = (currentIndex + 1) % VALUES.length;
     }

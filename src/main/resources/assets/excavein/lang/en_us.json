@@ -1,5 +1,19 @@
 {
   "key.excavein.selection_activation": "Selection Activation",
+
+  "key.excavein.next_mode": "Next Selection",
+  "key.excavein.prev_mode": "Previous Selection",
+
+  "key.excavein.active_selection": "Active Selection",
+  "key.excavein.active_vein": "Active Vein",
+  "key.excavein.active_excavate": "Active Excavate",
+  "key.excavein.active_tunnel": "Active Tunnel",
+  "key.excavein.active_large_tunnel": "Active Large Tunnel",
+  "key.excavein.active_diagonal_tunnel": "Active Diagonal Tunnel",
+  "key.excavein.active_side_selection": "Active Side Selection",
+  "key.excavein.active_side_vein": "Active Side Vein",
+  "key.excavein.active_side_excavate": "Active Side Excavate",
+
   "key.categories.excavein": "ExcaVein",
 
   "excavein.overlay.mode": "Mode:_",

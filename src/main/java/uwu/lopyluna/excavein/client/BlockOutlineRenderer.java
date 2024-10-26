@@ -29,6 +29,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static uwu.lopyluna.excavein.client.KeybindHandler.SELECTION_ACTIVATION;
+import static uwu.lopyluna.excavein.client.KeybindHandler.keyActivated;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
 
 @SuppressWarnings("unused")
@@ -71,7 +73,7 @@ public class BlockOutlineRenderer {
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (mc.getConnection() != null || event.phase == TickEvent.Phase.END) {
-            shouldRenderOutline = KeybindHandler.SELECTION_ACTIVATION.isDown();
+            shouldRenderOutline = ((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated));
         }
     }
 

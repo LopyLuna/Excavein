@@ -8,6 +8,9 @@ public class ClientConfig {
     public static final ForgeConfigSpec.IntValue SELECTION_COLOR_G;
     public static final ForgeConfigSpec.IntValue SELECTION_COLOR_B;
     public static final ForgeConfigSpec.IntValue SELECTION_ALPHA;
+    public static final ForgeConfigSpec.BooleanValue TEXT_SHADOW;
+    public static final ForgeConfigSpec.BooleanValue TOGGLEABLE_KEY;
+    public static final ForgeConfigSpec.BooleanValue DISABLE_SCROLL;
     public static final ForgeConfigSpec.DoubleValue OUTLINE_THICKNESS;
     public static final ForgeConfigSpec.BooleanValue RENDER_OUTLINE;
     public static final ForgeConfigSpec.BooleanValue RENDER_FACE;
@@ -23,24 +26,36 @@ public class ClientConfig {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
         SELECTION_COLOR_R = builder
-                .comment("Outline Red color value (default = 187)")
-                .defineInRange("SelectionColorR", 187, 1, 255);
+                .comment("Outline Red color value (default = 232)")
+                .defineInRange("SelectionColorR", 232, 1, 255);
 
         SELECTION_COLOR_G = builder
-                .comment("Outline Green color value (default = 247)")
-                .defineInRange("SelectionColorG", 247, 1, 255);
+                .comment("Outline Green color value (default = 232)")
+                .defineInRange("SelectionColorG", 232, 1, 255);
 
         SELECTION_COLOR_B = builder
-                .comment("Outline Blue color value (default = 252)")
-                .defineInRange("SelectionColorB", 252, 1, 255);
+                .comment("Outline Blue color value (default = 232)")
+                .defineInRange("SelectionColorB", 232, 1, 255);
 
         SELECTION_ALPHA = builder
-                .comment("Outline alpha value (default = 64)")
-                .defineInRange("SelectionAlpha", 64, 1, 255);
+                .comment("Outline alpha value (default = 32)")
+                .defineInRange("SelectionAlpha", 32, 1, 255);
+
+        TEXT_SHADOW = builder
+                .comment("Whether to have shadow behind of the Selection Text (default = true)")
+                .define("TextShadow", true);
+
+        TOGGLEABLE_KEY = builder
+                .comment("Whether to make the Activation Key Toggleable (default = false)")
+                .define("ToggleableKey", false);
+
+        DISABLE_SCROLL = builder
+                .comment("Whether to disable selection scroll (default = false)")
+                .define("DisableScroll", false);
 
         OUTLINE_THICKNESS = builder
-                .comment("Outline thickness (default = 1.0)")
-                .defineInRange("OutlineThickness", 1.0, 0.1, 16.0);
+                .comment("Outline thickness (default = 0.5)")
+                .defineInRange("OutlineThickness", 0.5, 0.1, 16.0);
 
         RENDER_OUTLINE = builder
                 .comment("Whether to render the Outline of the Selection (default = true)")
@@ -51,8 +66,8 @@ public class ClientConfig {
                 .define("RenderFace", true);
 
         BLUR_FACE = builder
-                .comment("Whether to blur the Face Texture of the Selection (default = false)")
-                .define("BlurFace", false);
+                .comment("Whether to blur the Face Texture of the Selection (default = true)")
+                .define("BlurFace", true);
 
         SELECTION_OFFSET_Y = builder
                 .comment("Offset Y position of Selection Text (default = 0)")

@@ -28,8 +28,8 @@ public class ServerConfig {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
         SELECTION_COOLDOWN = builder
-                .comment("Amount of ticks for block selection cooldown (default = " + (20 * 5) + ")")
-                .defineInRange("SelectionCooldown", 20 * 5, 0, 20 * 60 * 60 * 24 * 7);
+                .comment("Amount of ticks for block selection cooldown (default = 2s - " + (20 * 2) + ")")
+                .defineInRange("SelectionCooldown", 20 * 2, 0, 20 * 60 * 60 * 24 * 7);
 
         SELECTION_ADD_COOLDOWN = builder
                 .comment("Amount of ticks that get added to the block selection cooldown (default = 0)")
@@ -37,7 +37,7 @@ public class ServerConfig {
 
         SELECTION_ADD_RANGE = builder
                 .comment("Add range for block selection (default = 12)")
-                .defineInRange("SelectionMaxRange", 12, -16, 128);
+                .defineInRange("SelectionMaxRange", 12, -8, 128);
 
         SELECTION_MAX_BLOCK = builder
                 .comment("Maximum number of blocks that can be selected (default = 64)")
@@ -48,8 +48,8 @@ public class ServerConfig {
                 .defineInRange("FoodExhaustionMultiplier", 2.0, 0.0, 1000);
 
         ITEM_PICKUP_DELAY = builder
-                .comment("Amount of ticks for till you are able to pick up items after blocks drops from selection (default = 10)")
-                .defineInRange("ItemPickupDelay", 10, 0, 30000);
+                .comment("Amount of ticks for till you are able to pick up items after blocks drops from selection (default = 0)")
+                .defineInRange("ItemPickupDelay", 0, 0, 30000);
 
         INVERT_WHITELIST = builder
                 .comment("Invert the whitelist behavior (default = true)")
@@ -68,8 +68,8 @@ public class ServerConfig {
                 .define("RequiresHunger", true);
 
         BLOCKS_AT_PLAYER = builder
-                .comment("Sends all dropped Items from Blocks to the Player (default = false)")
-                .define("SendBlocksToPlayer", false);
+                .comment("Sends all dropped Items from Blocks to the Player (default = true)")
+                .define("SendBlocksToPlayer", true);
 
         BLOCK_PLACING = builder
                 .comment("Ability to Place Blocks by Selection (default = false)")

@@ -8,7 +8,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameRules;
@@ -39,8 +38,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static uwu.lopyluna.excavein.Utils.getValidTools;
-import static uwu.lopyluna.excavein.Utils.randomChance;
+import static uwu.lopyluna.excavein.Utils.*;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 import static uwu.lopyluna.excavein.tracker.CooldownTracker.getCoolDownCheck;
 import static uwu.lopyluna.excavein.tracker.CooldownTracker.getRemainingCooldown;
@@ -118,8 +116,9 @@ public class BlockPositionTracker {
                         continue;
                     if (player.getMainHandItem().isDamageableItem() && (player.getMainHandItem().getMaxDamage() - player.getMainHandItem().getDamageValue()) == 1)
                         continue;
-                    if (BLOCK_PLACING.get() && ((player.getMainHandItem().getItem() instanceof BlockItem) ||
-                            (!(!player.getMainHandItem().isEmpty() && getValidTools(player.getMainHandItem())) && player.getOffhandItem().getItem() instanceof BlockItem)))
+                    if (REQUIRES_TOOLS.get() && player.getMainHandItem().isEmpty() && !player.isCreative())
+                        continue;
+                    if (isValidForPlacing(player.getLevel(), player, pos))
                         continue;
                     BlockState blockState = level.getBlockState(pos);
                     Block block = blockState.getBlock();

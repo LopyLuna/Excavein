@@ -24,7 +24,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import uwu.lopyluna.excavein.tracker.CooldownTracker;
 
 import static uwu.lopyluna.excavein.Utils.getValidTools;
-import static uwu.lopyluna.excavein.client.KeybindHandler.SELECTION_ACTIVATION;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 import static uwu.lopyluna.excavein.tracker.BlockPositionTracker.*;
 
@@ -36,8 +35,8 @@ public class ServerPlayerGameModeMixin {
 
     @Inject(method = "useItemOn", at = @At("HEAD"), cancellable = true)
     public void useItemOn(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand, BlockHitResult pHitResult, CallbackInfoReturnable<InteractionResult> cir) {
-        if ((BLOCK_PLACING.get() && (pStack.getItem() instanceof BlockItem || getValidTools(pStack))) || (ITEM_INTERACTION.get() && (!(pStack.getItem() instanceof BlockItem) || getValidTools(pStack))) || (HAND_INTERACTION.get() && pStack.isEmpty())) {
-            if (!(pPlayer instanceof FakePlayer) && (keyIsDown || SELECTION_ACTIVATION.isDown())) {
+        if ((BLOCK_PLACING.get() && (pStack.getItem() instanceof BlockItem || !getValidTools(pStack))) || (ITEM_INTERACTION.get() && (!(pStack.getItem() instanceof BlockItem) || getValidTools(pStack))) || (HAND_INTERACTION.get() && pStack.isEmpty())) {
+            if (!(pPlayer instanceof FakePlayer) && keyIsDown) {
                 if (CooldownTracker.isCooldownNotActive(pPlayer)) {
 
                     for (BlockPos pos : savedBlockPositions) {
@@ -67,10 +66,12 @@ public class ServerPlayerGameModeMixin {
         boolean flag1 = (pPlayer.isSecondaryUseActive() && flag) && !(pPlayer.getMainHandItem().doesSneakBypassUse(pLevel, blockpos, pPlayer) && pPlayer.getOffhandItem().doesSneakBypassUse(pLevel, blockpos, pPlayer));
         ItemStack itemstack = pStack.copy();
         if ((event.getUseBlock() == net.minecraftforge.eventbus.api.Event.Result.ALLOW || (event.getUseBlock() != net.minecraftforge.eventbus.api.Event.Result.DENY && !flag1))) {
-            InteractionResult interactionresult = blockstate.use(pLevel, pPlayer, pHand, pHitResult);
-            if (interactionresult.consumesAction()) {
-                CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(pPlayer, blockpos, itemstack);
-                return interactionresult;
+            if (HAND_INTERACTION.get()) {
+                InteractionResult interactionresult = blockstate.use(pLevel, pPlayer, pHand, pHitResult);
+                if (interactionresult.consumesAction()) {
+                    CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(pPlayer, blockpos, itemstack);
+                    return interactionresult;
+                }
             }
         }
 

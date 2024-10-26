@@ -7,12 +7,14 @@ import uwu.lopyluna.excavein.tracker.BlockPositionTracker;
 import java.util.function.Supplier;
 
 import static uwu.lopyluna.excavein.client.KeybindHandler.SELECTION_ACTIVATION;
+import static uwu.lopyluna.excavein.client.KeybindHandler.keyActivated;
+import static uwu.lopyluna.excavein.config.ClientConfig.TOGGLEABLE_KEY;
 
 public class KeybindPacket {
     private final boolean selectionKeyIsDown;
 
     public KeybindPacket() {
-        selectionKeyIsDown = SELECTION_ACTIVATION.isDown();
+        selectionKeyIsDown = ((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated));
     }
 
     public static void encode(KeybindPacket msg, FriendlyByteBuf buf) {

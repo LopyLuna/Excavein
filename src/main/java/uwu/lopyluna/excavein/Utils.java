@@ -29,10 +29,6 @@ public class Utils {
         int newChance = Mth.clamp(chance, 0, 100);
         return level.getRandom().nextInt(1,  100) <= newChance;
     }
-    public static boolean randomChance(double chance, Level level) {
-        int newChance = Mth.clamp(((int) chance * 100), 0, 100);
-        return level.getRandom().nextInt(1,  100) <= newChance;
-    }
 
     public static ResourceLocation asResource(String path) {
         return new ResourceLocation(MOD_ID, path);
@@ -88,20 +84,51 @@ public class Utils {
         }
         return false;
     }
-
-    public static boolean isValidForMining(BlockState state, ServerPlayer player) {
-        if (!(player.isCreative() || (BLOCK_PLACING.get() && ((player.getMainHandItem().getItem() instanceof BlockItem) ||
-                (!(!player.getMainHandItem().isEmpty() && !(player.getMainHandItem().getItem() instanceof BlockItem)) && player.getOffhandItem().getItem() instanceof BlockItem))))) {
-            if (REQUIRES_TOOLS.get())
-                return isBlockInTag(state, getBlockTagFromTool(player.getMainHandItem())) && (!REQUIRES_MINEABLE.get() || ForgeHooks.isCorrectToolForDrops(state, player));
-            if (REQUIRES_MINEABLE.get())
-                return ForgeHooks.isCorrectToolForDrops(state, player);
+    public static boolean isValidForPlacing(Level world, ServerPlayer player, BlockPos pos) {
+        if (!player.isCreative()) { // if survival
+            if (BLOCK_PLACING.get()) { // if block placing enabled
+                if (player.getMainHandItem().getItem() instanceof BlockItem) { // if there is block in players hand
+                    return true;
+                } else if (player.getOffhandItem().getItem() instanceof BlockItem) { // if there is block in players offhand
+                    if (player.getMainHandItem().isEmpty()) { // if player hand is empty
+                        return true;
+                    }
+                }
+            }
+        } else {
+            return false;
         }
-        return true;
+        return isNotValidForMining(world.getBlockState(pos), player);
+    }
+
+    public static boolean isNotValidForMining(Level world, ServerPlayer player, BlockPos pos) {
+        if (!player.isCreative()) { // if survival
+            if (BLOCK_PLACING.get()) { // if block placing enabled
+                if (player.getMainHandItem().getItem() instanceof BlockItem) { // if there is block in players hand
+                    return false;
+                } else if (player.getOffhandItem().getItem() instanceof BlockItem) { // if there is block in players offhand
+                    if (player.getMainHandItem().isEmpty()) { // if player hand is empty
+                        return false;
+                    }
+                }
+            }
+        } else {
+            return false;
+        }
+        return isNotValidForMining(world.getBlockState(pos), player);
+    }
+
+
+    public static boolean isNotValidForMining(BlockState state, ServerPlayer player) {
+        if (REQUIRES_TOOLS.get())
+            return !isBlockInTag(state, getBlockTagFromTool(player.getMainHandItem())) || (REQUIRES_MINEABLE.get() && !ForgeHooks.isCorrectToolForDrops(state, player));
+        if (REQUIRES_MINEABLE.get())
+            return !ForgeHooks.isCorrectToolForDrops(state, player);
+        return false;
     }
 
     public static boolean isNotValidBlock(Level world, ServerPlayer player, BlockPos pos) {
-        return (!isBlockWhitelisted(world.getBlockState(pos)) || !world.getWorldBorder().isWithinBounds(pos) || !isValidForMining(world.getBlockState(pos), player) || world.getBlockState(pos).isAir() || ((world.getBlockState(pos).getDestroySpeed(world, pos) < 0) && !player.isCreative()));
+        return (!isBlockWhitelisted(world.getBlockState(pos)) || !world.getWorldBorder().isWithinBounds(pos) || isNotValidForMining(world, player, pos) || world.getBlockState(pos).isAir() || ((world.getBlockState(pos).getDestroySpeed(world, pos) < 0) && !player.isCreative()));
     }
 
     public static Set<BlockPos> selectionInspection(Level world, ServerPlayer player, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, SelectionMode mode) {
@@ -116,6 +143,7 @@ public class Utils {
         while (!toCheck.isEmpty() && validBlocks.size() < maxBlocks) {
             BlockPos currentPos = toCheck.poll();
 
+            assert currentPos != null;
             if (eyePos.distManhattan(currentPos) > maxRange) {
                 continue;
             }
@@ -125,6 +153,9 @@ public class Utils {
             }
             BlockState currentState = world.getBlockState(currentPos);
             BlockState startState = world.getBlockState(startPos);
+
+            if (REQUIRES_TOOLS.get() && player.getMainHandItem().isEmpty() && !player.isCreative())
+                continue;
 
             if (isNotValidBlock(world, player, currentPos) || startState.isAir() || ((startState.getDestroySpeed(world, startPos) < 0) && !player.isCreative()))
                 continue;
