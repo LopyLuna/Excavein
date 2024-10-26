@@ -7,12 +7,12 @@ license="MIT"
     modId="excavein"
     version="${file.jarVersion}"
     displayName="ExcaVein"
-    updateJSONURL="https://api.modrinth.com/updates/MOD/forge_updates.json"
-    displayURL="https://modrinth.com/mod/MOD"
+    updateJSONURL="https://api.modrinth.com/updates/excavein/forge_updates.json"
+    displayURL="https://modrinth.com/mod/excavein"
     logoFile="pack.png"
     authors="LopyLuna"
     description='''
-INFO ABOUT MOD
+Excavein is a powerful & customizable vein mining / building tool. Players can select different modes to gather or place blocks efficiently, making gathering resources and building faster and more enjoyable.
 '''
 
 [[dependencies.excavein]]

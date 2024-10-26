@@ -23,16 +23,18 @@ import java.util.function.Supplier;
 @SuppressWarnings("unused")
 public class SelectionInspectionPacket {
 
-    @SuppressWarnings("all")
-    public static final SelectionInspectionPacket INSTANCE = new SelectionInspectionPacket();
+    private final SelectionMode selectionMode;
 
-    private SelectionInspectionPacket() {
+    public SelectionInspectionPacket(SelectionMode mode) {
+        selectionMode = mode;
     }
 
-    public static void encode(SelectionInspectionPacket msg, FriendlyByteBuf buf) {}
+    public static void encode(SelectionInspectionPacket msg, FriendlyByteBuf buf) {
+        buf.writeEnum(msg.selectionMode);
+    }
 
     public static SelectionInspectionPacket decode(FriendlyByteBuf buf) {
-        return INSTANCE;
+        return new SelectionInspectionPacket(buf.readEnum(SelectionMode.class));
     }
 
     public static void handle(SelectionInspectionPacket msg, Supplier<NetworkEvent.Context> ctx) {
@@ -49,7 +51,8 @@ public class SelectionInspectionPacket {
                             new BlockPos(player.getEyePosition()),
                             ServerConfig.SELECTION_MAX_BLOCK.get(),
                             (int) Objects.requireNonNull(player.getAttribute(ForgeMod.REACH_DISTANCE.get())).getValue() + ServerConfig.SELECTION_ADD_RANGE.get(),
-                            SelectionMode.getCurrentMode()
+                            msg.selectionMode
+
                     );
                     BlockPositionTracker.update(player, rayTrace, validBlocks);
                     if (!validBlocks.isEmpty()) {

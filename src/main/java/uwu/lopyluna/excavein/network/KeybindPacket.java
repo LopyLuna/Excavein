@@ -6,23 +6,19 @@ import uwu.lopyluna.excavein.tracker.BlockPositionTracker;
 
 import java.util.function.Supplier;
 
-import static uwu.lopyluna.excavein.client.KeybindHandler.SELECTION_ACTIVATION;
-import static uwu.lopyluna.excavein.client.KeybindHandler.keyActivated;
-import static uwu.lopyluna.excavein.config.ClientConfig.TOGGLEABLE_KEY;
-
 public class KeybindPacket {
     private final boolean selectionKeyIsDown;
 
-    public KeybindPacket() {
-        selectionKeyIsDown = ((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated));
+    public KeybindPacket(boolean b) {
+        selectionKeyIsDown = b;
     }
 
     public static void encode(KeybindPacket msg, FriendlyByteBuf buf) {
         buf.writeBoolean(msg.selectionKeyIsDown);
     }
 
-    public static KeybindPacket decode() {
-        return new KeybindPacket();
+    public static KeybindPacket decode(FriendlyByteBuf buf) {
+        return new KeybindPacket(buf.readBoolean());
     }
 
     public static void handle(KeybindPacket msg, Supplier<NetworkEvent.Context> ctx) {

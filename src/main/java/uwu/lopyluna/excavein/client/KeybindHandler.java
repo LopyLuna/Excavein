@@ -97,9 +97,9 @@ public class KeybindHandler {
             if (tickCounter >= TICK_INTERVAL) {
                 tickCounter = 0;
                 if ((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)) {
-                    Excavein.CHANNEL.sendToServer(SelectionInspectionPacket.INSTANCE);
+                    Excavein.CHANNEL.sendToServer(new SelectionInspectionPacket(SelectionMode.getCurrentMode()));
                 }
-                Excavein.CHANNEL.sendToServer(new KeybindPacket());
+                Excavein.CHANNEL.sendToServer(new KeybindPacket((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)));
             }
 
             if (TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.consumeClick()) { keyActivated = !keyActivated; }
