@@ -3,6 +3,7 @@ package uwu.lopyluna.excavein.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -30,7 +31,7 @@ public class ModeOverlay {
 
     @SubscribeEvent
     public static void onRenderGuiOverlay(RenderGuiOverlayEvent event) {
-        PoseStack poseStack = event.getPoseStack();
+        PoseStack poseStack = event.getGuiGraphics().pose();
         if (mc.getConnection() == null || mc.options.hideGui || mc.noRender || mc.options.reducedDebugInfo().get() || mc.options.renderDebug || mc.options.renderFpsChart || mc.options.renderDebugCharts || !((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)))
             return;
 
@@ -77,7 +78,7 @@ public class ModeOverlay {
     public static void text(String pText, float pX, float pY, int pColor, boolean pDropShadow, PoseStack poseStack) {
         poseStack.pushPose();
         MultiBufferSource.BufferSource multibuffersource$buffersource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-        mc.font.drawInBatch(pText, pX, pY, pColor, pDropShadow, poseStack.last().pose(), multibuffersource$buffersource, false, 0, 15728880);
+        mc.font.drawInBatch(pText, pX, pY, pColor, pDropShadow, poseStack.last().pose(), multibuffersource$buffersource, Font.DisplayMode.NORMAL, 0, 15728880);
         multibuffersource$buffersource.endBatch();
         poseStack.popPose();
     }

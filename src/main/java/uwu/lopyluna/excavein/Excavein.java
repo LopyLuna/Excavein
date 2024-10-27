@@ -21,7 +21,7 @@ import uwu.lopyluna.excavein.network.KeybindPacket;
 import uwu.lopyluna.excavein.network.SelectionInspectionPacket;
 import uwu.lopyluna.excavein.network.SelectionOutlinePacket;
 
-@SuppressWarnings({"unused", "removal"})
+@SuppressWarnings("unused")
 @Mod(Excavein.MOD_ID)
 public class Excavein {
     public static final String NAME = "ExcaVein";

@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.*;
@@ -38,13 +39,13 @@ public class Utils {
 
     public static TagKey<Block> getBlockTagFromTool(ItemStack stack) {
         if (stack.is(Tags.Items.TOOLS)) {
-            if (stack.is(Tags.Items.TOOLS_AXES) || stack.getItem() instanceof AxeItem)
+            if ((stack.is(tag("tools/axes")) || stack.is(ItemTags.AXES)) || stack.getItem() instanceof AxeItem)
                 return BlockTags.MINEABLE_WITH_AXE;
-            if (stack.is(Tags.Items.TOOLS_PICKAXES) || stack.getItem() instanceof PickaxeItem)
+            if ((stack.is(tag("tools/pickaxes")) || stack.is(ItemTags.PICKAXES)) || stack.getItem() instanceof PickaxeItem)
                 return BlockTags.MINEABLE_WITH_PICKAXE;
-            if (stack.is(Tags.Items.TOOLS_SHOVELS) || stack.getItem() instanceof ShovelItem)
+            if ((stack.is(tag("tools/shovels")) || stack.is(ItemTags.SHOVELS)) || stack.getItem() instanceof ShovelItem)
                 return BlockTags.MINEABLE_WITH_SHOVEL;
-            if (stack.is(Tags.Items.TOOLS_HOES) || stack.getItem() instanceof ShovelItem)
+            if ((stack.is(tag("tools/hoes")) || stack.is(ItemTags.HOES)) || stack.getItem() instanceof ShovelItem)
                 return BlockTags.MINEABLE_WITH_HOE;
         }
         return null;
@@ -52,7 +53,9 @@ public class Utils {
 
     public static boolean getValidTools(ItemStack stack) {
         return stack.isDamageableItem() || stack.is(Tags.Items.TOOLS) || stack.getItem() instanceof AxeItem || stack.getItem() instanceof PickaxeItem || stack.getItem() instanceof ShovelItem || stack.getItem() instanceof HoeItem ||
-                stack.is(Tags.Items.TOOLS_AXES) || stack.is(Tags.Items.TOOLS_PICKAXES) || stack.is(Tags.Items.TOOLS_SHOVELS) || stack.is(Tags.Items.TOOLS_HOES);
+                stack.is(tag("tools/axes")) || stack.is(tag("tools/pickaxes")) || stack.is(tag("tools/shovels")) || stack.is(tag("tools/hoes")) ||
+                stack.is(ItemTags.AXES) || stack.is(ItemTags.PICKAXES) || stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.HOES)
+                ;
     }
 
     public static boolean isBlockWhitelisted(BlockState currentState) {
@@ -376,5 +379,9 @@ public class Utils {
         HOURS,
         DAYS,
         MONTHS
+    }
+
+    private static TagKey<Item> tag(String name) {
+        return ItemTags.create(new ResourceLocation("forge", name));
     }
 }

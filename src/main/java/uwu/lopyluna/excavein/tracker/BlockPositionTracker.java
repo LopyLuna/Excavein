@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -80,7 +81,7 @@ public class BlockPositionTracker {
         if (event.phase == TickEvent.Phase.END && player != null && cursorRayTrace != null) {
             BlockPos cursorBlockPos = cursorRayTrace.getBlockPos();
 
-            boolean isAir = player.getLevel().isEmptyBlock(cursorBlockPos);
+            boolean isAir = player.serverLevel().isEmptyBlock(cursorBlockPos);
 
             if (isAir) {
                 if (currentTickDelay != MAX_TICK_DELAY) {
@@ -107,7 +108,7 @@ public class BlockPositionTracker {
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         if (!(player instanceof FakePlayer) && keyIsDown) {
             if (CooldownTracker.isCooldownNotActive(player)) {
-                ServerLevel level = player.getLevel();
+                ServerLevel level = player.serverLevel();
 
                 for (BlockPos pos : savedBlockPositions) {
                     if (pos.equals(savedStartPos) && savedStartPos.equals(event.getPos()))
@@ -118,7 +119,7 @@ public class BlockPositionTracker {
                         continue;
                     if (REQUIRES_TOOLS.get() && player.getMainHandItem().isEmpty() && !player.isCreative())
                         continue;
-                    if (isValidForPlacing(player.getLevel(), player, pos))
+                    if (isValidForPlacing(player.serverLevel(), player, pos))
                         continue;
                     BlockState blockState = level.getBlockState(pos);
                     Block block = blockState.getBlock();
@@ -175,8 +176,7 @@ public class BlockPositionTracker {
     }
 
     public static List<ItemStack> getDrops(BlockState pState, ServerLevel pLevel, BlockPos pPos, @Nullable BlockEntity pBlockEntity, @Nullable Entity pEntity, ItemStack pTool) {
-        LootContext.Builder lootcontext$builder = (new LootContext.Builder(pLevel))
-                .withRandom(pLevel.random)
+        LootParams.Builder lootcontext$builder = (new LootParams.Builder(pLevel))
                 .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pPos))
                 .withParameter(LootContextParams.TOOL, pTool)
                 .withOptionalParameter(LootContextParams.THIS_ENTITY, pEntity)

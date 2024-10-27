@@ -1,5 +1,6 @@
 package uwu.lopyluna.excavein.network;
 
+import net.minecraft.core.Vec3i;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -41,16 +42,17 @@ public class SelectionInspectionPacket {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player != null) {
-                Level world = player.getLevel();
+                Level world = player.serverLevel();
                 BlockHitResult rayTrace = getPlayerRayTraceToBlock(player);
                 if (rayTrace != null) {
+                    Vec3 eye = player.getEyePosition();
                     Set<BlockPos> validBlocks = Utils.selectionInspection(
                             world,
                             player,
                             rayTrace,
-                            new BlockPos(player.getEyePosition()),
+                            new BlockPos(new Vec3i((int) eye.x, (int) eye.y, (int) eye.z)),
                             ServerConfig.SELECTION_MAX_BLOCK.get(),
-                            (int) Objects.requireNonNull(player.getAttribute(ForgeMod.REACH_DISTANCE.get())).getValue() + ServerConfig.SELECTION_ADD_RANGE.get(),
+                            (int) Objects.requireNonNull(player.getAttribute(ForgeMod.BLOCK_REACH.get())).getValue() + ServerConfig.SELECTION_ADD_RANGE.get(),
                             msg.selectionMode
 
                     );
@@ -69,12 +71,12 @@ public class SelectionInspectionPacket {
     }
 
     private static BlockHitResult getPlayerRayTraceToBlock(ServerPlayer player) {
-        double reachDistance = Objects.requireNonNull(player.getAttribute(ForgeMod.REACH_DISTANCE.get())).getValue();
+        double reachDistance = Objects.requireNonNull(player.getAttribute(ForgeMod.BLOCK_REACH.get())).getValue();
         Vec3 eyePosition = player.getEyePosition(1.0F);
         Vec3 lookVector = player.getLookAngle().scale(reachDistance);
         Vec3 reachPosition = eyePosition.add(lookVector);
 
-        BlockHitResult hitResult = player.getLevel().clip(new net.minecraft.world.level.ClipContext(
+        BlockHitResult hitResult = player.serverLevel().clip(new net.minecraft.world.level.ClipContext(
                 eyePosition, reachPosition,
                 net.minecraft.world.level.ClipContext.Block.OUTLINE,
                 net.minecraft.world.level.ClipContext.Fluid.NONE,
