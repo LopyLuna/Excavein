@@ -1,29 +1,30 @@
 package uwu.lopyluna.excavein.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class ClientConfig {
 
-    public static final ForgeConfigSpec.IntValue SELECTION_COLOR_R;
-    public static final ForgeConfigSpec.IntValue SELECTION_COLOR_G;
-    public static final ForgeConfigSpec.IntValue SELECTION_COLOR_B;
-    public static final ForgeConfigSpec.IntValue SELECTION_ALPHA;
-    public static final ForgeConfigSpec.BooleanValue TEXT_SHADOW;
-    public static final ForgeConfigSpec.BooleanValue TOGGLEABLE_KEY;
-    public static final ForgeConfigSpec.BooleanValue DISABLE_SCROLL;
-    public static final ForgeConfigSpec.DoubleValue OUTLINE_THICKNESS;
-    public static final ForgeConfigSpec.BooleanValue RENDER_OUTLINE;
-    public static final ForgeConfigSpec.BooleanValue RENDER_FACE;
-    public static final ForgeConfigSpec.BooleanValue BLUR_FACE;
-    public static final ForgeConfigSpec.IntValue SELECTION_OFFSET_Y;
-    public static final ForgeConfigSpec.IntValue SELECTION_OFFSET_X;
-    public static final ForgeConfigSpec.BooleanValue DISPLAY_SELECTION_CHAT;
-    public static final ForgeConfigSpec.IntValue MAX_BLOCK_VIEW;
+    public static final ModConfigSpec.IntValue SELECTION_COLOR_R;
+    public static final ModConfigSpec.IntValue SELECTION_COLOR_G;
+    public static final ModConfigSpec.IntValue SELECTION_COLOR_B;
+    public static final ModConfigSpec.IntValue SELECTION_ALPHA;
+    public static final ModConfigSpec.BooleanValue TEXT_SHADOW;
+    public static final ModConfigSpec.BooleanValue TOGGLEABLE_KEY;
+    public static final ModConfigSpec.BooleanValue DISABLE_SCROLL;
+    public static final ModConfigSpec.DoubleValue OUTLINE_THICKNESS;
+    public static final ModConfigSpec.BooleanValue RENDER_OUTLINE;
+    public static final ModConfigSpec.BooleanValue RENDER_FACE;
+    public static final ModConfigSpec.BooleanValue BLUR_FACE;
+    public static final ModConfigSpec.IntValue SELECTION_OFFSET_Y;
+    public static final ModConfigSpec.IntValue SELECTION_OFFSET_X;
+    public static final ModConfigSpec.BooleanValue DISPLAY_SELECTION_CHAT;
+    public static final ModConfigSpec.IntValue MAX_BLOCK_VIEW;
 
-    public static final ForgeConfigSpec CLIENT_SPEC;
+    public static final ModConfigSpec CLIENT_SPEC;
 
     static {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
         SELECTION_COLOR_R = builder
                 .comment("Outline Red color value (default = 232)")

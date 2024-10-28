@@ -2,16 +2,19 @@ package uwu.lopyluna.excavein.network;
 
 import net.minecraft.core.Vec3i;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.Level;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.ForgeMod;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
-import uwu.lopyluna.excavein.Excavein;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.jetbrains.annotations.NotNull;
 import uwu.lopyluna.excavein.Utils;
 import uwu.lopyluna.excavein.client.SelectionMode;
 import uwu.lopyluna.excavein.config.ServerConfig;
@@ -19,59 +22,44 @@ import uwu.lopyluna.excavein.tracker.BlockPositionTracker;
 
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 
-@SuppressWarnings("unused")
-public class SelectionInspectionPacket {
+public record SelectionInspectionPacket(int selectionMode) implements CustomPacketPayload {
+    public static final Type<SelectionInspectionPacket> TYPE = new Type<>(Utils.asResource("selection_inspection"));
+    public static final StreamCodec<FriendlyByteBuf, SelectionInspectionPacket> CODEC = StreamCodec.composite(
+            ByteBufCodecs.VAR_INT, SelectionInspectionPacket::selectionMode,
+            SelectionInspectionPacket::new
+    );
 
-    private final SelectionMode selectionMode;
-
-    public SelectionInspectionPacket(SelectionMode mode) {
-        selectionMode = mode;
-    }
-
-    public static void encode(SelectionInspectionPacket msg, FriendlyByteBuf buf) {
-        buf.writeEnum(msg.selectionMode);
-    }
-
-    public static SelectionInspectionPacket decode(FriendlyByteBuf buf) {
-        return new SelectionInspectionPacket(buf.readEnum(SelectionMode.class));
-    }
-
-    public static void handle(SelectionInspectionPacket msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            ServerPlayer player = ctx.get().getSender();
-            if (player != null) {
-                Level world = player.serverLevel();
-                BlockHitResult rayTrace = getPlayerRayTraceToBlock(player);
-                if (rayTrace != null) {
-                    Vec3 eye = player.getEyePosition();
-                    Set<BlockPos> validBlocks = Utils.selectionInspection(
-                            world,
-                            player,
-                            rayTrace,
-                            new BlockPos(new Vec3i((int) eye.x, (int) eye.y, (int) eye.z)),
-                            ServerConfig.SELECTION_MAX_BLOCK.get(),
-                            (int) Objects.requireNonNull(player.getAttribute(ForgeMod.BLOCK_REACH.get())).getValue() + ServerConfig.SELECTION_ADD_RANGE.get(),
-                            msg.selectionMode
-
-                    );
-                    BlockPositionTracker.update(player, rayTrace, validBlocks);
-                    if (!validBlocks.isEmpty()) {
-                        Excavein.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new SelectionOutlinePacket(validBlocks));
-                    } else {
-                        Excavein.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new SelectionOutlinePacket(Set.of()));
-                    }
+    public static void handle(final SelectionInspectionPacket msg, final IPayloadContext ctx) {
+        ctx.enqueueWork(() -> {
+            ServerPlayer player = (ServerPlayer) ctx.player();
+            Level world = player.serverLevel();
+            BlockHitResult rayTrace = getPlayerRayTraceToBlock(player);
+            if (rayTrace != null) {
+                Vec3 eye = player.getEyePosition();
+                Set<BlockPos> validBlocks = Utils.selectionInspection(
+                        world,
+                        player,
+                        rayTrace,
+                        new BlockPos(new Vec3i((int) eye.x, (int) eye.y, (int) eye.z)),
+                        ServerConfig.SELECTION_MAX_BLOCK.get(),
+                        (int) Objects.requireNonNull(player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE)).getValue() + ServerConfig.SELECTION_ADD_RANGE.get(),
+                        SelectionMode.class.getEnumConstants()[msg.selectionMode]
+                );
+                BlockPositionTracker.update(player, rayTrace, validBlocks);
+                if (!validBlocks.isEmpty()) {
+                    PacketDistributor.sendToPlayer(player, new SelectionOutlinePacket(validBlocks));
                 } else {
-                    Excavein.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new SelectionOutlinePacket(Set.of()));
+                    PacketDistributor.sendToPlayer(player, new SelectionOutlinePacket(Set.of()));
                 }
+            } else {
+                PacketDistributor.sendToPlayer(player, new SelectionOutlinePacket(Set.of()));
             }
         });
-        ctx.get().setPacketHandled(true);
     }
 
     private static BlockHitResult getPlayerRayTraceToBlock(ServerPlayer player) {
-        double reachDistance = Objects.requireNonNull(player.getAttribute(ForgeMod.BLOCK_REACH.get())).getValue();
+        double reachDistance = Objects.requireNonNull(player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE)).getValue();
         Vec3 eyePosition = player.getEyePosition(1.0F);
         Vec3 lookVector = player.getLookAngle().scale(reachDistance);
         Vec3 reachPosition = eyePosition.add(lookVector);
@@ -88,5 +76,10 @@ public class SelectionInspectionPacket {
         }
 
         return null;
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

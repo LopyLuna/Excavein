@@ -4,14 +4,15 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.client.settings.KeyConflictContext;
-import net.minecraftforge.client.settings.KeyModifier;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.settings.KeyConflictContext;
+import net.neoforged.neoforge.client.settings.KeyModifier;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 import uwu.lopyluna.excavein.Excavein;
 import uwu.lopyluna.excavein.network.KeybindPacket;
@@ -21,7 +22,7 @@ import static uwu.lopyluna.excavein.client.SelectionMode.setMode;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
 
 @SuppressWarnings("unused")
-@Mod.EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
 public class KeybindHandler {
 
     public static KeyMapping SELECTION_ACTIVATION;
@@ -91,15 +92,15 @@ public class KeybindHandler {
     public static boolean keyActivated = false;
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (mc.getConnection() != null && event.phase == TickEvent.Phase.END && !Minecraft.getInstance().isPaused()) {
+    public static void onClientTick(ClientTickEvent.Post event) {
+        if (mc.getConnection() != null && !Minecraft.getInstance().isPaused()) {
             tickCounter++;
             if (tickCounter >= TICK_INTERVAL) {
                 tickCounter = 0;
                 if ((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)) {
-                    Excavein.CHANNEL.sendToServer(new SelectionInspectionPacket(SelectionMode.getCurrentMode()));
+                    PacketDistributor.sendToServer(new SelectionInspectionPacket(SelectionMode.getCurrentMode().ordinal()));
                 }
-                Excavein.CHANNEL.sendToServer(new KeybindPacket((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)));
+                PacketDistributor.sendToServer(new KeybindPacket((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)));
             }
 
             if (TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.consumeClick()) { keyActivated = !keyActivated; }
@@ -128,8 +129,8 @@ public class KeybindHandler {
 
     @SubscribeEvent
     public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
-        if (!DISABLE_SCROLL.get() && (((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)) && event.getScrollDelta() != 0)) {
-            if (event.getScrollDelta() > 0) {
+        if (!DISABLE_SCROLL.get() && (((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)) && event.getScrollDeltaY() != 0)) {
+            if (event.getScrollDeltaY() > 0) {
                 SelectionMode.nextMode();
             } else {
                 SelectionMode.previousMode();

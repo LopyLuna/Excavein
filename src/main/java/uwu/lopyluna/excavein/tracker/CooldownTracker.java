@@ -2,10 +2,10 @@ package uwu.lopyluna.excavein.tracker;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import uwu.lopyluna.excavein.Utils;
 
 import java.util.HashMap;
@@ -16,7 +16,7 @@ import static uwu.lopyluna.excavein.config.ServerConfig.SELECTION_ADD_COOLDOWN;
 import static uwu.lopyluna.excavein.config.ServerConfig.SELECTION_COOLDOWN;
 
 @SuppressWarnings("unused")
-@Mod.EventBusSubscriber
+@EventBusSubscriber
 public class CooldownTracker {
     private static final Map<UUID, Integer> playerCooldowns = new HashMap<>();
 
@@ -37,13 +37,11 @@ public class CooldownTracker {
     }
 
     @SubscribeEvent
-    public static void onWorldTick(TickEvent.ServerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            for (Map.Entry<UUID, Integer> entry : playerCooldowns.entrySet()) {
-                int remainingTicks = entry.getValue();
-                if (remainingTicks > 0) {
-                    playerCooldowns.put(entry.getKey(), remainingTicks - 1);
-                }
+    public static void onWorldTick(ServerTickEvent.Post event) {
+        for (Map.Entry<UUID, Integer> entry : playerCooldowns.entrySet()) {
+            int remainingTicks = entry.getValue();
+            if (remainingTicks > 0) {
+                playerCooldowns.put(entry.getKey(), remainingTicks - 1);
             }
         }
     }

@@ -1,29 +1,28 @@
 package uwu.lopyluna.excavein.network;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.jetbrains.annotations.NotNull;
+import uwu.lopyluna.excavein.Utils;
 import uwu.lopyluna.excavein.tracker.BlockPositionTracker;
 
-import java.util.function.Supplier;
+public record KeybindPacket(boolean selectionKeyIsDown) implements CustomPacketPayload {
 
-public class KeybindPacket {
-    private final boolean selectionKeyIsDown;
+    public static final Type<KeybindPacket> TYPE = new Type<>(Utils.asResource("keybind"));
+    public static final StreamCodec<FriendlyByteBuf, KeybindPacket> CODEC = StreamCodec.composite(
+            ByteBufCodecs.BOOL, KeybindPacket::selectionKeyIsDown,
+            KeybindPacket::new
+    );
 
-    public KeybindPacket(boolean b) {
-        selectionKeyIsDown = b;
-    }
-
-    public static void encode(KeybindPacket msg, FriendlyByteBuf buf) {
-        buf.writeBoolean(msg.selectionKeyIsDown);
-    }
-
-    public static KeybindPacket decode(FriendlyByteBuf buf) {
-        return new KeybindPacket(buf.readBoolean());
-    }
-
-    public static void handle(KeybindPacket msg, Supplier<NetworkEvent.Context> ctx) {
-        NetworkEvent.Context context = ctx.get();
+    public static void handle(KeybindPacket msg, IPayloadContext context) {
         context.enqueueWork(() -> BlockPositionTracker.update(msg.selectionKeyIsDown));
-        context.setPacketHandled(true);
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

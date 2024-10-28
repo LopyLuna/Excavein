@@ -2,20 +2,20 @@ package uwu.lopyluna.excavein;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.common.ForgeHooks;
-import net.minecraftforge.common.Tags;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.Tags;
 import uwu.lopyluna.excavein.client.SelectionMode;
 import uwu.lopyluna.excavein.config.ServerConfig;
 
@@ -32,7 +32,7 @@ public class Utils {
     }
 
     public static ResourceLocation asResource(String path) {
-        return new ResourceLocation(MOD_ID, path);
+        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
     }
 
     public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("vein_mine_whitelist"));
@@ -67,7 +67,7 @@ public class Utils {
     private static List<TagKey<Block>> getTagsFromState(BlockState state) {
         List<TagKey<Block>> veinTags = new ArrayList<>();
         for (String tag : ServerConfig.VEIN_BLOCK_TAGS.get()) {
-            TagKey<Block> blockTag = TagKey.create(ForgeRegistries.BLOCKS.getRegistryKey(), new ResourceLocation(tag));
+            TagKey<Block> blockTag = TagKey.create(BuiltInRegistries.BLOCK.key(), ResourceLocation.parse(tag));
             if (state.is(blockTag)) {
                 veinTags.add(blockTag);
             }
@@ -101,7 +101,7 @@ public class Utils {
         } else {
             return false;
         }
-        return isNotValidForMining(world.getBlockState(pos), player);
+        return isNotValidForMining(player, world, pos);
     }
 
     public static boolean isNotValidForMining(Level world, ServerPlayer player, BlockPos pos) {
@@ -118,15 +118,15 @@ public class Utils {
         } else {
             return false;
         }
-        return isNotValidForMining(world.getBlockState(pos), player);
+        return isNotValidForMining(player, world, pos);
     }
 
 
-    public static boolean isNotValidForMining(BlockState state, ServerPlayer player) {
+    public static boolean isNotValidForMining(ServerPlayer player, Level world, BlockPos pos) {
         if (REQUIRES_TOOLS.get())
-            return !isBlockInTag(state, getBlockTagFromTool(player.getMainHandItem())) || (REQUIRES_MINEABLE.get() && !ForgeHooks.isCorrectToolForDrops(state, player));
+            return !isBlockInTag(world.getBlockState(pos), getBlockTagFromTool(player.getMainHandItem())) || (REQUIRES_MINEABLE.get() && !player.hasCorrectToolForDrops(world.getBlockState(pos), world, pos));
         if (REQUIRES_MINEABLE.get())
-            return !ForgeHooks.isCorrectToolForDrops(state, player);
+            return !player.hasCorrectToolForDrops(world.getBlockState(pos), world, pos);
         return false;
     }
 
@@ -134,7 +134,12 @@ public class Utils {
         return (!isBlockWhitelisted(world.getBlockState(pos)) || !world.getWorldBorder().isWithinBounds(pos) || isNotValidForMining(world, player, pos) || world.getBlockState(pos).isAir() || ((world.getBlockState(pos).getDestroySpeed(world, pos) < 0) && !player.isCreative()));
     }
 
-    public static Set<BlockPos> selectionInspection(Level world, ServerPlayer player, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, SelectionMode mode) {
+    public static Set<BlockPos> selectionInspection(Level world, Player pPlayer, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, SelectionMode mode) {
+        if (mode == null)
+            return new HashSet<>();
+        if (!(pPlayer instanceof ServerPlayer player))
+            return new HashSet<>();
+
         Set<BlockPos> validBlocks = new HashSet<>();
         Set<BlockPos> checkedBlocks = new HashSet<>();
         Queue<BlockPos> toCheck = new LinkedList<>();
@@ -180,7 +185,7 @@ public class Utils {
                             BlockState neighborState = world.getBlockState(neighbor);
                             if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState)) {
                                 toCheck.add(neighbor);
-                            } else if (!checkedBlocks.contains(neighbor) && ForgeHooks.isCorrectToolForDrops(neighborState, player) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
+                            } else if (!checkedBlocks.contains(neighbor) && player.hasCorrectToolForDrops(neighborState, world, neighbor) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
                                 toCheck.add(neighbor);
                             }
                         }
@@ -210,7 +215,7 @@ public class Utils {
                                 BlockState neighborState = world.getBlockState(neighbor);
                                 if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState)) {
                                     toCheck.add(neighbor);
-                                } else if (!checkedBlocks.contains(neighbor) && ForgeHooks.isCorrectToolForDrops(neighborState, player) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
+                                } else if (!checkedBlocks.contains(neighbor) && player.hasCorrectToolForDrops(neighborState, world, neighbor) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
                                     toCheck.add(neighbor);
                                 }
                             }
@@ -382,6 +387,6 @@ public class Utils {
     }
 
     private static TagKey<Item> tag(String name) {
-        return ItemTags.create(new ResourceLocation("forge", name));
+        return ItemTags.create(ResourceLocation.fromNamespaceAndPath("c", name));
     }
 }

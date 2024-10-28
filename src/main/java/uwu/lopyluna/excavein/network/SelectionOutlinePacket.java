@@ -2,44 +2,37 @@ package uwu.lopyluna.excavein.network;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.jetbrains.annotations.NotNull;
+import uwu.lopyluna.excavein.Utils;
 import uwu.lopyluna.excavein.client.BlockOutlineRenderer;
 
-import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
 
-public class SelectionOutlinePacket {
-    private final Set<BlockPos> blockPositions;
+public record SelectionOutlinePacket(Set<BlockPos> blockPositions) implements CustomPacketPayload {
 
-    public SelectionOutlinePacket(Set<BlockPos> blockPositions) {
-        this.blockPositions = blockPositions;
-    }
+    public static final Type<SelectionOutlinePacket> TYPE = new Type<>(Utils.asResource("selection_outline"));
+    public static final StreamCodec<FriendlyByteBuf, SelectionOutlinePacket> CODEC = StreamCodec.composite(
+            BlockPos.STREAM_CODEC.apply(ByteBufCodecs.list()).map(Set::copyOf, List::copyOf), SelectionOutlinePacket::blockPositions,
+            SelectionOutlinePacket::new
+    );
 
-    public static void encode(SelectionOutlinePacket msg, FriendlyByteBuf buf) {
-        buf.writeInt(msg.blockPositions.size());
-        for (BlockPos pos : msg.blockPositions) {
-            buf.writeBlockPos(pos);
-        }
-    }
-
-    public static SelectionOutlinePacket decode(FriendlyByteBuf buf) {
-        int size = buf.readInt();
-        Set<BlockPos> blockPositions = new HashSet<>();
-        for (int i = 0; i < size; i++) {
-            blockPositions.add(buf.readBlockPos());
-        }
-        return new SelectionOutlinePacket(blockPositions);
-    }
-
-    public static void handle(SelectionOutlinePacket msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
+    public static void handle(SelectionOutlinePacket msg, IPayloadContext context) {
+        context.enqueueWork(() -> {
             if (msg.blockPositions.isEmpty()) {
                 BlockOutlineRenderer.setOutlineBlocks(Set.of());
             } else {
                 BlockOutlineRenderer.setOutlineBlocks(msg.blockPositions);
             }
         });
-        ctx.get().setPacketHandled(true);
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

@@ -15,11 +15,11 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderHighlightEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RenderHighlightEvent;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -38,7 +38,7 @@ import static uwu.lopyluna.excavein.client.KeybindHandler.keyActivated;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
 
 @SuppressWarnings("unused")
-@Mod.EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
 public class BlockOutlineRenderer {
 
     private static final Minecraft mc = Minecraft.getInstance();
@@ -75,8 +75,8 @@ public class BlockOutlineRenderer {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (mc.getConnection() != null || event.phase == TickEvent.Phase.END) {
+    public static void onClientTick(ClientTickEvent.Post event) {
+        if (mc.getConnection() != null) {
             shouldRenderOutline = ((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated));
         }
     }
@@ -184,51 +184,51 @@ public class BlockOutlineRenderer {
 
         posTransformTemp.set(minX, minY, maxZ, 1);
         posTransformTemp.mul(posMatrix);
-        double x0 = posTransformTemp.x();
-        double y0 = posTransformTemp.y();
-        double z0 = posTransformTemp.z();
+        float x0 = posTransformTemp.x();
+        float y0 = posTransformTemp.y();
+        float z0 = posTransformTemp.z();
 
         posTransformTemp.set(minX, minY, minZ, 1);
         posTransformTemp.mul(posMatrix);
-        double x1 = posTransformTemp.x();
-        double y1 = posTransformTemp.y();
-        double z1 = posTransformTemp.z();
+        float x1 = posTransformTemp.x();
+        float y1 = posTransformTemp.y();
+        float z1 = posTransformTemp.z();
 
         posTransformTemp.set(maxX, minY, minZ, 1);
         posTransformTemp.mul(posMatrix);
-        double x2 = posTransformTemp.x();
-        double y2 = posTransformTemp.y();
-        double z2 = posTransformTemp.z();
+        float x2 = posTransformTemp.x();
+        float y2 = posTransformTemp.y();
+        float z2 = posTransformTemp.z();
 
         posTransformTemp.set(maxX, minY, maxZ, 1);
         posTransformTemp.mul(posMatrix);
-        double x3 = posTransformTemp.x();
-        double y3 = posTransformTemp.y();
-        double z3 = posTransformTemp.z();
+        float x3 = posTransformTemp.x();
+        float y3 = posTransformTemp.y();
+        float z3 = posTransformTemp.z();
 
         posTransformTemp.set(minX, maxY, minZ, 1);
         posTransformTemp.mul(posMatrix);
-        double x4 = posTransformTemp.x();
-        double y4 = posTransformTemp.y();
-        double z4 = posTransformTemp.z();
+        float x4 = posTransformTemp.x();
+        float y4 = posTransformTemp.y();
+        float z4 = posTransformTemp.z();
 
         posTransformTemp.set(minX, maxY, maxZ, 1);
         posTransformTemp.mul(posMatrix);
-        double x5 = posTransformTemp.x();
-        double y5 = posTransformTemp.y();
-        double z5 = posTransformTemp.z();
+        float x5 = posTransformTemp.x();
+        float y5 = posTransformTemp.y();
+        float z5 = posTransformTemp.z();
 
         posTransformTemp.set(maxX, maxY, maxZ, 1);
         posTransformTemp.mul(posMatrix);
-        double x6 = posTransformTemp.x();
-        double y6 = posTransformTemp.y();
-        double z6 = posTransformTemp.z();
+        float x6 = posTransformTemp.x();
+        float y6 = posTransformTemp.y();
+        float z6 = posTransformTemp.z();
 
         posTransformTemp.set(maxX, maxY, minZ, 1);
         posTransformTemp.mul(posMatrix);
-        double x7 = posTransformTemp.x();
-        double y7 = posTransformTemp.y();
-        double z7 = posTransformTemp.z();
+        float x7 = posTransformTemp.x();
+        float y7 = posTransformTemp.y();
+        float z7 = posTransformTemp.z();
 
         float r = color.x();
         float g = color.y();
@@ -249,37 +249,33 @@ public class BlockOutlineRenderer {
         float ny0 = normalTransformTemp.y();
         float nz0 = normalTransformTemp.z();
 
-        consumer.vertex(x0, y0, z0)
-                .color(r, g, b, a)
-                .uv(0, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx0, ny0, nz0)
-                .endVertex();
+        consumer.addVertex(x0, y0, z0)
+                .setColor(r, g, b, a)
+                .setUv(0, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx0, ny0, nz0);
 
-        consumer.vertex(x1, y1, z1)
-                .color(r, g, b, a)
-                .uv(0, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx0, ny0, nz0)
-                .endVertex();
+        consumer.addVertex(x1, y1, z1)
+                .setColor(r, g, b, a)
+                .setUv(0, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx0, ny0, nz0);
 
-        consumer.vertex(x2, y2, z2)
-                .color(r, g, b, a)
-                .uv(1, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx0, ny0, nz0)
-                .endVertex();
+        consumer.addVertex(x2, y2, z2)
+                .setColor(r, g, b, a)
+                .setUv(1, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx0, ny0, nz0);
 
-        consumer.vertex(x3, y3, z3)
-                .color(r, g, b, a)
-                .uv(1, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx0, ny0, nz0)
-                .endVertex();
+        consumer.addVertex(x3, y3, z3)
+                .setColor(r, g, b, a)
+                .setUv(1, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx0, ny0, nz0);
 
         // up
 
@@ -289,37 +285,33 @@ public class BlockOutlineRenderer {
         float ny1 = normalTransformTemp.y();
         float nz1 = normalTransformTemp.z();
 
-        consumer.vertex(x4, y4, z4)
-                .color(r, g, b, a)
-                .uv(0, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx1, ny1, nz1)
-                .endVertex();
+        consumer.addVertex(x4, y4, z4)
+                .setColor(r, g, b, a)
+                .setUv(0, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx1, ny1, nz1);
 
-        consumer.vertex(x5, y5, z5)
-                .color(r, g, b, a)
-                .uv(0, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx1, ny1, nz1)
-                .endVertex();
+        consumer.addVertex(x5, y5, z5)
+                .setColor(r, g, b, a)
+                .setUv(0, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx1, ny1, nz1);
 
-        consumer.vertex(x6, y6, z6)
-                .color(r, g, b, a)
-                .uv(1, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx1, ny1, nz1)
-                .endVertex();
+        consumer.addVertex(x6, y6, z6)
+                .setColor(r, g, b, a)
+                .setUv(1, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx1, ny1, nz1);
 
-        consumer.vertex(x7, y7, z7)
-                .color(r, g, b, a)
-                .uv(1, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx1, ny1, nz1)
-                .endVertex();
+        consumer.addVertex(x7, y7, z7)
+                .setColor(r, g, b, a)
+                .setUv(1, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx1, ny1, nz1);
 
         // north
 
@@ -333,37 +325,33 @@ public class BlockOutlineRenderer {
         float ny2 = normalTransformTemp.y();
         float nz2 = normalTransformTemp.z();
 
-        consumer.vertex(x7, y7, z7)
-                .color(r, g, b, a)
-                .uv(0, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx2, ny2, nz2)
-                .endVertex();
+        consumer.addVertex(x7, y7, z7)
+                .setColor(r, g, b, a)
+                .setUv(0, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx2, ny2, nz2);
 
-        consumer.vertex(x2, y2, z2)
-                .color(r, g, b, a)
-                .uv(0, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx2, ny2, nz2)
-                .endVertex();
+        consumer.addVertex(x2, y2, z2)
+                .setColor(r, g, b, a)
+                .setUv(0, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx2, ny2, nz2);
 
-        consumer.vertex(x1, y1, z1)
-                .color(r, g, b, a)
-                .uv(1, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx2, ny2, nz2)
-                .endVertex();
+        consumer.addVertex(x1, y1, z1)
+                .setColor(r, g, b, a)
+                .setUv(1, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx2, ny2, nz2);
 
-        consumer.vertex(x4, y4, z4)
-                .color(r, g, b, a)
-                .uv(1, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx2, ny2, nz2)
-                .endVertex();
+        consumer.addVertex(x4, y4, z4)
+                .setColor(r, g, b, a)
+                .setUv(1, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx2, ny2, nz2);
 
         // south
 
@@ -377,37 +365,33 @@ public class BlockOutlineRenderer {
         float ny3 = normalTransformTemp.y();
         float nz3 = normalTransformTemp.z();
 
-        consumer.vertex(x5, y5, z5)
-                .color(r, g, b, a)
-                .uv(0, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx3, ny3, nz3)
-                .endVertex();
+        consumer.addVertex(x5, y5, z5)
+                .setColor(r, g, b, a)
+                .setUv(0, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx3, ny3, nz3);
 
-        consumer.vertex(x0, y0, z0)
-                .color(r, g, b, a)
-                .uv(0, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx3, ny3, nz3)
-                .endVertex();
+        consumer.addVertex(x0, y0, z0)
+                .setColor(r, g, b, a)
+                .setUv(0, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx3, ny3, nz3);
 
-        consumer.vertex(x3, y3, z3)
-                .color(r, g, b, a)
-                .uv(1, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx3, ny3, nz3)
-                .endVertex();
+        consumer.addVertex(x3, y3, z3)
+                .setColor(r, g, b, a)
+                .setUv(1, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx3, ny3, nz3);
 
-        consumer.vertex(x6, y6, z6)
-                .color(r, g, b, a)
-                .uv(1, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx3, ny3, nz3)
-                .endVertex();
+        consumer.addVertex(x6, y6, z6)
+                .setColor(r, g, b, a)
+                .setUv(1, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx3, ny3, nz3);
 
         // west
 
@@ -421,37 +405,33 @@ public class BlockOutlineRenderer {
         float ny4 = normalTransformTemp.y();
         float nz4 = normalTransformTemp.z();
 
-        consumer.vertex(x4, y4, z4)
-                .color(r, g, b, a)
-                .uv(0, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx4, ny4, nz4)
-                .endVertex();
+        consumer.addVertex(x4, y4, z4)
+                .setColor(r, g, b, a)
+                .setUv(0, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx4, ny4, nz4);
 
-        consumer.vertex(x1, y1, z1)
-                .color(r, g, b, a)
-                .uv(0, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx4, ny4, nz4)
-                .endVertex();
+        consumer.addVertex(x1, y1, z1)
+                .setColor(r, g, b, a)
+                .setUv(0, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx4, ny4, nz4);
 
-        consumer.vertex(x0, y0, z0)
-                .color(r, g, b, a)
-                .uv(1, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx4, ny4, nz4)
-                .endVertex();
+        consumer.addVertex(x0, y0, z0)
+                .setColor(r, g, b, a)
+                .setUv(1, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx4, ny4, nz4);
 
-        consumer.vertex(x5, y5, z5)
-                .color(r, g, b, a)
-                .uv(1, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx4, ny4, nz4)
-                .endVertex();
+        consumer.addVertex(x5, y5, z5)
+                .setColor(r, g, b, a)
+                .setUv(1, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx4, ny4, nz4);
 
         // east
 
@@ -465,37 +445,33 @@ public class BlockOutlineRenderer {
         float ny5 = normalTransformTemp.y();
         float nz5 = normalTransformTemp.z();
 
-        consumer.vertex(x6, y6, z6)
-                .color(r, g, b, a)
-                .uv(0, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx5, ny5, nz5)
-                .endVertex();
+        consumer.addVertex(x6, y6, z6)
+                .setColor(r, g, b, a)
+                .setUv(0, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx5, ny5, nz5);
 
-        consumer.vertex(x3, y3, z3)
-                .color(r, g, b, a)
-                .uv(0, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx5, ny5, nz5)
-                .endVertex();
+        consumer.addVertex(x3, y3, z3)
+                .setColor(r, g, b, a)
+                .setUv(0, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx5, ny5, nz5);
 
-        consumer.vertex(x2, y2, z2)
-                .color(r, g, b, a)
-                .uv(1, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx5, ny5, nz5)
-                .endVertex();
+        consumer.addVertex(x2, y2, z2)
+                .setColor(r, g, b, a)
+                .setUv(1, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx5, ny5, nz5);
 
-        consumer.vertex(x7, y7, z7)
-                .color(r, g, b, a)
-                .uv(1, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx5, ny5, nz5)
-                .endVertex();
+        consumer.addVertex(x7, y7, z7)
+                .setColor(r, g, b, a)
+                .setUv(1, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx5, ny5, nz5);
     }
 
     public static void bufferQuad(PoseStack.Pose pose, VertexConsumer consumer, Vector3f pos0, Vector3f pos1, Vector3f pos2,
@@ -512,27 +488,27 @@ public class BlockOutlineRenderer {
 
         posTransformTemp.set(pos0.x(), pos0.y(), pos0.z(), 1);
         posTransformTemp.mul(posMatrix);
-        double x0 = posTransformTemp.x();
-        double y0 = posTransformTemp.y();
-        double z0 = posTransformTemp.z();
+        float x0 = posTransformTemp.x();
+        float y0 = posTransformTemp.y();
+        float z0 = posTransformTemp.z();
 
         posTransformTemp.set(pos1.x(), pos1.y(), pos1.z(), 1);
         posTransformTemp.mul(posMatrix);
-        double x1 = posTransformTemp.x();
-        double y1 = posTransformTemp.y();
-        double z1 = posTransformTemp.z();
+        float x1 = posTransformTemp.x();
+        float y1 = posTransformTemp.y();
+        float z1 = posTransformTemp.z();
 
         posTransformTemp.set(pos2.x(), pos2.y(), pos2.z(), 1);
         posTransformTemp.mul(posMatrix);
-        double x2 = posTransformTemp.x();
-        double y2 = posTransformTemp.y();
-        double z2 = posTransformTemp.z();
+        float x2 = posTransformTemp.x();
+        float y2 = posTransformTemp.y();
+        float z2 = posTransformTemp.z();
 
         posTransformTemp.set(pos3.x(), pos3.y(), pos3.z(), 1);
         posTransformTemp.mul(posMatrix);
-        double x3 = posTransformTemp.x();
-        double y3 = posTransformTemp.y();
-        double z3 = posTransformTemp.z();
+        float x3 = posTransformTemp.x();
+        float y3 = posTransformTemp.y();
+        float z3 = posTransformTemp.z();
 
         float r = color.x();
         float g = color.y();
@@ -545,37 +521,33 @@ public class BlockOutlineRenderer {
         float ny = normalTransformTemp.y();
         float nz = normalTransformTemp.z();
 
-        consumer.vertex(x0, y0, z0)
-                .color(r, g, b, a)
-                .uv(minU, minV)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx, ny, nz)
-                .endVertex();
+        consumer.addVertex(x0, y0, z0)
+                .setColor(r, g, b, a)
+                .setUv(minU, minV)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx, ny, nz);
 
-        consumer.vertex(x1, y1, z1)
-                .color(r, g, b, a)
-                .uv(minU, maxV)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx, ny, nz)
-                .endVertex();
+        consumer.addVertex(x1, y1, z1)
+                .setColor(r, g, b, a)
+                .setUv(minU, maxV)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx, ny, nz);
 
-        consumer.vertex(x2, y2, z2)
-                .color(r, g, b, a)
-                .uv(maxU, maxV)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx, ny, nz)
-                .endVertex();
+        consumer.addVertex(x2, y2, z2)
+                .setColor(r, g, b, a)
+                .setUv(maxU, maxV)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx, ny, nz);
 
-        consumer.vertex(x3, y3, z3)
-                .color(r, g, b, a)
-                .uv(maxU, minV)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(lightmap)
-                .normal(nx, ny, nz)
-                .endVertex();
+        consumer.addVertex(x3, y3, z3)
+                .setColor(r, g, b, a)
+                .setUv(maxU, minV)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(lightmap)
+                .setNormal(nx, ny, nz);
     }
     
     //MOSTLY FROM CREATE'S BLOCKCLUSTEROUTLINE.JAVA

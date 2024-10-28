@@ -1,31 +1,32 @@
 package uwu.lopyluna.excavein.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.List;
 
+@SuppressWarnings("deprecation")
 public class ServerConfig {
 
-    public static final ForgeConfigSpec.IntValue SELECTION_COOLDOWN;
-    public static final ForgeConfigSpec.IntValue SELECTION_ADD_COOLDOWN;
-    public static final ForgeConfigSpec.IntValue SELECTION_ADD_RANGE;
-    public static final ForgeConfigSpec.IntValue SELECTION_MAX_BLOCK;
-    public static final ForgeConfigSpec.DoubleValue FOOD_EXHAUSTION_MULTIPLIER;
-    public static final ForgeConfigSpec.IntValue ITEM_PICKUP_DELAY;
-    public static final ForgeConfigSpec.BooleanValue INVERT_WHITELIST;
-    public static final ForgeConfigSpec.BooleanValue REQUIRES_MINEABLE;
-    public static final ForgeConfigSpec.BooleanValue REQUIRES_TOOLS;
-    public static final ForgeConfigSpec.BooleanValue REQUIRES_HUNGER;
-    public static final ForgeConfigSpec.BooleanValue BLOCKS_AT_PLAYER;
-    public static final ForgeConfigSpec.BooleanValue BLOCK_PLACING;
-    public static final ForgeConfigSpec.BooleanValue HAND_INTERACTION;
-    public static final ForgeConfigSpec.BooleanValue ITEM_INTERACTION;
-    public static ForgeConfigSpec.ConfigValue<List<? extends String>> VEIN_BLOCK_TAGS;
+    public static final ModConfigSpec.IntValue SELECTION_COOLDOWN;
+    public static final ModConfigSpec.IntValue SELECTION_ADD_COOLDOWN;
+    public static final ModConfigSpec.IntValue SELECTION_ADD_RANGE;
+    public static final ModConfigSpec.IntValue SELECTION_MAX_BLOCK;
+    public static final ModConfigSpec.DoubleValue FOOD_EXHAUSTION_MULTIPLIER;
+    public static final ModConfigSpec.IntValue ITEM_PICKUP_DELAY;
+    public static final ModConfigSpec.BooleanValue INVERT_WHITELIST;
+    public static final ModConfigSpec.BooleanValue REQUIRES_MINEABLE;
+    public static final ModConfigSpec.BooleanValue REQUIRES_TOOLS;
+    public static final ModConfigSpec.BooleanValue REQUIRES_HUNGER;
+    public static final ModConfigSpec.BooleanValue BLOCKS_AT_PLAYER;
+    public static final ModConfigSpec.BooleanValue BLOCK_PLACING;
+    public static final ModConfigSpec.BooleanValue HAND_INTERACTION;
+    public static final ModConfigSpec.BooleanValue ITEM_INTERACTION;
+    public static ModConfigSpec.ConfigValue<List<? extends String>> VEIN_BLOCK_TAGS;
 
-    public static final ForgeConfigSpec SERVER_SPEC;
+    public static final ModConfigSpec SERVER_SPEC;
 
     static {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
         SELECTION_COOLDOWN = builder
                 .comment("Amount of ticks for block selection cooldown (default = 2s - " + (20 * 2) + ")")
@@ -80,7 +81,7 @@ public class ServerConfig {
                 .define("HandInteraction", true);
 
         ITEM_INTERACTION = builder
-                .comment("Ability to Interact Blocks using said Item by Selection (default = true")
+                .comment("Ability to Interact Blocks using said Item by Selection (default = true)")
                 .define("ItemInteraction", true);
 
         VEIN_BLOCK_TAGS = builder

@@ -1,16 +1,14 @@
 package uwu.lopyluna.excavein.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import uwu.lopyluna.excavein.Excavein;
 import uwu.lopyluna.excavein.config.ClientConfig;
 
@@ -24,20 +22,20 @@ import static uwu.lopyluna.excavein.client.KeybindHandler.keyActivated;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
 
 @SuppressWarnings("unused")
-@Mod.EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
 public class ModeOverlay {
 
     private static final Minecraft mc = Minecraft.getInstance();
 
     @SubscribeEvent
-    public static void onRenderGuiOverlay(RenderGuiOverlayEvent event) {
+    public static void onRenderGuiOverlay(RenderGuiEvent.Post event) {
         PoseStack poseStack = event.getGuiGraphics().pose();
-        if (mc.getConnection() == null || mc.options.hideGui || mc.noRender || mc.options.reducedDebugInfo().get() || mc.options.renderDebug || mc.options.renderFpsChart || mc.options.renderDebugCharts || !((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)))
+        if (mc.getConnection() == null || mc.options.hideGui || mc.noRender || mc.showOnlyReducedInfo() || !((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)))
             return;
 
         poseStack.pushPose();
 
-        int screenWidth = event.getWindow().getGuiScaledWidth();
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
         int xPos = 15 + SELECTION_OFFSET_X.get();
         int yPos = 15 + SELECTION_OFFSET_Y.get();
 
@@ -77,9 +75,7 @@ public class ModeOverlay {
 
     public static void text(String pText, float pX, float pY, int pColor, boolean pDropShadow, PoseStack poseStack) {
         poseStack.pushPose();
-        MultiBufferSource.BufferSource multibuffersource$buffersource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-        mc.font.drawInBatch(pText, pX, pY, pColor, pDropShadow, poseStack.last().pose(), multibuffersource$buffersource, Font.DisplayMode.NORMAL, 0, 15728880);
-        multibuffersource$buffersource.endBatch();
+        mc.font.drawInBatch(pText, pX, pY, pColor, pDropShadow, poseStack.last().pose(), mc.renderBuffers().bufferSource(), Font.DisplayMode.NORMAL, 0, 15728880);
         poseStack.popPose();
     }
 
