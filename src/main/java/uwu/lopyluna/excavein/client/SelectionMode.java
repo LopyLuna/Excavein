@@ -11,7 +11,8 @@ public enum SelectionMode {
     DIAGONAL_TUNNEL,
     SIDE_SELECTION,
     SIDE_VEIN,
-    SIDE_EXCAVATE;
+    SIDE_EXCAVATE,
+    SURFACE;
 
     private static final SelectionMode[] VALUES = values();
     private static int currentIndex = 0;

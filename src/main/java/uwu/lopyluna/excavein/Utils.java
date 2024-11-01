@@ -8,13 +8,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.neoforged.neoforge.common.Tags;
 import uwu.lopyluna.excavein.client.SelectionMode;
 import uwu.lopyluna.excavein.config.ServerConfig;
@@ -26,26 +26,21 @@ import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
 public class Utils {
 
-    public static boolean randomChance(int chance, Level level) {
-        int newChance = Mth.clamp(chance, 0, 100);
-        return level.getRandom().nextInt(1,  100) <= newChance;
-    }
-
     public static ResourceLocation asResource(String path) {
         return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
     }
 
-    public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("vein_mine_whitelist"));
+    public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("vein_whitelist"));
 
     public static TagKey<Block> getBlockTagFromTool(ItemStack stack) {
         if (stack.is(Tags.Items.TOOLS)) {
-            if ((stack.is(tag("tools/axes")) || stack.is(ItemTags.AXES)) || stack.getItem() instanceof AxeItem)
+            if ((stack.is(universalTag("tools/axes")) || stack.is(ItemTags.AXES)) || stack.getItem() instanceof AxeItem)
                 return BlockTags.MINEABLE_WITH_AXE;
-            if ((stack.is(tag("tools/pickaxes")) || stack.is(ItemTags.PICKAXES)) || stack.getItem() instanceof PickaxeItem)
+            if ((stack.is(universalTag("tools/pickaxes")) || stack.is(ItemTags.PICKAXES)) || stack.getItem() instanceof PickaxeItem)
                 return BlockTags.MINEABLE_WITH_PICKAXE;
-            if ((stack.is(tag("tools/shovels")) || stack.is(ItemTags.SHOVELS)) || stack.getItem() instanceof ShovelItem)
+            if ((stack.is(universalTag("tools/shovels")) || stack.is(ItemTags.SHOVELS)) || stack.getItem() instanceof ShovelItem)
                 return BlockTags.MINEABLE_WITH_SHOVEL;
-            if ((stack.is(tag("tools/hoes")) || stack.is(ItemTags.HOES)) || stack.getItem() instanceof ShovelItem)
+            if ((stack.is(universalTag("tools/hoes")) || stack.is(ItemTags.HOES)) || stack.getItem() instanceof ShovelItem)
                 return BlockTags.MINEABLE_WITH_HOE;
         }
         return null;
@@ -53,7 +48,7 @@ public class Utils {
 
     public static boolean getValidTools(ItemStack stack) {
         return stack.isDamageableItem() || stack.is(Tags.Items.TOOLS) || stack.getItem() instanceof AxeItem || stack.getItem() instanceof PickaxeItem || stack.getItem() instanceof ShovelItem || stack.getItem() instanceof HoeItem ||
-                stack.is(tag("tools/axes")) || stack.is(tag("tools/pickaxes")) || stack.is(tag("tools/shovels")) || stack.is(tag("tools/hoes")) ||
+                stack.is(universalTag("tools/axes")) || stack.is(universalTag("tools/pickaxes")) || stack.is(universalTag("tools/shovels")) || stack.is(universalTag("tools/hoes")) ||
                 stack.is(ItemTags.AXES) || stack.is(ItemTags.PICKAXES) || stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.HOES)
                 ;
     }
@@ -197,8 +192,10 @@ public class Utils {
                     toCheck.addAll(getNeighborsIncludingDiagonals(currentPos));
                     break;
                 case SIDE_SELECTION:
+                    BlockPos offsetC = currentPos.relative(direction.getOpposite());
+                    BlockState stateC = world.getBlockState(offsetC);
                     if (currentState.is(startState.getBlock())) {
-                        if (world.getBlockState(currentPos.relative(direction.getOpposite())).isAir()) {
+                        if (stateC.isAir() || stateC.canBeReplaced() || stateC.getCollisionShape(world, offsetC) == Shapes.empty()) {
                             validBlocks.add(currentPos);
                             checkedBlocks.add(currentPos);
                             toCheck.addAll(getNeighborsIncludingDiagonals(currentPos));
@@ -206,7 +203,9 @@ public class Utils {
                     }
                     break;
                 case SIDE_VEIN:
-                    if (world.getBlockState(currentPos.relative(direction.getOpposite())).isAir()) {
+                    BlockPos offsetB = currentPos.relative(direction.getOpposite());
+                    BlockState stateB = world.getBlockState(offsetB);
+                    if (stateB.isAir() || stateB.canBeReplaced() || stateB.getCollisionShape(world, offsetB) == Shapes.empty()) {
                         if (isBlockInTag(startState, currentState, getTagsFromState(startState))) {
                             validBlocks.add(currentPos);
                             checkedBlocks.add(currentPos);
@@ -223,10 +222,21 @@ public class Utils {
                     }
                     break;
                 case SIDE_EXCAVATE:
-                    if (world.getBlockState(currentPos.relative(direction.getOpposite())).isAir()) {
+                    BlockPos offsetA = currentPos.relative(direction.getOpposite());
+                    BlockState stateA = world.getBlockState(offsetA);
+                    if (stateA.isAir() || stateA.canBeReplaced() || stateA.getCollisionShape(world, offsetA) == Shapes.empty()) {
                         validBlocks.add(currentPos);
                         checkedBlocks.add(currentPos);
                         toCheck.addAll(getNeighborsIncludingDiagonals(currentPos));
+                    }
+                    break;
+                case SURFACE:
+                    BlockPos offsetZ = currentPos.relative(direction.getOpposite());
+                    BlockState state = world.getBlockState(offsetZ);
+                    if (state.isAir() || state.canBeReplaced() || state.getCollisionShape(world, offsetZ) == Shapes.empty()) {
+                        validBlocks.add(currentPos);
+                        checkedBlocks.add(currentPos);
+                        toCheck.addAll(getNeighborsDirectional(currentPos, direction));
                     }
                     break;
                 case TUNNEL:
@@ -324,6 +334,16 @@ public class Utils {
         return diagonalPos;
     }
 
+    private static Set<BlockPos> getNeighborsDirectional(BlockPos pos, Direction direction) {
+        Set<BlockPos> offsets = new HashSet<>();
+        for (Direction directional : Direction.values()) {
+            if (directional.getAxis() != direction.getAxis()) {
+                offsets.add(pos.relative(directional));
+            }
+        }
+        return offsets;
+    }
+
     private static Set<BlockPos> getNeighborsIncludingDiagonals(BlockPos pos) {
         Set<BlockPos> neighbors = new HashSet<>();
 
@@ -343,6 +363,11 @@ public class Utils {
     public static int calculateTimeFromBlocks(int maxTime, int currentAmountBlocks) {
         double multiplier = (double) currentAmountBlocks / SELECTION_MAX_BLOCK.get();
         return (int) (maxTime * multiplier);
+    }
+
+    public static double calculatePercentage(double currentValue, double maxValue, double minOutputValue, double maxOutputValue, boolean invert) {
+        double ratio = Math.max(0, Math.min(currentValue / maxValue, 1));
+        return Math.round((invert ? maxOutputValue - ratio * (maxOutputValue - minOutputValue) : minOutputValue + ratio * (maxOutputValue - minOutputValue)) * 1000.0) / 1000.0;
     }
 
     @SuppressWarnings("all")
@@ -386,7 +411,57 @@ public class Utils {
         MONTHS
     }
 
-    private static TagKey<Item> tag(String name) {
+    public static TagKey<Item> universalTag(String name) {
         return ItemTags.create(ResourceLocation.fromNamespaceAndPath("c", name));
+    }
+    public static TagKey<Item> tag(String name) {
+        return ItemTags.create(ResourceLocation.fromNamespaceAndPath(MOD_ID, name));
+    }
+
+    public static void removingFuelItems(Player player, int amount) {
+        findAndRemoveInInventory(player, amount);
+    }
+
+    //Mostly copied from https://github.com/Creators-of-Create/Create/blob/mc1.20.1/dev/src/main/java/com/simibubi/create/foundation/utility/BlockHelper.java#L89
+
+    public static int findInInventory(Player player) {
+        int amountFound = 0;
+
+        int preferredSlot = player.getInventory().selected;
+        ItemStack itemstack = player.getInventory().getItem(preferredSlot);
+        if (itemstack.is(Utils.tag("vein_fuels"))) {
+            amountFound = amountFound + itemstack.getCount();
+        }
+        for (int i = 0; i < player.getInventory().getContainerSize(); ++i) {
+            ItemStack itemstack2 = player.getInventory().getItem(i);
+            if (itemstack2.is(Utils.tag("vein_fuels"))) {
+                amountFound = amountFound + itemstack2.getCount();
+            }
+        }
+        return amountFound;
+    }
+
+    private static void findAndRemoveInInventory(Player player, int amount) {
+        int amountFound = 0;
+
+        int preferredSlot = player.getInventory().selected;
+        ItemStack itemstack = player.getInventory().getItem(preferredSlot);
+        int count = itemstack.getCount();
+        if (itemstack.is(Utils.tag("vein_fuels")) && count > 0) {
+            int taken = Math.min(count, amount - amountFound);
+            player.getInventory().setItem(preferredSlot, new ItemStack(itemstack.getItem(), count - taken));
+            amountFound += taken;
+        }
+        for (int i = 0; i < player.getInventory().getContainerSize(); ++i) {
+            if (amountFound == amount)
+                break;
+            ItemStack itemstack2 = player.getInventory().getItem(i);
+            int count2 = itemstack2.getCount();
+            if (itemstack2.is(Utils.tag("vein_fuels")) && count2 > 0) {
+                int taken = Math.min(count2, amount - amountFound);
+                player.getInventory().setItem(i, new ItemStack(itemstack2.getItem(), count2 - taken));
+                amountFound += taken;
+            }
+        }
     }
 }

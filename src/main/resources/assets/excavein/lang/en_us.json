@@ -13,6 +13,7 @@
   "key.excavein.active_side_selection": "Active Side Selection",
   "key.excavein.active_side_vein": "Active Side Vein",
   "key.excavein.active_side_excavate": "Active Side Excavate",
+  "key.excavein.active_surface": "Active Surface",
 
   "key.categories.excavein": "ExcaVein",
 
@@ -23,6 +24,11 @@
   "excavein.overlay.scroll_up": "_____↑_",
   "excavein.overlay.scroll_down": "_____↓_",
   "excavein.overlay.current_mode": "Current_Mode:_",
+  "excavein.overlay.breaking": "Breaking_Blocks",
+
+  "excavein.overlay.require_xp": "Experience needed",
+  "excavein.overlay.require_hunger": "Food needed",
+  "excavein.overlay.require_fuel": "Fuel Items needed",
 
   "excavein.modes.selection": "Selection",
   "excavein.modes.vein": "Vein",
@@ -32,5 +38,11 @@
   "excavein.modes.diagonal_tunnel": "Diagonal Tunnel",
   "excavein.modes.side_selection": "Side Selection",
   "excavein.modes.side_vein": "Side Vein",
-  "excavein.modes.side_excavate": "Side Excavate"
+  "excavein.modes.side_excavate": "Side Excavate",
+  "excavein.modes.surface": "Surface",
+
+
+  "excavein.warning.require_xp": "Experience is require to continue",
+  "excavein.warning.require_hunger": "Food is require to continue",
+  "excavein.warning.require_fuel": "Fuel Items is require to continue"
 }

@@ -13,10 +13,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import org.slf4j.Logger;
 import uwu.lopyluna.excavein.config.ClientConfig;
 import uwu.lopyluna.excavein.config.ServerConfig;
-import uwu.lopyluna.excavein.network.CooldownPacket;
-import uwu.lopyluna.excavein.network.KeybindPacket;
-import uwu.lopyluna.excavein.network.SelectionInspectionPacket;
-import uwu.lopyluna.excavein.network.SelectionOutlinePacket;
+import uwu.lopyluna.excavein.network.*;
 
 @SuppressWarnings("unused")
 @Mod(Excavein.MOD_ID)
@@ -42,6 +39,7 @@ public class Excavein {
         registrar.playToServer(SelectionInspectionPacket.TYPE, SelectionInspectionPacket.CODEC, SelectionInspectionPacket::handle);
         registrar.playToClient(SelectionOutlinePacket.TYPE, SelectionOutlinePacket.CODEC, SelectionOutlinePacket::handle);
         registrar.playToClient(CooldownPacket.TYPE, CooldownPacket.CODEC, CooldownPacket::handle);
+        registrar.playToClient(IsBreakingPacket.TYPE, IsBreakingPacket.CODEC, IsBreakingPacket::handle);
     }
 
 }
