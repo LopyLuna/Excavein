@@ -126,7 +126,12 @@ public class Utils {
     }
 
     public static boolean isCorrectSpeeds(ServerPlayer player, Level world, BlockPos pos, BlockPos startPos) {
-        return player.getDigSpeed(world.getBlockState(startPos), startPos) >= player.getDigSpeed(world.getBlockState(pos), pos) + (player.getDigSpeed(world.getBlockState(pos), pos) * 0.1f);
+        BlockState startState = world.getBlockState(startPos);
+        BlockState state = world.getBlockState(pos);
+        float startSpeed = startState.getDestroySpeed(world, startPos) * player.getInventory().getDestroySpeed(startState);
+        float speed = state.getDestroySpeed(world, startPos) * player.getInventory().getDestroySpeed(state);
+
+        return (!player.isCreative() && startSpeed >= speed) || player.isCreative();
     }
 
     public static boolean isNotValidBlock(Level world, ServerPlayer player, BlockPos pos) {
