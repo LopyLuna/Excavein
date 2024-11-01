@@ -154,9 +154,13 @@ public class BlockPositionTracker {
     @SubscribeEvent
     public static void onBlockDrop(BlockDropsEvent event) {
         if (event.getBreaker() instanceof Player pPlayer && pPlayer.is(player) && flag()) {
+            Vec3 pos = player.position();
+            if (BLOCKS_AT_PLAYER.get()) {
+                pPlayer.giveExperiencePoints(event.getDroppedExperience());
+                event.setDroppedExperience(0);
+            }
             event.getDrops().forEach(itemEntity -> {
                 itemEntity.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
-                Vec3 pos = player.position();
                 if (BLOCKS_AT_PLAYER.get()) {
                     itemEntity.teleportTo(pos.x, pos.y, pos.z);
                 }
