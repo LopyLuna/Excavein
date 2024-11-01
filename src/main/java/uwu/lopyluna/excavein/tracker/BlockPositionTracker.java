@@ -38,12 +38,12 @@ import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
-import uwu.lopyluna.excavein.Utils;
 import uwu.lopyluna.excavein.mixins.BlockAccessor;
 import uwu.lopyluna.excavein.network.CooldownPacket;
 import uwu.lopyluna.excavein.network.IsBreakingPacket;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -70,6 +70,7 @@ public class BlockPositionTracker {
     public static BlockHitResult cursorRayTrace;
     public static boolean keyIsDown = false;
     public static boolean save = false;
+    private static boolean simpleCheck = false;
 
     public static void setSavedBlocks(Set<BlockPos> blocks) {
         savedBlockPositions = blocks;
@@ -121,8 +122,17 @@ public class BlockPositionTracker {
                 }
             if (currentBreakDelay > 0)
                 currentBreakDelay--;
-            if (MINING_SPEED_NERF_MAX.get() != 0) {
+
+
+            if (MINING_SPEED_NERF_MAX.get() != 0 && savedBlockPositions != null) {
                 harvestCheck(!flag());
+                if (!simpleCheck) simpleCheck = true;
+            } else if (simpleCheck) {
+                AttributeInstance speed = player.getAttribute(Attributes.BLOCK_BREAK_SPEED);
+                if (speed != null) {
+                    speed.setBaseValue(speed.getAttribute().value().getDefaultValue());
+                    simpleCheck = false;
+                }
             }
         }
     }
@@ -205,7 +215,7 @@ public class BlockPositionTracker {
     public static void reset() {
         CooldownTracker.resetCooldown(player, player.isCreative() ? 0 : i);
         if (!player.isCreative())
-            if (i > 0) Utils.removingFuelItems(player, FUEL_EXHAUSTION_AMOUNT.get() * i);
+            if (i > 0) removingFuelItems(player, FUEL_EXHAUSTION_AMOUNT.get() * i);
         if (isBreaking) isBreaking = false;
 
         i = 0;
@@ -225,7 +235,7 @@ public class BlockPositionTracker {
 
         boolean valid = (!REQUIRES_XP.get() || player.isCreative() || player.totalExperience != 0) &&
                 (!REQUIRES_HUNGER.get() || player.isCreative() || player.getFoodData().getFoodLevel() != 0) &&
-                (!REQUIRES_FUEL_ITEM.get() || player.isCreative() || Utils.findInInventory(player) != 0) &&
+                (!REQUIRES_FUEL_ITEM.get() || player.isCreative() || findInInventory(player) != 0) &&
                 (!player.getMainHandItem().isDamageableItem() || (player.getMainHandItem().getMaxDamage() - player.getMainHandItem().getDamageValue()) != 1) &&
                 (!REQUIRES_TOOLS.get() || !player.getMainHandItem().isEmpty() || player.isCreative()) && (!isValidForPlacing(player.serverLevel(), player, pos));
 
@@ -233,7 +243,7 @@ public class BlockPositionTracker {
             player.displayClientMessage(Component.translatable("excavein.warning.require_xp").withStyle(ChatFormatting.RED), true); else
         if (REQUIRES_HUNGER.get() && !player.isCreative() && player.getFoodData().getFoodLevel() == 0)
             player.displayClientMessage(Component.translatable("excavein.warning.require_hunger").withStyle(ChatFormatting.RED), true); else
-        if (REQUIRES_FUEL_ITEM.get() && !player.isCreative() && Utils.findInInventory(player) == 0)
+        if (REQUIRES_FUEL_ITEM.get() && !player.isCreative() && findInInventory(player) == 0)
             player.displayClientMessage(Component.translatable("excavein.warning.require_fuel").withStyle(ChatFormatting.RED), true);
 
         if (valid) {
@@ -311,7 +321,7 @@ public class BlockPositionTracker {
     }
 
     private static void beginCapturingDrops() {
-        BlockAccessor.excavein$capturedDrops(new java.util.ArrayList<>());
+        BlockAccessor.excavein$capturedDrops(new ArrayList<>());
     }
 
     private static List<ItemEntity> stopCapturingDrops() {

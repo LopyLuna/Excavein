@@ -125,6 +125,10 @@ public class Utils {
         return false;
     }
 
+    public static boolean isCorrectSpeeds(ServerPlayer player, Level world, BlockPos pos, BlockPos startPos) {
+        return player.getDigSpeed(world.getBlockState(startPos), startPos) >= player.getDigSpeed(world.getBlockState(pos), pos) + (player.getDigSpeed(world.getBlockState(pos), pos) * 0.1f);
+    }
+
     public static boolean isNotValidBlock(Level world, ServerPlayer player, BlockPos pos) {
         return (!isBlockWhitelisted(world.getBlockState(pos)) || !world.getWorldBorder().isWithinBounds(pos) || isNotValidForMining(world, player, pos) || world.getBlockState(pos).isAir() || ((world.getBlockState(pos).getDestroySpeed(world, pos) < 0) && !player.isCreative()));
     }
@@ -163,6 +167,9 @@ public class Utils {
             if (isNotValidBlock(world, player, currentPos) || startState.isAir() || ((startState.getDestroySpeed(world, startPos) < 0) && !player.isCreative()))
                 continue;
 
+            if (!isCorrectSpeeds(player, world, currentPos, startPos))
+                continue;
+
             switch (mode) {
                 case SELECTION:
                     if (currentState.is(startState.getBlock())) {
@@ -178,7 +185,7 @@ public class Utils {
 
                         for (BlockPos neighbor : getNeighborsIncludingDiagonals(currentPos)) {
                             BlockState neighborState = world.getBlockState(neighbor);
-                            if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState)) {
+                            if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState) && isCorrectSpeeds(player, world, neighbor, startPos)) {
                                 toCheck.add(neighbor);
                             } else if (!checkedBlocks.contains(neighbor) && player.hasCorrectToolForDrops(neighborState, world, neighbor) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
                                 toCheck.add(neighbor);
@@ -212,7 +219,7 @@ public class Utils {
 
                             for (BlockPos neighbor : getNeighborsIncludingDiagonals(currentPos)) {
                                 BlockState neighborState = world.getBlockState(neighbor);
-                                if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState)) {
+                                if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState) && isCorrectSpeeds(player, world, neighbor, startPos)) {
                                     toCheck.add(neighbor);
                                 } else if (!checkedBlocks.contains(neighbor) && player.hasCorrectToolForDrops(neighborState, world, neighbor) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
                                     toCheck.add(neighbor);
@@ -246,6 +253,8 @@ public class Utils {
                     while (eyePos.distManhattan(nextPos) <= maxRange && validBlocks.size() < maxBlocks) {
                         if (isNotValidBlock(world, player, nextPos))
                             break;
+                        if (isCorrectSpeeds(player, world, nextPos, startPos))
+                            break;
                         validBlocks.add(nextPos);
                         checkedBlocks.add(nextPos);
                         nextPos = nextPos.relative(direction);
@@ -260,6 +269,8 @@ public class Utils {
 
                         if (isNotValidBlock(world, player, largeTunnelPos))
                             continue;
+                        if (isCorrectSpeeds(player, world, largeTunnelPos, startPos))
+                            continue;
 
                         if (!checkedBlocks.contains(largeTunnelPos)) {
                             validBlocks.add(largeTunnelPos);
@@ -271,6 +282,8 @@ public class Utils {
                             BlockPos largeTunnelPos = nextPosLarge.offset(offset);
 
                             if (isNotValidBlock(world, player, largeTunnelPos))
+                                continue;
+                            if (isCorrectSpeeds(player, world, largeTunnelPos, startPos))
                                 continue;
 
                             if (!checkedBlocks.contains(largeTunnelPos)) {
@@ -288,6 +301,8 @@ public class Utils {
                     checkedBlocks.add(startPos);
                     while (eyePos.distManhattan(diagonalPos) <= maxRange && validBlocks.size() < maxBlocks) {
                         if (isNotValidBlock(world, player, diagonalPos))
+                            break;
+                        if (isCorrectSpeeds(player, world, diagonalPos, startPos))
                             break;
                         validBlocks.add(diagonalPos);
                         checkedBlocks.add(diagonalPos);

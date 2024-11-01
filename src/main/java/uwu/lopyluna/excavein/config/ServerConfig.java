@@ -148,8 +148,21 @@ public class ServerConfig {
 
     private static List<String> defaultVeinTags() {
         return List.of(
-                "forge:ores",
-                "forge:glass",
+                "c:ores",
+                "c:glass_blocks",
+                "c:glass_panes",
+                "c:sands",
+                "c:end_stones",
+                "c:cobblestones",
+                "c:gravels",
+                "c:netherracks",
+                "c:obsidians",
+                "c:ropes",
+                "c:stones",
+                "c:chests",
+                "c:barrels",
+                "c:villager_job_sites",
+                "c:skulls",
                 "minecraft:planks",
                 "minecraft:wool",
                 "minecraft:terracotta",
