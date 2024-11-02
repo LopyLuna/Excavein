@@ -21,9 +21,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.GameMasterBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.FakePlayer;
@@ -85,7 +87,7 @@ public class BlockPositionTracker {
         if (event.phase == TickEvent.Phase.END && player != null && cursorRayTrace != null) {
             Excavein.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new IsBreakingPacket(isBreaking));
             BlockPos cursorBlockPos = cursorRayTrace.getBlockPos();
-            boolean isAir = player.serverLevel().isEmptyBlock(cursorBlockPos);
+            boolean isAir = player.getLevel().isEmptyBlock(cursorBlockPos);
 
             if (isAir && (currentTickDelay != MAX_TICK_DELAY))
                 resetTick();
@@ -138,13 +140,24 @@ public class BlockPositionTracker {
         } else if (DELAY_BETWEEN_BREAK.get() == 0 && !isBreaking && flag()) {
             performBlockBreak();
         }
+        if (event.getPlayer().is(player) && flag()) {
+            event.getLevel().getEntities(EntityTypeTest.forClass(ItemEntity.class), new AABB(event.getPos()), EntitySelector.NO_SPECTATORS).forEach(itemEntity -> {
+                itemEntity.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
+                if (BLOCKS_AT_PLAYER.get()) itemEntity.teleportTo(player.position().x, player.position().y, player.position().z);
+            });
+            Vec3 pos = player.position();
+            if (BLOCKS_AT_PLAYER.get()) {
+                player.giveExperiencePoints(event.getExpToDrop());
+                event.setExpToDrop(0);
+            }
+        }
     }
 
     public static boolean isBreaking;
 
     public static void performBlockBreakTick() {
         if (!blocksToBreak.isEmpty()) {
-            ServerLevel level = player.serverLevel();
+            ServerLevel level = player.getLevel();
 
             BlockPos pos = blocksToBreak.stream().toList().get(getPos(blocksToBreak));
             if (blockBreak(level, pos)) {
@@ -159,7 +172,7 @@ public class BlockPositionTracker {
     public static int getPos(Set<BlockPos> pos) {
         int size = pos.toArray().length;
         if (size != 0) {
-            int v = player.serverLevel().getRandom().nextInt(0, size);
+            int v = player.getLevel().getRandom().nextInt(0, size);
             v = v < 0 ? v * -1 : v;
             v = v > size ? size : Math.max(v, 0);
             return v;
@@ -170,7 +183,7 @@ public class BlockPositionTracker {
     public static void performBlockBreak() {
         isBreaking = true;
 
-        savedBlockPositions.forEach(pos -> blockBreak(player.serverLevel(), pos));
+        savedBlockPositions.forEach(pos -> blockBreak(player.getLevel(), pos));
         reset();
     }
 
@@ -198,7 +211,7 @@ public class BlockPositionTracker {
                 (!REQUIRES_HUNGER.get() || player.isCreative() || player.getFoodData().getFoodLevel() != 0) &&
                 (!REQUIRES_FUEL_ITEM.get() || player.isCreative() || findInInventory(player) != 0) &&
                 !(PREVENT_BREAKING_TOOL.get() && !player.isCreative() && player.getMainHandItem().isDamageableItem() && player.getMainHandItem().getMaxDamage() - player.getMainHandItem().getDamageValue() == 1) &&
-                (!REQUIRES_TOOLS.get() || !player.getMainHandItem().isEmpty() || player.isCreative()) && (!isValidForPlacing(player.serverLevel(), player, pos));
+                (!REQUIRES_TOOLS.get() || !player.getMainHandItem().isEmpty() || player.isCreative()) && (!isValidForPlacing(player.getLevel(), player, pos));
 
         if (REQUIRES_XP.get() && !player.isCreative() && player.totalExperience == 0)
             player.displayClientMessage(Component.translatable("excavein.warning.require_xp").withStyle(ChatFormatting.RED), true); else
@@ -281,7 +294,7 @@ public class BlockPositionTracker {
     }
 
     public static List<ItemStack> getDrops(BlockState pState, ServerLevel pLevel, BlockPos pPos, @Nullable BlockEntity pBlockEntity, @Nullable Entity pEntity, ItemStack pTool) {
-        LootParams.Builder lootcontext$builder = (new LootParams.Builder(pLevel))
+        LootContext.Builder lootcontext$builder = (new LootContext.Builder(pLevel))
                 .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pPos))
                 .withParameter(LootContextParams.TOOL, pTool)
                 .withOptionalParameter(LootContextParams.THIS_ENTITY, pEntity)

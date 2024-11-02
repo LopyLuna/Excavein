@@ -2,12 +2,15 @@ package uwu.lopyluna.excavein.client;
 
 import com.google.common.base.Strings;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.math.Matrix4f;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -33,8 +36,8 @@ public class ModeOverlay {
     static int dots = 0;
 
     @SubscribeEvent
-    public static void onRenderGuiOverlay(RenderGuiOverlayEvent event) {
-        PoseStack poseStack = event.getGuiGraphics().pose();
+    public static void onRenderGuiOverlay(RenderGuiEvent event) {
+        PoseStack poseStack = event.getPoseStack();
         if (mc.getConnection() == null || mc.player == null || mc.options.hideGui || mc.noRender || mc.options.reducedDebugInfo().get() || mc.options.renderDebug || mc.options.renderFpsChart || mc.options.renderDebugCharts || !((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)))
             return;
 
@@ -60,7 +63,7 @@ public class ModeOverlay {
         boolean leftSide = TEXT_LEFT_SIDE.get();
 
         if (currentMode != null) {
-            renderText(translateText("mode") + currentMode.getName(), 1, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(translateText("mode") + currentMode.getName(), 1, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
         }
         if (!(isBreaking && WAIT_TILL_BROKEN.get()) && requiredFlag(mc.player)) {
             String tag = "";
@@ -70,22 +73,22 @@ public class ModeOverlay {
                 tag = "hunger"; else
             if (REQUIRES_FUEL_ITEM.get() && !mc.player.isCreative() && Utils.findInInventory(mc.player) == 0)
                 tag = "fuel";
-            renderText(tag.isEmpty() ? "" : translateText("require_" + tag), 3, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(tag.isEmpty() ? "" : translateText("require_" + tag), 3, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
         } else if (!(isBreaking && WAIT_TILL_BROKEN.get()) && !requiredFlag(mc.player)) {
             int blockCount = outlineBlocks.isEmpty() ? 0 : outlineBlocks.size();
             if (blockCount > 0 && !ClientCooldownHandler.isCooldownActive()) {
-                renderText(translateText("selecting") + blockCount + translateText("blocks"), 3, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+                renderText(translateText("selecting") + blockCount + translateText("blocks"), 3, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
             }
             if (ClientCooldownHandler.isCooldownActive()) {
-                renderText(translateText("cooldown") + ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS), 3, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+                renderText(translateText("cooldown") + ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS), 3, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
             }
-        } else if (isBreaking && WAIT_TILL_BROKEN.get()) renderText(translateText("breaking") + animatedDotsString(), 3, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        } else if (isBreaking && WAIT_TILL_BROKEN.get()) renderText(translateText("breaking") + animatedDotsString(), 3, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
 
         if (previousMode != null) {
-            renderText(translateText("scroll_up") + previousMode.getName(), 0, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(translateText("scroll_up") + previousMode.getName(), 0, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
         }
         if (nextMode != null) {
-            renderText(translateText("scroll_down") + nextMode.getName(), 2, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(translateText("scroll_down") + nextMode.getName(), 2, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
         }
         poseStack.popPose();
     }
@@ -105,20 +108,26 @@ public class ModeOverlay {
         }
     }
 
-    private static void renderText(String pText, int pOffsetOrder, int pOffX, int pOffY, GuiGraphics pGuiGraphics, boolean pLeftSide, int pTextColor, boolean pDropShadow, boolean pBackground) {
+    private static void renderText(String pText, int pOffsetOrder, int pOffX, int pOffY, PoseStack pGuiGraphics, boolean pLeftSide, int pTextColor, boolean pDropShadow, boolean pBackground) {
         int i = 9;
         if (!Strings.isNullOrEmpty(pText) && pBackground) {
             int k = mc.font.width(pText);
-            int l = (pLeftSide ? 2 : pGuiGraphics.guiWidth() - 2 - k) + pOffX;
+            int l = (pLeftSide ? 2 : mc.getWindow().getGuiScaledWidth() - 2 - k) + pOffX;
             int i1 = (2 + i * pOffsetOrder) + pOffY;
-            pGuiGraphics.fill(l - 1, i1 - 1, l + k + 1, i1 + i - 1, -1873784752);
+            GuiComponent.fill(pGuiGraphics, l - 1, i1 - 1, l + k + 1, i1 + i - 1, -1873784752);
         }
         if (!Strings.isNullOrEmpty(pText)) {
             int k1 = mc.font.width(pText);
-            int l1 = (pLeftSide ? 2 : pGuiGraphics.guiWidth() - 2 - k1) + pOffX;
+            int l1 = (pLeftSide ? 2 : mc.getWindow().getGuiScaledWidth() - 2 - k1) + pOffX;
             int i2 = (2 + i * pOffsetOrder) + pOffY;
-            pGuiGraphics.drawString(mc.font, pText, l1, i2, pTextColor, pDropShadow);
+            drawInternal(pText, l1, i2, pTextColor, pGuiGraphics.last().pose(), pDropShadow);
         }
+    }
+
+    private static void drawInternal(String pText, float pX, float pY, int pColor, Matrix4f pMatrix, boolean pDrawShadow) {
+        MultiBufferSource.BufferSource multibuffersource$buffersource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+        int i = mc.font.drawInBatch(pText, pX, pY, pColor, pDrawShadow, pMatrix, multibuffersource$buffersource, false, 0, 15728880);
+        multibuffersource$buffersource.endBatch();
     }
 
     public static Color color(int r, int g, int b, int a) {

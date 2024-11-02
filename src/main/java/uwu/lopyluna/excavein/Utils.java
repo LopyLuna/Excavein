@@ -9,6 +9,8 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -36,13 +38,13 @@ public class Utils {
 
     public static TagKey<Block> getBlockTagFromTool(ItemStack stack) {
         if (stack.is(Tags.Items.TOOLS)) {
-            if ((stack.is(tag("tools/axes")) || stack.is(ItemTags.AXES)) || stack.getItem() instanceof AxeItem)
+            if ((stack.is(tag("tools/axes")) || stack.is(Tags.Items.TOOLS_AXES)) || stack.getItem() instanceof AxeItem)
                 return BlockTags.MINEABLE_WITH_AXE;
-            if ((stack.is(tag("tools/pickaxes")) || stack.is(ItemTags.PICKAXES)) || stack.getItem() instanceof PickaxeItem)
+            if ((stack.is(tag("tools/pickaxes")) || stack.is(Tags.Items.TOOLS_PICKAXES)) || stack.getItem() instanceof PickaxeItem)
                 return BlockTags.MINEABLE_WITH_PICKAXE;
-            if ((stack.is(tag("tools/shovels")) || stack.is(ItemTags.SHOVELS)) || stack.getItem() instanceof ShovelItem)
+            if ((stack.is(tag("tools/shovels")) || stack.is(Tags.Items.TOOLS_SHOVELS)) || stack.getItem() instanceof ShovelItem)
                 return BlockTags.MINEABLE_WITH_SHOVEL;
-            if ((stack.is(tag("tools/hoes")) || stack.is(ItemTags.HOES)) || stack.getItem() instanceof ShovelItem)
+            if ((stack.is(tag("tools/hoes")) || stack.is(Tags.Items.TOOLS_HOES)) || stack.getItem() instanceof ShovelItem)
                 return BlockTags.MINEABLE_WITH_HOE;
         }
         return null;
@@ -51,7 +53,7 @@ public class Utils {
     public static boolean getValidTools(ItemStack stack) {
         return stack.isDamageableItem() || stack.is(Tags.Items.TOOLS) || stack.getItem() instanceof AxeItem || stack.getItem() instanceof PickaxeItem || stack.getItem() instanceof ShovelItem || stack.getItem() instanceof HoeItem ||
                 stack.is(tag("tools/axes")) || stack.is(tag("tools/pickaxes")) || stack.is(tag("tools/shovels")) || stack.is(tag("tools/hoes")) ||
-                stack.is(ItemTags.AXES) || stack.is(ItemTags.PICKAXES) || stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.HOES)
+                stack.is(Tags.Items.TOOLS_AXES) || stack.is(Tags.Items.TOOLS_PICKAXES) || stack.is(Tags.Items.TOOLS_SHOVELS) || stack.is(Tags.Items.TOOLS_HOES)
                 ;
     }
 
@@ -143,6 +145,7 @@ public class Utils {
         if (mode == null)
             return new HashSet<>();
 
+        BlockPlaceContext context = new BlockPlaceContext(new UseOnContext(player, player.getUsedItemHand(), rayTrace));
         Set<BlockPos> validBlocks = new HashSet<>();
         Set<BlockPos> checkedBlocks = new HashSet<>();
         Queue<BlockPos> toCheck = new LinkedList<>();
@@ -205,7 +208,7 @@ public class Utils {
                     BlockPos offsetC = currentPos.relative(direction.getOpposite());
                     BlockState stateC = world.getBlockState(offsetC);
                     if (currentState.is(startState.getBlock())) {
-                        if (stateC.isAir() || stateC.canBeReplaced() || stateC.getCollisionShape(world, offsetC) == Shapes.empty()) {
+                        if (stateC.isAir() || stateC.canBeReplaced(context) || stateC.getCollisionShape(world, offsetC) == Shapes.empty()) {
                             validBlocks.add(currentPos);
                             checkedBlocks.add(currentPos);
                             toCheck.addAll(getNeighborsIncludingDiagonals(currentPos));
@@ -215,7 +218,7 @@ public class Utils {
                 case SIDE_VEIN:
                     BlockPos offsetB = currentPos.relative(direction.getOpposite());
                     BlockState stateB = world.getBlockState(offsetB);
-                    if (stateB.isAir() || stateB.canBeReplaced() || stateB.getCollisionShape(world, offsetB) == Shapes.empty()) {
+                    if (stateB.isAir() || stateB.canBeReplaced(context) || stateB.getCollisionShape(world, offsetB) == Shapes.empty()) {
                         if (isBlockInTag(startState, currentState, getTagsFromState(startState))) {
                             validBlocks.add(currentPos);
                             checkedBlocks.add(currentPos);
@@ -234,7 +237,7 @@ public class Utils {
                 case SIDE_EXCAVATE:
                     BlockPos offsetA = currentPos.relative(direction.getOpposite());
                     BlockState stateA = world.getBlockState(offsetA);
-                    if (stateA.isAir() || stateA.canBeReplaced() || stateA.getCollisionShape(world, offsetA) == Shapes.empty()) {
+                    if (stateA.isAir() || stateA.canBeReplaced(context) || stateA.getCollisionShape(world, offsetA) == Shapes.empty()) {
                         validBlocks.add(currentPos);
                         checkedBlocks.add(currentPos);
                         toCheck.addAll(getNeighborsIncludingDiagonals(currentPos));
@@ -243,7 +246,7 @@ public class Utils {
                 case SURFACE:
                     BlockPos offsetZ = currentPos.relative(direction.getOpposite());
                     BlockState state = world.getBlockState(offsetZ);
-                    if (state.isAir() || state.canBeReplaced() || state.getCollisionShape(world, offsetZ) == Shapes.empty()) {
+                    if (state.isAir() || state.canBeReplaced(context) || state.getCollisionShape(world, offsetZ) == Shapes.empty()) {
                         validBlocks.add(currentPos);
                         checkedBlocks.add(currentPos);
                         toCheck.addAll(getNeighborsDirectional(currentPos, direction));
