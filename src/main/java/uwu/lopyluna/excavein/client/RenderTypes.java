@@ -5,6 +5,8 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
+import uwu.lopyluna.excavein.config.ClientConfig;
+import uwu.lopyluna.excavein.config.ServerConfig;
 
 import static uwu.lopyluna.excavein.Excavein.MOD_ID;
 
@@ -19,6 +21,7 @@ public class RenderTypes extends RenderStateShard {
                         .setCullState(CULL)
                         .setLightmapState(LIGHTMAP)
                         .setOverlayState(OVERLAY)
+                        .setDepthTestState(ServerConfig.XRAY_OUTLINE_SELECTION.get() && ClientConfig.XRAY_OUTLINE_SELECTION.get() ? NO_DEPTH_TEST : LEQUAL_DEPTH_TEST)
                         .createCompositeState(false));
     }
 

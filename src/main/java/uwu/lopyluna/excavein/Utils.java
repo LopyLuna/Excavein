@@ -7,12 +7,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
-import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.Tags;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -25,11 +27,6 @@ import static uwu.lopyluna.excavein.Excavein.MOD_ID;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
 public class Utils {
-
-    public static boolean randomChance(int chance, Level level) {
-        int newChance = Mth.clamp(chance, 0, 100);
-        return level.getRandom().nextInt(1,  100) <= newChance;
-    }
 
     public static ResourceLocation asResource(String path) {
         return new ResourceLocation(MOD_ID, path);
@@ -101,7 +98,7 @@ public class Utils {
         } else {
             return false;
         }
-        return isNotValidForMining(world.getBlockState(pos), player);
+        return isNotValidForMining(player, world, pos);
     }
 
     public static boolean isNotValidForMining(Level world, ServerPlayer player, BlockPos pos) {
@@ -118,23 +115,34 @@ public class Utils {
         } else {
             return false;
         }
-        return isNotValidForMining(world.getBlockState(pos), player);
+        return isNotValidForMining(player, world, pos);
     }
 
-
-    public static boolean isNotValidForMining(BlockState state, ServerPlayer player) {
+    public static boolean isNotValidForMining(ServerPlayer player, Level world, BlockPos pos) {
         if (REQUIRES_TOOLS.get())
-            return !isBlockInTag(state, getBlockTagFromTool(player.getMainHandItem())) || (REQUIRES_MINEABLE.get() && !ForgeHooks.isCorrectToolForDrops(state, player));
+            return !isBlockInTag(world.getBlockState(pos), getBlockTagFromTool(player.getMainHandItem())) || (REQUIRES_MINEABLE.get() && !ForgeHooks.isCorrectToolForDrops(world.getBlockState(pos), player));
         if (REQUIRES_MINEABLE.get())
-            return !ForgeHooks.isCorrectToolForDrops(state, player);
+            return !ForgeHooks.isCorrectToolForDrops(world.getBlockState(pos), player);
         return false;
     }
 
+    public static boolean isCorrectSpeeds(ServerPlayer player, Level world, BlockPos pos, BlockPos startPos) {
+        BlockState startState = world.getBlockState(startPos);
+        BlockState state = world.getBlockState(pos);
+        float startSpeed = startState.getDestroySpeed(world, startPos) * player.getInventory().getDestroySpeed(startState);
+        float speed = state.getDestroySpeed(world, startPos) * player.getInventory().getDestroySpeed(state);
+
+        return (!player.isCreative() && startSpeed >= speed) || player.isCreative();
+    }
+
     public static boolean isNotValidBlock(Level world, ServerPlayer player, BlockPos pos) {
-        return (!isBlockWhitelisted(world.getBlockState(pos)) || !world.getWorldBorder().isWithinBounds(pos) || isNotValidForMining(world, player, pos) || world.getBlockState(pos).isAir() || ((world.getBlockState(pos).getDestroySpeed(world, pos) < 0) && !player.isCreative()));
+        return (!isBlockWhitelisted(world.getBlockState(pos)) || !world.getWorldBorder().isWithinBounds(pos) || isNotValidForMining(world, player, pos) || world.getBlockState(pos).isAir() || (world.getFluidState(pos).getType() instanceof FlowingFluid) || ((world.getBlockState(pos).getDestroySpeed(world, pos) < 0) && !player.isCreative()));
     }
 
     public static Set<BlockPos> selectionInspection(Level world, ServerPlayer player, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, SelectionMode mode) {
+        if (mode == null)
+            return new HashSet<>();
+
         Set<BlockPos> validBlocks = new HashSet<>();
         Set<BlockPos> checkedBlocks = new HashSet<>();
         Queue<BlockPos> toCheck = new LinkedList<>();
@@ -162,6 +170,8 @@ public class Utils {
 
             if (isNotValidBlock(world, player, currentPos) || startState.isAir() || ((startState.getDestroySpeed(world, startPos) < 0) && !player.isCreative()))
                 continue;
+            if (!isCorrectSpeeds(player, world, currentPos, startPos))
+                continue;
 
             switch (mode) {
                 case SELECTION:
@@ -178,7 +188,7 @@ public class Utils {
 
                         for (BlockPos neighbor : getNeighborsIncludingDiagonals(currentPos)) {
                             BlockState neighborState = world.getBlockState(neighbor);
-                            if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState)) {
+                            if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState) && isCorrectSpeeds(player, world, neighbor, startPos)) {
                                 toCheck.add(neighbor);
                             } else if (!checkedBlocks.contains(neighbor) && ForgeHooks.isCorrectToolForDrops(neighborState, player) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
                                 toCheck.add(neighbor);
@@ -192,8 +202,10 @@ public class Utils {
                     toCheck.addAll(getNeighborsIncludingDiagonals(currentPos));
                     break;
                 case SIDE_SELECTION:
+                    BlockPos offsetC = currentPos.relative(direction.getOpposite());
+                    BlockState stateC = world.getBlockState(offsetC);
                     if (currentState.is(startState.getBlock())) {
-                        if (world.getBlockState(currentPos.relative(direction.getOpposite())).isAir()) {
+                        if (stateC.isAir() || stateC.canBeReplaced() || stateC.getCollisionShape(world, offsetC) == Shapes.empty()) {
                             validBlocks.add(currentPos);
                             checkedBlocks.add(currentPos);
                             toCheck.addAll(getNeighborsIncludingDiagonals(currentPos));
@@ -201,14 +213,16 @@ public class Utils {
                     }
                     break;
                 case SIDE_VEIN:
-                    if (world.getBlockState(currentPos.relative(direction.getOpposite())).isAir()) {
+                    BlockPos offsetB = currentPos.relative(direction.getOpposite());
+                    BlockState stateB = world.getBlockState(offsetB);
+                    if (stateB.isAir() || stateB.canBeReplaced() || stateB.getCollisionShape(world, offsetB) == Shapes.empty()) {
                         if (isBlockInTag(startState, currentState, getTagsFromState(startState))) {
                             validBlocks.add(currentPos);
                             checkedBlocks.add(currentPos);
 
                             for (BlockPos neighbor : getNeighborsIncludingDiagonals(currentPos)) {
                                 BlockState neighborState = world.getBlockState(neighbor);
-                                if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState)) {
+                                if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState) && isCorrectSpeeds(player, world, neighbor, startPos)) {
                                     toCheck.add(neighbor);
                                 } else if (!checkedBlocks.contains(neighbor) && ForgeHooks.isCorrectToolForDrops(neighborState, player) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
                                     toCheck.add(neighbor);
@@ -218,10 +232,21 @@ public class Utils {
                     }
                     break;
                 case SIDE_EXCAVATE:
-                    if (world.getBlockState(currentPos.relative(direction.getOpposite())).isAir()) {
+                    BlockPos offsetA = currentPos.relative(direction.getOpposite());
+                    BlockState stateA = world.getBlockState(offsetA);
+                    if (stateA.isAir() || stateA.canBeReplaced() || stateA.getCollisionShape(world, offsetA) == Shapes.empty()) {
                         validBlocks.add(currentPos);
                         checkedBlocks.add(currentPos);
                         toCheck.addAll(getNeighborsIncludingDiagonals(currentPos));
+                    }
+                    break;
+                case SURFACE:
+                    BlockPos offsetZ = currentPos.relative(direction.getOpposite());
+                    BlockState state = world.getBlockState(offsetZ);
+                    if (state.isAir() || state.canBeReplaced() || state.getCollisionShape(world, offsetZ) == Shapes.empty()) {
+                        validBlocks.add(currentPos);
+                        checkedBlocks.add(currentPos);
+                        toCheck.addAll(getNeighborsDirectional(currentPos, direction));
                     }
                     break;
                 case TUNNEL:
@@ -230,6 +255,8 @@ public class Utils {
                     checkedBlocks.add(startPos);
                     while (eyePos.distManhattan(nextPos) <= maxRange && validBlocks.size() < maxBlocks) {
                         if (isNotValidBlock(world, player, nextPos))
+                            break;
+                        if (!isCorrectSpeeds(player, world, nextPos, startPos))
                             break;
                         validBlocks.add(nextPos);
                         checkedBlocks.add(nextPos);
@@ -245,6 +272,8 @@ public class Utils {
 
                         if (isNotValidBlock(world, player, largeTunnelPos))
                             continue;
+                        if (!isCorrectSpeeds(player, world, largeTunnelPos, startPos))
+                            continue;
 
                         if (!checkedBlocks.contains(largeTunnelPos)) {
                             validBlocks.add(largeTunnelPos);
@@ -256,6 +285,8 @@ public class Utils {
                             BlockPos largeTunnelPos = nextPosLarge.offset(offset);
 
                             if (isNotValidBlock(world, player, largeTunnelPos))
+                                continue;
+                            if (!isCorrectSpeeds(player, world, largeTunnelPos, startPos))
                                 continue;
 
                             if (!checkedBlocks.contains(largeTunnelPos)) {
@@ -273,6 +304,8 @@ public class Utils {
                     checkedBlocks.add(startPos);
                     while (eyePos.distManhattan(diagonalPos) <= maxRange && validBlocks.size() < maxBlocks) {
                         if (isNotValidBlock(world, player, diagonalPos))
+                            break;
+                        if (!isCorrectSpeeds(player, world, diagonalPos, startPos))
                             break;
                         validBlocks.add(diagonalPos);
                         checkedBlocks.add(diagonalPos);
@@ -317,6 +350,16 @@ public class Utils {
         }
 
         return diagonalPos;
+    }
+
+    private static Set<BlockPos> getNeighborsDirectional(BlockPos pos, Direction direction) {
+        Set<BlockPos> offsets = new HashSet<>();
+        for (Direction directional : Direction.values()) {
+            if (directional.getAxis() != direction.getAxis()) {
+                offsets.add(pos.relative(directional));
+            }
+        }
+        return offsets;
     }
 
     private static Set<BlockPos> getNeighborsIncludingDiagonals(BlockPos pos) {
@@ -383,5 +426,53 @@ public class Utils {
 
     private static TagKey<Item> tag(String name) {
         return ItemTags.create(new ResourceLocation("forge", name));
+    }
+
+
+    public static void removingFuelItems(Player player, int amount) {
+        findAndRemoveInInventory(player, amount);
+    }
+
+    //Mostly copied from https://github.com/Creators-of-Create/Create/blob/mc1.20.1/dev/src/main/java/com/simibubi/create/foundation/utility/BlockHelper.java#L89
+
+    public static int findInInventory(Player player) {
+        int amountFound = 0;
+
+        int preferredSlot = player.getInventory().selected;
+        ItemStack itemstack = player.getInventory().getItem(preferredSlot);
+        if (itemstack.is(Utils.tag("vein_fuels"))) {
+            amountFound = amountFound + itemstack.getCount();
+        }
+        for (int i = 0; i < player.getInventory().getContainerSize(); ++i) {
+            ItemStack itemstack2 = player.getInventory().getItem(i);
+            if (itemstack2.is(Utils.tag("vein_fuels"))) {
+                amountFound = amountFound + itemstack2.getCount();
+            }
+        }
+        return amountFound;
+    }
+
+    private static void findAndRemoveInInventory(Player player, int amount) {
+        int amountFound = 0;
+
+        int preferredSlot = player.getInventory().selected;
+        ItemStack itemstack = player.getInventory().getItem(preferredSlot);
+        int count = itemstack.getCount();
+        if (itemstack.is(Utils.tag("vein_fuels")) && count > 0) {
+            int taken = Math.min(count, amount - amountFound);
+            player.getInventory().setItem(preferredSlot, new ItemStack(itemstack.getItem(), count - taken));
+            amountFound += taken;
+        }
+        for (int i = 0; i < player.getInventory().getContainerSize(); ++i) {
+            if (amountFound == amount)
+                break;
+            ItemStack itemstack2 = player.getInventory().getItem(i);
+            int count2 = itemstack2.getCount();
+            if (itemstack2.is(Utils.tag("vein_fuels")) && count2 > 0) {
+                int taken = Math.min(count2, amount - amountFound);
+                player.getInventory().setItem(i, new ItemStack(itemstack2.getItem(), count2 - taken));
+                amountFound += taken;
+            }
+        }
     }
 }

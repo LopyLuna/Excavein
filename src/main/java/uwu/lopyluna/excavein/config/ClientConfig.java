@@ -9,12 +9,15 @@ public class ClientConfig {
     public static final ForgeConfigSpec.IntValue SELECTION_COLOR_B;
     public static final ForgeConfigSpec.IntValue SELECTION_ALPHA;
     public static final ForgeConfigSpec.BooleanValue TEXT_SHADOW;
+    public static final ForgeConfigSpec.BooleanValue TEXT_BACKGROUND;
+    public static final ForgeConfigSpec.BooleanValue TEXT_LEFT_SIDE;
     public static final ForgeConfigSpec.BooleanValue TOGGLEABLE_KEY;
     public static final ForgeConfigSpec.BooleanValue DISABLE_SCROLL;
     public static final ForgeConfigSpec.DoubleValue OUTLINE_THICKNESS;
     public static final ForgeConfigSpec.BooleanValue RENDER_OUTLINE;
     public static final ForgeConfigSpec.BooleanValue RENDER_FACE;
     public static final ForgeConfigSpec.BooleanValue BLUR_FACE;
+    public static final ForgeConfigSpec.BooleanValue XRAY_OUTLINE_SELECTION;
     public static final ForgeConfigSpec.IntValue SELECTION_OFFSET_Y;
     public static final ForgeConfigSpec.IntValue SELECTION_OFFSET_X;
     public static final ForgeConfigSpec.BooleanValue DISPLAY_SELECTION_CHAT;
@@ -42,8 +45,16 @@ public class ClientConfig {
                 .defineInRange("SelectionAlpha", 32, 1, 255);
 
         TEXT_SHADOW = builder
-                .comment("Whether to have shadow behind of the Selection Text (default = true)")
-                .define("TextShadow", true);
+                .comment("Whether to have shadow behind of the Selection Text (default = false)")
+                .define("TextShadow", false);
+
+        TEXT_BACKGROUND = builder
+                .comment("Whether to have background behind of the Selection Text (default = false)")
+                .define("TextBackground", true);
+
+        TEXT_LEFT_SIDE = builder
+                .comment("Whether to have Selection Text on the left side of the screen (default = true)")
+                .define("TextLeftSide", true);
 
         TOGGLEABLE_KEY = builder
                 .comment("Whether to make the Activation Key Toggleable (default = false)")
@@ -69,6 +80,10 @@ public class ClientConfig {
                 .comment("Whether to blur the Face Texture of the Selection (default = true)")
                 .define("BlurFace", true);
 
+        XRAY_OUTLINE_SELECTION = builder
+                .comment("Ability to see your selection through Blocks whether the server allows it also (default = true)")
+                .define("XrayOutlineSelection", true);
+
         SELECTION_OFFSET_Y = builder
                 .comment("Offset Y position of Selection Text (default = 0)")
                 .defineInRange("SelectionTextOffsetY", 0, -Integer.MAX_VALUE, Integer.MAX_VALUE);
@@ -82,8 +97,8 @@ public class ClientConfig {
                 .define("DisplaySelectionInChat", false);
 
         MAX_BLOCK_VIEW = builder
-                .comment("Maximum of Selection Blocks that can be viewed (default = 256)")
-                .defineInRange("MaxBlockViewing", 256, 0, 2048);
+                .comment("Maximum of Selection Blocks that can be viewed (default = 128)")
+                .defineInRange("MaxBlockViewing", 128, 0, 2048);
 
         CLIENT_SPEC = builder.build();
     }

@@ -16,10 +16,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 import org.slf4j.Logger;
 import uwu.lopyluna.excavein.config.ClientConfig;
 import uwu.lopyluna.excavein.config.ServerConfig;
-import uwu.lopyluna.excavein.network.CooldownPacket;
-import uwu.lopyluna.excavein.network.KeybindPacket;
-import uwu.lopyluna.excavein.network.SelectionInspectionPacket;
-import uwu.lopyluna.excavein.network.SelectionOutlinePacket;
+import uwu.lopyluna.excavein.network.*;
 
 @SuppressWarnings("unused")
 @Mod(Excavein.MOD_ID)
@@ -69,6 +66,10 @@ public class Excavein {
                 KeybindPacket::encode,
                 KeybindPacket::decode,
                 KeybindPacket::handle);
+        CHANNEL.registerMessage(packetId++, IsBreakingPacket.class,
+                IsBreakingPacket::encode,
+                IsBreakingPacket::decode,
+                IsBreakingPacket::handle);
 
     }
 
