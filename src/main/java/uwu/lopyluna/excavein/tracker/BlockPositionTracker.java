@@ -21,9 +21,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.GameMasterBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.FakePlayer;
@@ -137,6 +139,18 @@ public class BlockPositionTracker {
             save = true;
         } else if (DELAY_BETWEEN_BREAK.get() == 0 && !isBreaking && flag()) {
             performBlockBreak();
+        }
+
+        if (event.getPlayer().is(player) && flag()) {
+            event.getLevel().getEntities(EntityTypeTest.forClass(ItemEntity.class), new AABB(event.getPos()), EntitySelector.NO_SPECTATORS).forEach(itemEntity -> {
+                itemEntity.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
+                if (BLOCKS_AT_PLAYER.get()) itemEntity.teleportTo(player.position().x, player.position().y, player.position().z);
+            });
+            Vec3 pos = player.position();
+            if (BLOCKS_AT_PLAYER.get()) {
+                player.giveExperiencePoints(event.getExpToDrop());
+                event.setExpToDrop(0);
+            }
         }
     }
 
