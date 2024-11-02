@@ -55,7 +55,8 @@ public class ServerPlayerGameModeMixin {
     private InteractionResult excavein$performInteraction(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand, BlockHitResult pHitResult) {
         if ((BLOCK_PLACING.get() && (pStack.getItem() instanceof BlockItem || !getValidTools(pStack))) || (ITEM_INTERACTION.get() && (!(pStack.getItem() instanceof BlockItem) || getValidTools(pStack))) || (HAND_INTERACTION.get() && pStack.isEmpty())) {
             if ((!(pPlayer instanceof FakePlayer) && keyIsDown) && (CooldownTracker.isCooldownNotActive(pPlayer) && !isBreaking) && !savedBlockPositions.isEmpty()) {
-                savedBlockPositions.forEach(pos -> excavein$performInteraction(pPlayer, pLevel, pStack, pHand, pHitResult, pos));
+                savedBlockPositions.forEach(pos -> excavein$performInteraction(pPlayer, pLevel, pStack, pHand, pHitResult, pos)
+                );
                 excavein$reset(pPlayer);
                 CooldownTracker.resetCooldown(pPlayer, BLOCK_PLACING.get() && !pPlayer.isCreative() ? excavein$i : 0);
                 return excavein$result.get();
@@ -82,7 +83,9 @@ public class ServerPlayerGameModeMixin {
     private void excavein$performInteraction(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand, BlockHitResult pHitResult, BlockPos pos) {
         boolean valid = !(REQUIRES_XP.get() && !pPlayer.isCreative() && pPlayer.totalExperience == 0) &&
                 !(REQUIRES_HUNGER.get() && !pPlayer.isCreative() && pPlayer.getFoodData().getFoodLevel() == 0) &&
-                !(REQUIRES_FUEL_ITEM.get() && !pPlayer.isCreative() && Utils.findInInventory(pPlayer) == 0);
+                !(REQUIRES_FUEL_ITEM.get() && !pPlayer.isCreative() && Utils.findInInventory(pPlayer) == 0) &&
+                !(PREVENT_BREAKING_TOOL.get() && !pPlayer.isCreative() && pStack.isDamageableItem() && pStack.getMaxDamage() - pStack.getDamageValue() == 1)
+                ;
 
         if (REQUIRES_XP.get() && !pPlayer.isCreative() && pPlayer.totalExperience == 0)
             pPlayer.displayClientMessage(Component.translatable("excavein.warning.require_xp").withStyle(ChatFormatting.RED), true); else

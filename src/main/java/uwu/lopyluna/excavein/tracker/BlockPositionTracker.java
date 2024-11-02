@@ -237,7 +237,7 @@ public class BlockPositionTracker {
         boolean valid = (!REQUIRES_XP.get() || player.isCreative() || player.totalExperience != 0) &&
                 (!REQUIRES_HUNGER.get() || player.isCreative() || player.getFoodData().getFoodLevel() != 0) &&
                 (!REQUIRES_FUEL_ITEM.get() || player.isCreative() || findInInventory(player) != 0) &&
-                (!player.getMainHandItem().isDamageableItem() || (player.getMainHandItem().getMaxDamage() - player.getMainHandItem().getDamageValue()) != 1) &&
+                !(PREVENT_BREAKING_TOOL.get() && !player.isCreative() && player.getMainHandItem().isDamageableItem() && player.getMainHandItem().getMaxDamage() - player.getMainHandItem().getDamageValue() == 1) &&
                 (!REQUIRES_TOOLS.get() || !player.getMainHandItem().isEmpty() || player.isCreative()) && (!isValidForPlacing(player.serverLevel(), player, pos));
 
         if (REQUIRES_XP.get() && !player.isCreative() && player.totalExperience == 0)

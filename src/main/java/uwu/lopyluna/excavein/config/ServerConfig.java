@@ -28,6 +28,7 @@ public class ServerConfig {
     public static final ModConfigSpec.BooleanValue INVERT_WHITELIST;
     public static final ModConfigSpec.BooleanValue REQUIRES_MINEABLE;
     public static final ModConfigSpec.BooleanValue REQUIRES_TOOLS;
+    public static final ModConfigSpec.BooleanValue PREVENT_BREAKING_TOOL; //NEW
     public static final ModConfigSpec.BooleanValue BLOCKS_AT_PLAYER;
     public static final ModConfigSpec.BooleanValue BLOCK_PLACING;
     public static final ModConfigSpec.BooleanValue HAND_INTERACTION;
@@ -106,6 +107,10 @@ public class ServerConfig {
         REQUIRES_TOOLS = builder
                 .comment("Require Tools for said selected blocks (default = false)")
                 .define("RequiresTools", false);
+
+        PREVENT_BREAKING_TOOL = builder
+                .comment("Prevents Tools being broke when mining/interaction (default = true)")
+                .define("PreventBreakingTool", true);
 
         BLOCKS_AT_PLAYER = builder
                 .comment("Sends all dropped Items from Blocks to the Player (default = true)")

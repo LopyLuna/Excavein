@@ -13,6 +13,7 @@ import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.neoforged.neoforge.common.Tags;
@@ -135,7 +136,7 @@ public class Utils {
     }
 
     public static boolean isNotValidBlock(Level world, ServerPlayer player, BlockPos pos) {
-        return (!isBlockWhitelisted(world.getBlockState(pos)) || !world.getWorldBorder().isWithinBounds(pos) || isNotValidForMining(world, player, pos) || world.getBlockState(pos).isAir() || ((world.getBlockState(pos).getDestroySpeed(world, pos) < 0) && !player.isCreative()));
+        return (!isBlockWhitelisted(world.getBlockState(pos)) || !world.getWorldBorder().isWithinBounds(pos) || isNotValidForMining(world, player, pos) || world.getBlockState(pos).isAir() || (world.getFluidState(pos).getType() instanceof FlowingFluid) || ((world.getBlockState(pos).getDestroySpeed(world, pos) < 0) && !player.isCreative()));
     }
 
     public static Set<BlockPos> selectionInspection(Level world, Player pPlayer, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, SelectionMode mode) {
@@ -258,7 +259,7 @@ public class Utils {
                     while (eyePos.distManhattan(nextPos) <= maxRange && validBlocks.size() < maxBlocks) {
                         if (isNotValidBlock(world, player, nextPos))
                             break;
-                        if (isCorrectSpeeds(player, world, nextPos, startPos))
+                        if (!isCorrectSpeeds(player, world, nextPos, startPos))
                             break;
                         validBlocks.add(nextPos);
                         checkedBlocks.add(nextPos);
@@ -274,7 +275,7 @@ public class Utils {
 
                         if (isNotValidBlock(world, player, largeTunnelPos))
                             continue;
-                        if (isCorrectSpeeds(player, world, largeTunnelPos, startPos))
+                        if (!isCorrectSpeeds(player, world, largeTunnelPos, startPos))
                             continue;
 
                         if (!checkedBlocks.contains(largeTunnelPos)) {
@@ -288,7 +289,7 @@ public class Utils {
 
                             if (isNotValidBlock(world, player, largeTunnelPos))
                                 continue;
-                            if (isCorrectSpeeds(player, world, largeTunnelPos, startPos))
+                            if (!isCorrectSpeeds(player, world, largeTunnelPos, startPos))
                                 continue;
 
                             if (!checkedBlocks.contains(largeTunnelPos)) {
@@ -307,7 +308,7 @@ public class Utils {
                     while (eyePos.distManhattan(diagonalPos) <= maxRange && validBlocks.size() < maxBlocks) {
                         if (isNotValidBlock(world, player, diagonalPos))
                             break;
-                        if (isCorrectSpeeds(player, world, diagonalPos, startPos))
+                        if (!isCorrectSpeeds(player, world, diagonalPos, startPos))
                             break;
                         validBlocks.add(diagonalPos);
                         checkedBlocks.add(diagonalPos);
