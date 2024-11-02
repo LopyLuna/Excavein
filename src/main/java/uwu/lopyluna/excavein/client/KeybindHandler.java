@@ -34,6 +34,7 @@ public class KeybindHandler {
     public static KeyMapping SIDE_SELECTION;
     public static KeyMapping SIDE_VEIN;
     public static KeyMapping SIDE_EXCAVATE;
+    public static KeyMapping SURFACE;
 
     public static KeyMapping NEXT_MODE;
     public static KeyMapping PREV_MODE;
@@ -53,6 +54,7 @@ public class KeybindHandler {
         SIDE_SELECTION = createModKey(SelectionMode.SIDE_SELECTION.name().toLowerCase());
         SIDE_VEIN = createModKey(SelectionMode.SIDE_VEIN.name().toLowerCase());
         SIDE_EXCAVATE = createModKey(SelectionMode.SIDE_EXCAVATE.name().toLowerCase());
+        SURFACE = createModKey(SelectionMode.SURFACE.name().toLowerCase());
 
         event.register(SELECTION_ACTIVATION);
 
@@ -68,6 +70,7 @@ public class KeybindHandler {
         event.register(SIDE_SELECTION);
         event.register(SIDE_VEIN);
         event.register(SIDE_EXCAVATE);
+        event.register(SURFACE);
     }
 
     public static KeyMapping createModKey(String id) {

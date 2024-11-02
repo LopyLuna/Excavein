@@ -1,29 +1,32 @@
 package uwu.lopyluna.excavein.tracker;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.piglin.PiglinAi;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.GameMasterBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.util.FakePlayer;
-import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -31,11 +34,10 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import uwu.lopyluna.excavein.Excavein;
 import uwu.lopyluna.excavein.network.CooldownPacket;
+import uwu.lopyluna.excavein.network.IsBreakingPacket;
 
 import javax.annotation.Nullable;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static uwu.lopyluna.excavein.Utils.*;
@@ -53,9 +55,12 @@ public class BlockPositionTracker {
     private static final int MAX_TICK_DELAY = 1;
     private static int currentTickDelay = 0;
 
+    private static int currentBreakDelay = 0;
+
     public static ServerPlayer player;
     public static BlockHitResult cursorRayTrace;
     public static boolean keyIsDown = false;
+    public static boolean save = false;
 
     public static void setSavedBlocks(Set<BlockPos> blocks) {
         savedBlockPositions = blocks;
@@ -78,105 +83,205 @@ public class BlockPositionTracker {
     @SubscribeEvent
     public static void onWorldTick(TickEvent.ServerTickEvent event) {
         if (event.phase == TickEvent.Phase.END && player != null && cursorRayTrace != null) {
+            Excavein.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new IsBreakingPacket(isBreaking));
             BlockPos cursorBlockPos = cursorRayTrace.getBlockPos();
+            boolean isAir = player.serverLevel().isEmptyBlock(cursorBlockPos);
 
-            boolean isAir = player.getLevel().isEmptyBlock(cursorBlockPos);
-
-            if (isAir) {
-                if (currentTickDelay != MAX_TICK_DELAY) {
-                    resetTick();
-                }
-            } else {
-                if (currentTickDelay == 0) {
-                    if (!currentBlocksPositions.equals(savedBlockPositions)) {
-                        setSavedBlocks(new HashSet<>(currentBlocksPositions));
-                    }
-                }
+            if (isAir && (currentTickDelay != MAX_TICK_DELAY))
+                resetTick();
+            else if (currentBlocksPositions != null && savedBlockPositions != null && ((!currentBlocksPositions.equals(savedBlockPositions) && save) || (currentTickDelay == 0 && (!currentBlocksPositions.equals(savedBlockPositions)) && (!WAIT_TILL_BROKEN.get() || !isBreaking)))) {
+                setSavedBlocks(new HashSet<>(currentBlocksPositions));
+                if (save) save = false;
             }
+            if (savedBlockPositions == null)
+                savedBlockPositions = new HashSet<>();
+
             getCoolDownCheck(player);
             int cooldownTicks = getRemainingCooldown(player);
             Excavein.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CooldownPacket(cooldownTicks));
 
-            if (currentTickDelay > 0) {
+            if (currentTickDelay > 0)
                 currentTickDelay--;
+
+            if (DELAY_BETWEEN_BREAK.get() > 0 && isBreaking)
+                if (currentBreakDelay == 0) {
+                    for (int i = 0; i < BLOCK_PER_BREAK.get(); i++)
+                        performBlockBreakTick();
+                    currentBreakDelay = DELAY_BETWEEN_BREAK.get();
+                }
+            if (currentBreakDelay > 0)
+                currentBreakDelay--;
+        }
+    }
+
+    public static Set<BlockPos> blocksToBreak = new HashSet<>();
+    static int i = 0;
+
+    public static void onBlockDrop(Player pBreaker, ItemEntity drop) {
+        if (pBreaker.is(player) && flag()) {
+            drop.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
+            Vec3 pos = player.position();
+            if (BLOCKS_AT_PLAYER.get()) {
+                drop.teleportTo(pos.x, pos.y, pos.z);
             }
         }
     }
 
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (!(player instanceof FakePlayer) && keyIsDown) {
-            if (CooldownTracker.isCooldownNotActive(player)) {
-                ServerLevel level = player.getLevel();
+        if (isBreaking && WAIT_TILL_BROKEN.get()) {
+            event.setCanceled(true);
+        } else if (DELAY_BETWEEN_BREAK.get() > 0 && (!isBreaking || !WAIT_TILL_BROKEN.get()) && flag()) {
+            blocksToBreak.addAll(savedBlockPositions);
+            isBreaking = true;
+            save = true;
+        } else if (DELAY_BETWEEN_BREAK.get() == 0 && !isBreaking && flag()) {
+            performBlockBreak();
+        }
+    }
 
-                for (BlockPos pos : savedBlockPositions) {
-                    if (pos.equals(savedStartPos) && savedStartPos.equals(event.getPos()))
-                        continue;
-                    if (REQUIRES_HUNGER.get() && !player.isCreative() && player.getFoodData().getFoodLevel() == 0)
-                        continue;
-                    if (player.getMainHandItem().isDamageableItem() && (player.getMainHandItem().getMaxDamage() - player.getMainHandItem().getDamageValue()) == 1)
-                        continue;
-                    if (REQUIRES_TOOLS.get() && player.getMainHandItem().isEmpty() && !player.isCreative())
-                        continue;
-                    if (isValidForPlacing(player.getLevel(), player, pos))
-                        continue;
-                    BlockState blockState = level.getBlockState(pos);
-                    Block block = blockState.getBlock();
-                    BlockEntity be = level.getBlockEntity(pos);
-                    destroyBlock(level, player, pos, blockState, be, player.getMainHandItem(), BLOCKS_AT_PLAYER.get());
+    public static boolean isBreaking;
+
+    public static void performBlockBreakTick() {
+        if (!blocksToBreak.isEmpty()) {
+            ServerLevel level = player.serverLevel();
+
+            BlockPos pos = blocksToBreak.stream().toList().get(getPos(blocksToBreak));
+            if (blockBreak(level, pos)) {
+                blocksToBreak.remove(pos);
+            } else reset();
+
+            if (blocksToBreak.isEmpty())
+                reset();
+        }
+    }
+
+    public static int getPos(Set<BlockPos> pos) {
+        int size = pos.toArray().length;
+        if (size != 0) {
+            int v = player.serverLevel().getRandom().nextInt(0, size);
+            v = v < 0 ? v * -1 : v;
+            v = v > size ? size : Math.max(v, 0);
+            return v;
+        }
+        return 0;
+    }
+
+    public static void performBlockBreak() {
+        isBreaking = true;
+
+        savedBlockPositions.forEach(pos -> blockBreak(player.serverLevel(), pos));
+        reset();
+    }
+
+    public static void reset() {
+        CooldownTracker.resetCooldown(player, player.isCreative() ? 0 : i);
+        if (!player.isCreative())
+            if (i > 0) removingFuelItems(player, FUEL_EXHAUSTION_AMOUNT.get() * i);
+        if (isBreaking) isBreaking = false;
+
+        i = 0;
+        resetTick();
+        if (!savedBlockPositions.isEmpty()) savedBlockPositions.clear();
+        if (!blocksToBreak.isEmpty()) blocksToBreak.clear();
+    }
+
+    public static boolean flag() {
+        return (!(player instanceof FakePlayer) && keyIsDown) && CooldownTracker.isCooldownNotActive(player) && !savedBlockPositions.isEmpty();
+    }
+
+    public static boolean blockBreak(ServerLevel level, BlockPos pos) {
+        if (pos == null)
+            return false;
+
+        boolean valid = (!REQUIRES_XP.get() || player.isCreative() || player.totalExperience != 0) &&
+                (!REQUIRES_HUNGER.get() || player.isCreative() || player.getFoodData().getFoodLevel() != 0) &&
+                (!REQUIRES_FUEL_ITEM.get() || player.isCreative() || findInInventory(player) != 0) &&
+                !(PREVENT_BREAKING_TOOL.get() && !player.isCreative() && player.getMainHandItem().isDamageableItem() && player.getMainHandItem().getMaxDamage() - player.getMainHandItem().getDamageValue() == 1) &&
+                (!REQUIRES_TOOLS.get() || !player.getMainHandItem().isEmpty() || player.isCreative()) && (!isValidForPlacing(player.serverLevel(), player, pos));
+
+        if (REQUIRES_XP.get() && !player.isCreative() && player.totalExperience == 0)
+            player.displayClientMessage(Component.translatable("excavein.warning.require_xp").withStyle(ChatFormatting.RED), true); else
+        if (REQUIRES_HUNGER.get() && !player.isCreative() && player.getFoodData().getFoodLevel() == 0)
+            player.displayClientMessage(Component.translatable("excavein.warning.require_hunger").withStyle(ChatFormatting.RED), true); else
+        if (REQUIRES_FUEL_ITEM.get() && !player.isCreative() && findInInventory(player) == 0)
+            player.displayClientMessage(Component.translatable("excavein.warning.require_fuel").withStyle(ChatFormatting.RED), true);
+
+        if (valid) {
+            destroyBlock(level, player, pos);
+            i++;
+            return true;
+        }
+        return false;
+    }
+
+    public static void destroyBlock(ServerLevel level, ServerPlayer player, BlockPos pPos) {
+        BlockState blockstate = level.getBlockState(pPos);
+        BlockEntity blockentity = level.getBlockEntity(pPos);
+        Block block = blockstate.getBlock();
+        if (block instanceof GameMasterBlock && !player.canUseGameMasterBlocks()) {
+            level.sendBlockUpdated(pPos, blockstate, blockstate, 3);
+        } else {
+            if (blockstate.is(BlockTags.GUARDED_BY_PIGLINS)) {
+                PiglinAi.angerNearbyPiglins(player, false);
+            }
+            level.gameEvent(GameEvent.BLOCK_DESTROY, pPos, GameEvent.Context.of(player, blockstate));
+
+            level.removeBlock(pPos, false);
+            if (!player.isCreative()) {
+                ItemStack itemstack = player.getMainHandItem();
+                ItemStack itemstack1 = itemstack.copy();
+
+                if (!NO_DURABILITY_LOSS.get() && (!level.isClientSide && blockstate.getDestroySpeed(level, pPos) != 0.0F)) {
+                    itemstack.mineBlock(level, blockstate, pPos, player);
+                    player.awardStat(Stats.ITEM_USED.get(itemstack.getItem()));
                 }
-                if (BLOCKS_AT_PLAYER.get()) {
-                    List<ItemStack> stack = getDrops(event.getState(), level, event.getPos(), level.getBlockEntity(event.getPos()), player, player.getMainHandItem());
-                    for (ItemStack pStack : stack) {
-                        level.getEntities(EntityType.ITEM, new AABB(event.getPos()).inflate(1), EntitySelector.NO_SPECTATORS).forEach(entity -> {
-                            if (entity.getItem().equals(pStack)) {
-                                entity.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
-                                Vec3 pos = player.position();
-                                entity.teleportTo(pos.x, pos.y, pos.z);
-                            }
-                        });
-                    }
-                }
-                CooldownTracker.resetCooldown(player, player.isCreative() ? 0 : savedBlockPositions.size());
-                resetTick();
-                savedBlockPositions.clear();
+
+                playerDestroy(block, level, player, pPos, blockstate, blockentity, itemstack);
+                if (itemstack.isEmpty() && !itemstack1.isEmpty())
+                    net.minecraftforge.event.ForgeEventFactory.onPlayerDestroyItem(player, itemstack, InteractionHand.MAIN_HAND);
             }
         }
     }
 
-    public static void destroyBlock(ServerLevel pLevel, ServerPlayer pPlayer, BlockPos pPos, BlockState pState, @Nullable BlockEntity pBlockEntity, ItemStack pTool, boolean isPlayerPos) {
-        assert pTool != null;
-        Vec3 vec = isPlayerPos ? pPlayer.position() : Vec3.atCenterOf(pPos);
-        ItemStack pTool1 = pTool.copy();
+    public static void playerDestroy(Block block, Level pLevel, Player pPlayer, BlockPos pPos, BlockState pState, @Nullable BlockEntity pBlockEntity, ItemStack pTool) {
+        pPlayer.awardStat(Stats.BLOCK_MINED.get(block));
+        if (!pPlayer.isCreative()) {
+            if ((savedBlockPositions.size() * FOOD_EXHAUSTION_MULTIPLIER.get()) != 0)
+                pPlayer.causeFoodExhaustion((float) (0.005F * (savedBlockPositions.size() * FOOD_EXHAUSTION_MULTIPLIER.get())));
+            if (XP_EXHAUSTION_AMOUNT.get() != 0)
+                pPlayer.giveExperiencePoints(-XP_EXHAUSTION_AMOUNT.get());
+        }
+        dropResources(pState, pLevel, pPos, pBlockEntity, pPlayer, pTool, BLOCKS_AT_PLAYER.get());
+    }
 
-        pPlayer.awardStat(Stats.BLOCK_MINED.get(pState.getBlock()));
-        pPlayer.causeFoodExhaustion((float) (0.005F * (savedBlockPositions.size() * FOOD_EXHAUSTION_MULTIPLIER.get())));
-        if (pState.getDestroySpeed(pLevel, pPos) != 0.0F && !pTool.isEmpty() && randomChance(15, pLevel))
-            pTool.hurtAndBreak(1, pPlayer, (flag) -> flag.broadcastBreakEvent(EquipmentSlot.MAINHAND));
-        pState.spawnAfterBreak(pLevel, pPos, pTool, true);
-
-        pLevel.setBlock(pPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL_IMMEDIATE);
-        pLevel.removeBlock(pPos, false);
-        pTool.mineBlock(pLevel, pState, pPos, pPlayer);
-        if (pTool.isEmpty() && !pTool1.isEmpty())
-            ForgeEventFactory.onPlayerDestroyItem(pPlayer, pTool1, InteractionHand.MAIN_HAND);
-        if (ForgeHooks.isCorrectToolForDrops(pState, pPlayer) && !pPlayer.isCreative()) {
-            getDrops(pState, pLevel, pPos, pBlockEntity, pPlayer, pTool).forEach((pStack) ->
-                    popResource(pLevel, vec, pStack, isPlayerPos));
+    public static void dropResources(BlockState pState, Level pLevel, BlockPos pPos, @Nullable BlockEntity pBlockEntity, @Nullable Entity pEntity, ItemStack pTool, boolean isPlayerPos) {
+        if (pLevel instanceof ServerLevel) {
+            Vec3 vec;
+            if (isPlayerPos) {
+                assert pEntity != null;
+                vec = pEntity.position();
+            } else {
+                vec = Vec3.atCenterOf(pPos);
+            }
+            getDrops(pState, (ServerLevel)pLevel, pPos, pBlockEntity, pEntity, pTool).forEach(stack ->
+                    popResource(pLevel, vec, stack, isPlayerPos, pState.getBlock()));
+            pState.spawnAfterBreak((ServerLevel)pLevel, pPos, pTool, false);
 
             int fortuneLevel = pTool.getEnchantmentLevel(Enchantments.BLOCK_FORTUNE);
             int silkTouchLevel = pTool.getEnchantmentLevel(Enchantments.SILK_TOUCH);
-            int exp = pState.getExpDrop(pLevel, pLevel.random, pPos, fortuneLevel, silkTouchLevel);
-            if (exp > 0)
-                if (pLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS) && !pLevel.restoringBlockSnapshots) {
-                    ExperienceOrb.award(pLevel, vec, exp);
-                }
+            int exp = pLevel.getBlockState(pPos).getExpDrop(pLevel, pLevel.random, pPos, fortuneLevel, silkTouchLevel);
+            if (exp > 0) popExperience((ServerLevel)pLevel, vec, exp);
         }
     }
 
+    public static void popExperience(ServerLevel pLevel, Vec3 pPos, int pAmount) {
+        if (pLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS) && !pLevel.restoringBlockSnapshots)
+            ExperienceOrb.award(pLevel, pPos, pAmount);
+    }
+
     public static List<ItemStack> getDrops(BlockState pState, ServerLevel pLevel, BlockPos pPos, @Nullable BlockEntity pBlockEntity, @Nullable Entity pEntity, ItemStack pTool) {
-        LootContext.Builder lootcontext$builder = (new LootContext.Builder(pLevel))
-                .withRandom(pLevel.random)
+        LootParams.Builder lootcontext$builder = (new LootParams.Builder(pLevel))
                 .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pPos))
                 .withParameter(LootContextParams.TOOL, pTool)
                 .withOptionalParameter(LootContextParams.THIS_ENTITY, pEntity)
@@ -184,21 +289,20 @@ public class BlockPositionTracker {
         return pState.getDrops(lootcontext$builder);
     }
 
-    public static void popResource(Level pLevel, Vec3 pPos, ItemStack pStack, boolean isPlayerPos) {
-        float f = EntityType.ITEM.getHeight() / 2.0F;
-        double d0 = (double)((float)pPos.x() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25D, 0.25D);
-        double d1 = (double)((float)pPos.y() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25D, 0.25D) - (double)f;
-        double d2 = (double)((float)pPos.z() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25D, 0.25D);
-        ItemEntity item = new ItemEntity(pLevel, d0, d1, d2, pStack);
-        item.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
-        popResource(pLevel, () -> item, pStack);
+    public static void popResource(Level pLevel, Vec3 pPos, ItemStack pStack, boolean isPlayerPos, Block block) {
+        double f  = (double) EntityType.ITEM.getHeight() / 2.0;
+        double d0 = (double)((float)pPos.x() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25, 0.25);
+        double d1 = (double)((float)pPos.y() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25, 0.25) - f;
+        double d2 = (double)((float)pPos.z() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25, 0.25);
+        popResource(pLevel, () -> new ItemEntity(pLevel, d0, d1, d2, pStack), pStack, block);
     }
 
-    private static void popResource(Level pLevel, Supplier<ItemEntity> pItemEntitySupplier, ItemStack pStack) {
+    private static void popResource(Level pLevel, Supplier<ItemEntity> pItemEntitySupplier, ItemStack pStack, Block block) {
         if (!pLevel.isClientSide && !pStack.isEmpty() && pLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS) && !pLevel.restoringBlockSnapshots) {
             ItemEntity itementity = pItemEntitySupplier.get();
-            itementity.setDefaultPickUpDelay();
+            itementity.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
             pLevel.addFreshEntity(itementity);
+            onBlockDrop(player, itementity);
         }
     }
 }

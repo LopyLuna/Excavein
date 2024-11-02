@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.*;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
@@ -32,6 +33,7 @@ import java.util.Set;
 import static uwu.lopyluna.excavein.client.KeybindHandler.SELECTION_ACTIVATION;
 import static uwu.lopyluna.excavein.client.KeybindHandler.keyActivated;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
+import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
 @SuppressWarnings("unused")
 @Mod.EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
@@ -40,15 +42,20 @@ public class BlockOutlineRenderer {
     private static final Minecraft mc = Minecraft.getInstance();
     public static Set<BlockPos> outlineBlocks = new HashSet<>();
     private static boolean shouldRenderOutline = false;
+    public static boolean isBreaking = false;
 
     public static void setOutlineBlocks(Set<BlockPos> blocks) {
         outlineBlocks = blocks;
     }
 
+    public static void setBreaking(boolean breaking) {
+        isBreaking = breaking;
+    }
+
     @SubscribeEvent
     public static void onRenderWorld(RenderHighlightEvent.Block event) {
         PoseStack poseStack = event.getPoseStack();
-        if (mc.getConnection() == null || !shouldRenderOutline || outlineBlocks.isEmpty() || outlineBlocks.size() > MAX_BLOCK_VIEW.get() || ClientCooldownHandler.isCooldownActive()) {
+        if (mc.getConnection() == null || mc.player == null || requiredFlag(mc.player) || !shouldRenderOutline || outlineBlocks.isEmpty() || (isBreaking && WAIT_TILL_BROKEN.get()) || outlineBlocks.size() > MAX_BLOCK_VIEW.get() || ClientCooldownHandler.isCooldownActive()) {
             return;
         }
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
@@ -68,6 +75,12 @@ public class BlockOutlineRenderer {
             renderFaces(poseStack, event.getMultiBufferSource().getBuffer(selection), outlineBlocks, event.getCamera().getPosition(), new Vector4f(red, green, blue, alpha));
 
         event.setCanceled(true);
+    }
+
+    public static boolean requiredFlag(LocalPlayer player) {
+        return (REQUIRES_XP.get() && !player.isCreative() && player.totalExperience == 0) ||
+                (REQUIRES_HUNGER.get() && !player.isCreative() && player.getFoodData().getFoodLevel() == 0) ||
+                (REQUIRES_FUEL_ITEM.get() && !player.isCreative() && Utils.findInInventory(player) == 0);
     }
 
     @SubscribeEvent
