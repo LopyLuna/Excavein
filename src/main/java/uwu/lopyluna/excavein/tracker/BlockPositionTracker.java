@@ -1,6 +1,7 @@
 package uwu.lopyluna.excavein.tracker;
 
 import net.fabricmc.fabric.api.entity.FakePlayer;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -10,7 +11,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -24,26 +24,18 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.GameMasterBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.common.CommonHooks;
-import net.neoforged.neoforge.common.util.FakePlayer;
-import net.neoforged.neoforge.event.EventHooks;
-import net.neoforged.neoforge.event.level.BlockDropsEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
-import uwu.lopyluna.excavein.mixins.BlockAccessor;
+import org.jetbrains.annotations.Nullable;
+import uwu.lopyluna.excavein.BlockAccessor;
 import uwu.lopyluna.excavein.network.CooldownPacket;
 import uwu.lopyluna.excavein.network.IsBreakingPacket;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -69,6 +61,8 @@ public class BlockPositionTracker {
     public static boolean save = false;
     private static boolean simpleCheck = false;
 
+    private static final Block block = new Block(BlockBehaviour.Properties.of());
+
     public static void setSavedBlocks(Set<BlockPos> blocks) {
         savedBlockPositions = blocks;
         savedStartPos = cursorRayTrace.getBlockPos();
@@ -90,7 +84,7 @@ public class BlockPositionTracker {
 
     public static void onWorldTick(Level level) {
         if (player != null && cursorRayTrace != null) {
-            PacketDistributor.sendToPlayer(player, new IsBreakingPacket(isBreaking));
+            ServerPlayNetworking.send(player, new IsBreakingPacket(isBreaking));
             BlockPos cursorBlockPos = cursorRayTrace.getBlockPos();
             boolean isAir = player.serverLevel().isEmptyBlock(cursorBlockPos);
 
@@ -105,7 +99,7 @@ public class BlockPositionTracker {
 
             getCoolDownCheck(player);
             int cooldownTicks = getRemainingCooldown(player);
-            PacketDistributor.sendToPlayer(player, new CooldownPacket(cooldownTicks));
+            ServerPlayNetworking.send(player, new CooldownPacket(cooldownTicks));
 
             if (currentTickDelay > 0)
                 currentTickDelay--;
@@ -147,15 +141,16 @@ public class BlockPositionTracker {
         }
     }
 
-    @SubscribeEvent
-    public static void onBlockDrop(BlockDropsEvent event) {
-        if (event.getBreaker() instanceof Player pPlayer && pPlayer.is(player) && flag()) {
+    public static void onBlockDrop(Entity breaker, List<ItemEntity> drops) {
+        if (breaker instanceof Player pPlayer && pPlayer.is(player) && flag()) {
             Vec3 pos = player.position();
             if (BLOCKS_AT_PLAYER.get()) {
+                /* //TODO: experience shit
                 pPlayer.giveExperiencePoints(event.getDroppedExperience());
                 event.setDroppedExperience(0);
+                 */
             }
-            event.getDrops().forEach(itemEntity -> {
+            drops.forEach(itemEntity -> {
                 itemEntity.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
                 if (BLOCKS_AT_PLAYER.get()) {
                     itemEntity.teleportTo(pos.x, pos.y, pos.z);
@@ -278,7 +273,8 @@ public class BlockPositionTracker {
                 }
                 playerDestroy(block, level, player, pPos, blockstate, blockentity, itemstack);
                 if (itemstack.isEmpty() && !itemstack1.isEmpty()) {
-                    EventHooks.onPlayerDestroyItem(player, itemstack, InteractionHand.MAIN_HAND);
+                    //TODO: is this even needed?
+                    //EventHooks.onPlayerDestroyItem(player, itemstack, InteractionHand.MAIN_HAND);
                 }
             }
         }
@@ -307,7 +303,7 @@ public class BlockPositionTracker {
             }
             getDrops(pState, (ServerLevel)pLevel, pPos, pBlockEntity, pEntity, pTool).forEach(p_49944_ -> popResource(pLevel, vec, p_49944_, isPlayerPos, pState.getBlock()));
             List<ItemEntity> captured = stopCapturingDrops();
-            CommonHooks.handleBlockDrops((ServerLevel) pLevel, pPos, pState, pBlockEntity, captured, pEntity, pTool);
+            Block.dropResources(pState, pLevel, pPos, pBlockEntity, pEntity, pTool);
         }
     }
 
@@ -321,12 +317,12 @@ public class BlockPositionTracker {
     }
 
     private static void beginCapturingDrops() {
-        BlockAccessor.excavein$capturedDrops(new ArrayList<>());
+        ((BlockAccessor) (block)).excavein$capturedDrops(new ArrayList<>());
     }
 
     private static List<ItemEntity> stopCapturingDrops() {
-        List<ItemEntity> drops = BlockAccessor.excavein$capturedDrops();
-        BlockAccessor.excavein$capturedDrops(null);
+        List<ItemEntity> drops = ((BlockAccessor) (block)).excavein$capturedDrops();
+        ((BlockAccessor) (block)).excavein$capturedDrops(null);
         return drops;
     }
 
@@ -339,13 +335,13 @@ public class BlockPositionTracker {
     }
 
     private static void popResource(Level pLevel, Supplier<ItemEntity> pItemEntitySupplier, ItemStack pStack, Block block) {
-        if (!pLevel.isClientSide && !pStack.isEmpty() && pLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS) && !pLevel.restoringBlockSnapshots) {
+        if (!pLevel.isClientSide && !pStack.isEmpty() && pLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)) {
             ItemEntity itementity = pItemEntitySupplier.get();
             itementity.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
-            List<ItemEntity> stacks = BlockAccessor.excavein$capturedDrops();
+            List<ItemEntity> stacks = ((BlockAccessor) (block)).excavein$capturedDrops();
             if (stacks != null) {
                 stacks.add(itementity);
-                BlockAccessor.excavein$capturedDrops(stacks);
+                ((BlockAccessor) (block)).excavein$capturedDrops(stacks);
             } else {
                 pLevel.addFreshEntity(itementity);
             }

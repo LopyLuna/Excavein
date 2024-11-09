@@ -1,6 +1,8 @@
 package uwu.lopyluna.excavein.mixins;
 
 import net.fabricmc.fabric.api.entity.FakePlayer;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
@@ -17,7 +19,6 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -94,9 +95,10 @@ public class ServerPlayerGameModeMixin {
         if (REQUIRES_FUEL_ITEM.get() && !pPlayer.isCreative() && Utils.findInInventory(pPlayer) == 0)
             pPlayer.displayClientMessage(Component.translatable("excavein.warning.require_fuel").withStyle(ChatFormatting.RED), true);
 
+        /*
         if (valid) {
-            net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock events = net.neoforged.neoforge.common.CommonHooks.onRightClickBlock(pPlayer, pHand, pos, pHitResult.withPosition(pos));
-            InteractionResult resulting = excavein$useItemOn(pPlayer, pLevel, pStack, pHand, pHitResult.withPosition(pos), pLevel.getBlockState(pos), pos, events);
+            InteractionResult resulting = excavein$useItemOn(pPlayer, pLevel, pStack, pHand, pHitResult.withPosition(pos), pLevel.getBlockState(pos), pos);
+
             if (pos.equals(pHitResult.getBlockPos())) {
                 excavein$result.set(resulting);
             }
@@ -111,20 +113,22 @@ public class ServerPlayerGameModeMixin {
                 }
             }
         }
+         */
     }
 
-
+    /*
     @Unique
-    public InteractionResult excavein$useItemOn(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand,
-                                                BlockHitResult pHitResult, BlockState blockstate, BlockPos blockpos, PlayerInteractEvent.RightClickBlock event) {
+    public InteractionResult excavein$useItemOn(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand, BlockHitResult pHitResult, BlockState blockstate, BlockPos blockpos) {
         if (!blockstate.getBlock().isEnabled(pLevel.enabledFeatures())) {
             return InteractionResult.FAIL;
         }
 
-        if (event.isCanceled()) return event.getCancellationResult();
+        InteractionResult eventResult = UseBlockCallback.EVENT.invoker().interact(pPlayer, pLevel, pHand, pHitResult.withPosition(blockpos));
+
+        if (eventResult.consumesAction()) return eventResult;
 
         UseOnContext useoncontext = new UseOnContext(pPlayer, pHand, pHitResult);
-        if (event.getUseItem() != net.neoforged.neoforge.common.util.TriState.FALSE) {
+        if (!pPlayer.getItemInHand(pHand).isEmpty()) {
             InteractionResult result = pStack.onItemUseFirst(useoncontext);
             if (result != InteractionResult.PASS) return result;
         }
@@ -172,9 +176,12 @@ public class ServerPlayerGameModeMixin {
 
     }
 
+     */
+
     @Shadow
     public boolean isCreative() {
         return this.gameModeForPlayer.isCreative();
     }
+
 }
 

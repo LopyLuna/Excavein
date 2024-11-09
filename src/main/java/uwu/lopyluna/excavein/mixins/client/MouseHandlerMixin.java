@@ -12,7 +12,7 @@ import uwu.lopyluna.excavein.client.KeybindHandler;
 public class MouseHandlerMixin {
     @Inject(
             method = "onScroll",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;isSpectator()Z", ordinal = 0, shift = At.Shift.BEFORE),
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;isSpectator()Z", ordinal = 0),
             cancellable = true
     )
     private void onScroll(long windowPointer, double xOffset, double yOffset, CallbackInfo ci, @Local(ordinal = 1, argsOnly = true) double e, @Local(ordinal = 2) double f) {
