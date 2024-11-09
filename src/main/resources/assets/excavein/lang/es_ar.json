@@ -1,0 +1,47 @@
+{
+    "key.excavein.selection_activation": "Usar ExcaVein",
+  
+    "key.excavein.next_mode": "Modo Siguiente",
+    "key.excavein.prev_mode": "Modo Anterior",
+  
+    "key.excavein.active_selection": "Activar: Selección",
+    "key.excavein.active_vein": "Activar: Veta",
+    "key.excavein.active_excavate": "Activar: Excavar",
+    "key.excavein.active_tunnel": "Activar: Túnel",
+    "key.excavein.active_large_tunnel": "Activar: Túnel Grande",
+    "key.excavein.active_diagonal_tunnel": "Activar: Túnel Diagonal",
+    "key.excavein.active_side_selection": "Activar: Selección por Lado",
+    "key.excavein.active_side_vein": "Activar: Veta por Lado",
+    "key.excavein.active_side_excavate": "Activar: Excavar por Lado",
+    "key.excavein.active_surface": "Activar: Superficie",
+  
+    "key.categories.excavein": "ExcaVein",
+  
+    "excavein.overlay.mode": "Modo:_",
+    "excavein.overlay.selecting": "Seleccionando:_",
+    "excavein.overlay.cooldown": "Enfriamiento:_",
+    "excavein.overlay.blocks": "_Bloques",
+    "excavein.overlay.scroll_up": "_____↑_",
+    "excavein.overlay.scroll_down": "_____↓_",
+    "excavein.overlay.current_mode": "Modo:_",
+    "excavein.overlay.breaking": "Rompiendo_Bloques",
+  
+    "excavein.overlay.require_xp": "Se necesita experiencia",
+    "excavein.overlay.require_hunger": "Se necesita comida",
+    "excavein.overlay.require_fuel": "Se necesitan items combustibles",
+  
+    "excavein.modes.selection": "Selección",
+    "excavein.modes.vein": "Veta",
+    "excavein.modes.excavate": "Excavar",
+    "excavein.modes.tunnel": "Túnel",
+    "excavein.modes.large_tunnel": "Túnel Grande",
+    "excavein.modes.diagonal_tunnel": "Túnel Diagonal",
+    "excavein.modes.side_selection": "Selección por Lado",
+    "excavein.modes.side_vein": "Veta por Lado",
+    "excavein.modes.side_excavate": "Excavar por Lado",
+    "excavein.modes.surface": "Superficie",
+  
+    "excavein.warning.require_xp": "Se requiere experiencia para continuar",
+    "excavein.warning.require_hunger": "Se requiere comida para continuar",
+    "excavein.warning.require_fuel": "Se requieren items combustibles para continuar"
+  }
