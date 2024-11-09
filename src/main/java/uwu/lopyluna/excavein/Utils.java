@@ -3,6 +3,7 @@ package uwu.lopyluna.excavein;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
@@ -16,7 +17,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.Shapes;
-import net.neoforged.neoforge.common.Tags;
 import uwu.lopyluna.excavein.client.SelectionMode;
 import uwu.lopyluna.excavein.config.ServerConfig;
 
@@ -31,10 +31,12 @@ public class Utils {
         return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
     }
 
-    public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("vein_whitelist"));
+    public static final TagKey<Block> VEIN_MINE_WHITELIST = TagKey.create(Registries.BLOCK, asResource("vein_whitelist"));
+
+    private static final TagKey<Item> TOOLS = universalTag("tools");
 
     public static TagKey<Block> getBlockTagFromTool(ItemStack stack) {
-        if (stack.is(Tags.Items.TOOLS)) {
+        if (stack.is(TOOLS)) {
             if ((stack.is(universalTag("tools/axes")) || stack.is(ItemTags.AXES)) || stack.getItem() instanceof AxeItem)
                 return BlockTags.MINEABLE_WITH_AXE;
             if ((stack.is(universalTag("tools/pickaxes")) || stack.is(ItemTags.PICKAXES)) || stack.getItem() instanceof PickaxeItem)
@@ -48,7 +50,7 @@ public class Utils {
     }
 
     public static boolean getValidTools(ItemStack stack) {
-        return stack.isDamageableItem() || stack.is(Tags.Items.TOOLS) || stack.getItem() instanceof AxeItem || stack.getItem() instanceof PickaxeItem || stack.getItem() instanceof ShovelItem || stack.getItem() instanceof HoeItem ||
+        return stack.isDamageableItem() || stack.is(TOOLS) || stack.getItem() instanceof AxeItem || stack.getItem() instanceof PickaxeItem || stack.getItem() instanceof ShovelItem || stack.getItem() instanceof HoeItem ||
                 stack.is(universalTag("tools/axes")) || stack.is(universalTag("tools/pickaxes")) || stack.is(universalTag("tools/shovels")) || stack.is(universalTag("tools/hoes")) ||
                 stack.is(ItemTags.AXES) || stack.is(ItemTags.PICKAXES) || stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.HOES)
                 ;
@@ -120,9 +122,9 @@ public class Utils {
 
     public static boolean isNotValidForMining(ServerPlayer player, Level world, BlockPos pos) {
         if (REQUIRES_TOOLS.get())
-            return !isBlockInTag(world.getBlockState(pos), getBlockTagFromTool(player.getMainHandItem())) || (REQUIRES_MINEABLE.get() && !player.hasCorrectToolForDrops(world.getBlockState(pos), world, pos));
+            return !isBlockInTag(world.getBlockState(pos), getBlockTagFromTool(player.getMainHandItem())) || (REQUIRES_MINEABLE.get() && !player.hasCorrectToolForDrops(world.getBlockState(pos)));
         if (REQUIRES_MINEABLE.get())
-            return !player.hasCorrectToolForDrops(world.getBlockState(pos), world, pos);
+            return !player.hasCorrectToolForDrops(world.getBlockState(pos));
         return false;
     }
 
@@ -193,7 +195,7 @@ public class Utils {
                             BlockState neighborState = world.getBlockState(neighbor);
                             if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState) && isCorrectSpeeds(player, world, neighbor, startPos)) {
                                 toCheck.add(neighbor);
-                            } else if (!checkedBlocks.contains(neighbor) && player.hasCorrectToolForDrops(neighborState, world, neighbor) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
+                            } else if (!checkedBlocks.contains(neighbor) && player.hasCorrectToolForDrops(neighborState) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
                                 toCheck.add(neighbor);
                             }
                         }
@@ -227,7 +229,7 @@ public class Utils {
                                 BlockState neighborState = world.getBlockState(neighbor);
                                 if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState) && isCorrectSpeeds(player, world, neighbor, startPos)) {
                                     toCheck.add(neighbor);
-                                } else if (!checkedBlocks.contains(neighbor) && player.hasCorrectToolForDrops(neighborState, world, neighbor) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
+                                } else if (!checkedBlocks.contains(neighbor) && player.hasCorrectToolForDrops(neighborState) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
                                     toCheck.add(neighbor);
                                 }
                             }
@@ -433,10 +435,10 @@ public class Utils {
     }
 
     public static TagKey<Item> universalTag(String name) {
-        return ItemTags.create(ResourceLocation.fromNamespaceAndPath("c", name));
+        return TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("c", name));
     }
     public static TagKey<Item> tag(String name) {
-        return ItemTags.create(ResourceLocation.fromNamespaceAndPath(MOD_ID, name));
+        return TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath(MOD_ID, name));
     }
 
     public static void removingFuelItems(Player player, int amount) {

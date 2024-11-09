@@ -1,11 +1,11 @@
 package uwu.lopyluna.excavein.network;
 
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.NotNull;
 import uwu.lopyluna.excavein.Utils;
 import uwu.lopyluna.excavein.client.BlockOutlineRenderer;
@@ -21,8 +21,8 @@ public record SelectionOutlinePacket(Set<BlockPos> blockPositions) implements Cu
             SelectionOutlinePacket::new
     );
 
-    public static void handle(SelectionOutlinePacket msg, IPayloadContext context) {
-        context.enqueueWork(() -> {
+    public static void handle(SelectionOutlinePacket msg, ClientPlayNetworking.Context context) {
+        context.client().execute(() -> {
             if (msg.blockPositions.isEmpty()) {
                 BlockOutlineRenderer.setOutlineBlocks(Set.of());
             } else {

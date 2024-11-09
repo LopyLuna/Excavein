@@ -1,5 +1,6 @@
 package uwu.lopyluna.excavein.network;
 
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.Vec3i;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -12,8 +13,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.NotNull;
 import uwu.lopyluna.excavein.Utils;
 import uwu.lopyluna.excavein.client.SelectionMode;
@@ -30,8 +29,8 @@ public record SelectionInspectionPacket(int selectionMode) implements CustomPack
             SelectionInspectionPacket::new
     );
 
-    public static void handle(final SelectionInspectionPacket msg, final IPayloadContext ctx) {
-        ctx.enqueueWork(() -> {
+    public static void handle(final SelectionInspectionPacket msg, final ServerPlayNetworking.Context ctx) {
+        ctx.server().execute(() -> {
             ServerPlayer player = (ServerPlayer) ctx.player();
             Level world = player.serverLevel();
             BlockHitResult rayTrace = getPlayerRayTraceToBlock(player);
@@ -48,12 +47,12 @@ public record SelectionInspectionPacket(int selectionMode) implements CustomPack
                 );
                 BlockPositionTracker.update(player, rayTrace, validBlocks);
                 if (!validBlocks.isEmpty()) {
-                    PacketDistributor.sendToPlayer(player, new SelectionOutlinePacket(validBlocks));
+                    ServerPlayNetworking.send(player, new SelectionOutlinePacket(validBlocks));
                 } else {
-                    PacketDistributor.sendToPlayer(player, new SelectionOutlinePacket(Set.of()));
+                    ServerPlayNetworking.send(player, new SelectionOutlinePacket(Set.of()));
                 }
             } else {
-                PacketDistributor.sendToPlayer(player, new SelectionOutlinePacket(Set.of()));
+                ServerPlayNetworking.send(player, new SelectionOutlinePacket(Set.of()));
             }
         });
     }

@@ -1,10 +1,10 @@
 package uwu.lopyluna.excavein.network;
 
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.NotNull;
 import uwu.lopyluna.excavein.Utils;
 import uwu.lopyluna.excavein.client.ClientCooldownHandler;
@@ -17,8 +17,8 @@ public record CooldownPacket(int cooldownTicks) implements CustomPacketPayload {
             CooldownPacket::new
     );
 
-    public static void handle(CooldownPacket msg, IPayloadContext context) {
-        context.enqueueWork(() -> ClientCooldownHandler.setCooldown(msg.cooldownTicks));
+    public static void handle(CooldownPacket msg, ClientPlayNetworking.Context context) {
+        context.client().execute(() -> ClientCooldownHandler.setCooldown(msg.cooldownTicks));
     }
 
     @Override
