@@ -119,6 +119,7 @@ public class KeybindHandler {
             if (SIDE_SELECTION.consumeClick()) { setMode(SelectionMode.SIDE_SELECTION.ordinal()); displayText = true; }
             if (SIDE_VEIN.consumeClick()) { setMode(SelectionMode.SIDE_VEIN.ordinal()); displayText = true; }
             if (SIDE_EXCAVATE.consumeClick()) { setMode(SelectionMode.SIDE_EXCAVATE.ordinal()); displayText = true; }
+            if (SURFACE.consumeClick()) { setMode(SelectionMode.SURFACE.ordinal()); displayText = true; }
             if (displayText) {
                 SelectionMode currentMode = SelectionMode.getCurrentMode();
                 assert Minecraft.getInstance().player != null;
