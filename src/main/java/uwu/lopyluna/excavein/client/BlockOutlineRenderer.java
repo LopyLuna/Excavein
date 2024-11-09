@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.*;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
@@ -16,16 +17,10 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RenderHighlightEvent;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import uwu.lopyluna.excavein.Excavein;
 import uwu.lopyluna.excavein.Utils;
 import uwu.lopyluna.excavein.config.ClientConfig;
 
@@ -40,7 +35,6 @@ import static uwu.lopyluna.excavein.config.ClientConfig.*;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
 @SuppressWarnings("unused")
-@EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
 public class BlockOutlineRenderer {
 
     private static final Minecraft mc = Minecraft.getInstance();
@@ -56,11 +50,10 @@ public class BlockOutlineRenderer {
         isBreaking = breaking;
     }
 
-    @SubscribeEvent
-    public static void onRenderWorld(RenderHighlightEvent.Block event) {
-        PoseStack poseStack = event.getPoseStack();
+    public static boolean onRenderWorld(WorldRenderContext worldRenderContext, WorldRenderContext.BlockOutlineContext blockOutlineContext) {
+        PoseStack poseStack = worldRenderContext.matrixStack();
         if (mc.getConnection() == null || mc.player == null || requiredFlag(mc.player) || !shouldRenderOutline || outlineBlocks.isEmpty() || (isBreaking && WAIT_TILL_BROKEN.get()) || outlineBlocks.size() > MAX_BLOCK_VIEW.get() || ClientCooldownHandler.isCooldownActive()) {
-            return;
+            return true;
         }
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.defaultBlendFunc();
@@ -74,11 +67,11 @@ public class BlockOutlineRenderer {
         RenderType selection = RenderTypes.getOutline(Utils.asResource("textures/special/selection.png"), BLUR_FACE.get());
 
         if (RENDER_OUTLINE.get())
-            renderShape(poseStack, event.getMultiBufferSource().getBuffer(blank), selectionShape, event.getCamera().getPosition(), red, green, blue);
+            renderShape(poseStack, worldRenderContext.consumers().getBuffer(blank), selectionShape, worldRenderContext.camera().getPosition(), red, green, blue);
         if (RENDER_FACE.get())
-            renderFaces(poseStack, event.getMultiBufferSource().getBuffer(selection), outlineBlocks, event.getCamera().getPosition(), new Vector4f(red, green, blue, alpha));
+            renderFaces(poseStack, worldRenderContext.consumers().getBuffer(selection), outlineBlocks, worldRenderContext.camera().getPosition(), new Vector4f(red, green, blue, alpha));
 
-        event.setCanceled(true);
+        return false;
     }
 
     public static boolean requiredFlag(LocalPlayer player) {
@@ -87,8 +80,7 @@ public class BlockOutlineRenderer {
                 (REQUIRES_FUEL_ITEM.get() && !player.isCreative() && Utils.findInInventory(player) == 0);
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick(Minecraft client) {
         if (mc.getConnection() != null) {
             shouldRenderOutline = ((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated));
         }

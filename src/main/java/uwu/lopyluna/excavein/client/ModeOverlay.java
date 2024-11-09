@@ -2,16 +2,11 @@ package uwu.lopyluna.excavein.client;
 
 import com.google.common.base.Strings;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
-import uwu.lopyluna.excavein.Excavein;
 import uwu.lopyluna.excavein.Utils;
 
 import java.awt.*;
@@ -25,15 +20,13 @@ import static uwu.lopyluna.excavein.config.ClientConfig.*;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
 @SuppressWarnings("unused")
-@EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
 public class ModeOverlay {
 
     private static final Minecraft mc = Minecraft.getInstance();
     static int dots = 0;
 
-    @SubscribeEvent
-    public static void onRenderGuiOverlay(RenderGuiEvent.Post event) {
-        PoseStack poseStack = event.getGuiGraphics().pose();
+    public static void onRenderGuiOverlay(GuiGraphics guiGraphics, DeltaTracker delta) {
+        PoseStack poseStack = guiGraphics.pose();
         if (mc.getConnection() == null || mc.player == null || mc.options.hideGui || mc.noRender || mc.showOnlyReducedInfo() || !((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)))
             return;
 
@@ -59,7 +52,7 @@ public class ModeOverlay {
         boolean leftSide = TEXT_LEFT_SIDE.get();
 
         if (currentMode != null) {
-            renderText(translateText("mode") + currentMode.getName(), 1, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(translateText("mode") + currentMode.getName(), 1, xPos, yPos, guiGraphics, leftSide, color, dropShadow, background);
         }
 
         if (!(isBreaking && WAIT_TILL_BROKEN.get()) && requiredFlag(mc.player)) {
@@ -70,22 +63,22 @@ public class ModeOverlay {
                 tag = "hunger"; else
             if (REQUIRES_FUEL_ITEM.get() && !mc.player.isCreative() && Utils.findInInventory(mc.player) == 0)
                 tag = "fuel";
-            renderText(tag.isEmpty() ? "" : translateText("require_" + tag), 3, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(tag.isEmpty() ? "" : translateText("require_" + tag), 3, xPos, yPos, guiGraphics, leftSide, color, dropShadow, background);
         } else if (!(isBreaking && WAIT_TILL_BROKEN.get()) && !requiredFlag(mc.player)) {
             int blockCount = outlineBlocks.isEmpty() ? 0 : outlineBlocks.size();
             if (blockCount > 0 && !ClientCooldownHandler.isCooldownActive()) {
-                renderText(translateText("selecting") + blockCount + translateText("blocks"), 3, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+                renderText(translateText("selecting") + blockCount + translateText("blocks"), 3, xPos, yPos, guiGraphics, leftSide, color, dropShadow, background);
             }
             if (ClientCooldownHandler.isCooldownActive()) {
-                renderText(translateText("cooldown") + ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS), 3, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+                renderText(translateText("cooldown") + ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS), 3, xPos, yPos, guiGraphics, leftSide, color, dropShadow, background);
             }
-        } else if (isBreaking && WAIT_TILL_BROKEN.get()) renderText(translateText("breaking") + animatedDotsString(), 3, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        } else if (isBreaking && WAIT_TILL_BROKEN.get()) renderText(translateText("breaking") + animatedDotsString(), 3, xPos, yPos, guiGraphics, leftSide, color, dropShadow, background);
 
         if (previousMode != null) {
-            renderText(translateText("scroll_up") + previousMode.getName(), 0, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(translateText("scroll_up") + previousMode.getName(), 0, xPos, yPos, guiGraphics, leftSide, color, dropShadow, background);
         }
         if (nextMode != null) {
-            renderText(translateText("scroll_down") + nextMode.getName(), 2, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(translateText("scroll_down") + nextMode.getName(), 2, xPos, yPos, guiGraphics, leftSide, color, dropShadow, background);
         }
         poseStack.popPose();
     }
@@ -96,8 +89,7 @@ public class ModeOverlay {
 
     static int tick = 0;
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick(Minecraft client) {
         if (tick > 0) tick--; else { tick = 3;
             if (dots < 3) dots++; else dots = 0;
         }

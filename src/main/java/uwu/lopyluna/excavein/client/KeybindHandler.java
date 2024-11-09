@@ -1,20 +1,13 @@
 package uwu.lopyluna.excavein.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.settings.KeyConflictContext;
-import net.neoforged.neoforge.client.settings.KeyModifier;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
-import uwu.lopyluna.excavein.Excavein;
 import uwu.lopyluna.excavein.network.KeybindPacket;
 import uwu.lopyluna.excavein.network.SelectionInspectionPacket;
 
@@ -22,7 +15,6 @@ import static uwu.lopyluna.excavein.client.SelectionMode.setMode;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
 
 @SuppressWarnings("unused")
-@EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
 public class KeybindHandler {
 
     public static KeyMapping SELECTION_ACTIVATION;
@@ -40,7 +32,7 @@ public class KeybindHandler {
     public static KeyMapping NEXT_MODE;
     public static KeyMapping PREV_MODE;
 
-    public static void register(RegisterKeyMappingsEvent event) {
+    public static void register() {
         SELECTION_ACTIVATION = create("selection_activation", GLFW.GLFW_KEY_GRAVE_ACCENT);
 
         NEXT_MODE = create("next_mode", GLFW.GLFW_KEY_UP);
@@ -57,21 +49,23 @@ public class KeybindHandler {
         SIDE_EXCAVATE = createModKey(SelectionMode.SIDE_EXCAVATE.name().toLowerCase());
         SURFACE = createModKey(SelectionMode.SURFACE.name().toLowerCase());
 
-        event.register(SELECTION_ACTIVATION);
+        KeyBindingHelper.registerKeyBinding(SELECTION_ACTIVATION);
 
-        event.register(NEXT_MODE);
-        event.register(PREV_MODE);
+        KeyBindingHelper.registerKeyBinding(NEXT_MODE);
+        KeyBindingHelper.registerKeyBinding(PREV_MODE);
 
-        event.register(SELECTION);
-        event.register(VEIN);
-        event.register(EXCAVATE);
-        event.register(TUNNEL);
-        event.register(LARGE_TUNNEL);
-        event.register(DIAGONAL_TUNNEL);
-        event.register(SIDE_SELECTION);
-        event.register(SIDE_VEIN);
-        event.register(SIDE_EXCAVATE);
-        event.register(SURFACE);
+        KeyBindingHelper.registerKeyBinding(SELECTION);
+        KeyBindingHelper.registerKeyBinding(VEIN);
+        KeyBindingHelper.registerKeyBinding(EXCAVATE);
+        KeyBindingHelper.registerKeyBinding(TUNNEL);
+        KeyBindingHelper.registerKeyBinding(LARGE_TUNNEL);
+        KeyBindingHelper.registerKeyBinding(DIAGONAL_TUNNEL);
+        KeyBindingHelper.registerKeyBinding(SIDE_SELECTION);
+        KeyBindingHelper.registerKeyBinding(SIDE_VEIN);
+        KeyBindingHelper.registerKeyBinding(SIDE_EXCAVATE);
+        KeyBindingHelper.registerKeyBinding(SURFACE);
+
+        ClientTickEvents.END_CLIENT_TICK.register(KeybindHandler::onClientTick);
     }
 
     public static KeyMapping createModKey(String id) {
@@ -81,8 +75,6 @@ public class KeybindHandler {
     public static KeyMapping create(String id, int key) {
         return new KeyMapping(
                 "key.excavein." + id,
-                KeyConflictContext.IN_GAME,
-                KeyModifier.NONE,
                 InputConstants.Type.KEYSYM,
                 key,
                 "key.categories.excavein");
@@ -94,16 +86,15 @@ public class KeybindHandler {
     private static boolean displayText;
     public static boolean keyActivated = false;
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick(Minecraft client) {
         if (mc.getConnection() != null && !Minecraft.getInstance().isPaused()) {
             tickCounter++;
             if (tickCounter >= TICK_INTERVAL) {
                 tickCounter = 0;
                 if ((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)) {
-                    PacketDistributor.sendToServer(new SelectionInspectionPacket(SelectionMode.getCurrentMode().ordinal()));
+                    ClientPlayNetworking.send(new SelectionInspectionPacket(SelectionMode.getCurrentMode().ordinal()));
                 }
-                PacketDistributor.sendToServer(new KeybindPacket((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)));
+                ClientPlayNetworking.send(new KeybindPacket((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)));
             }
 
             if (TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.consumeClick()) { keyActivated = !keyActivated; }
@@ -131,10 +122,9 @@ public class KeybindHandler {
         }
     }
 
-    @SubscribeEvent
-    public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
-        if (!DISABLE_SCROLL.get() && (((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)) && event.getScrollDeltaY() != 0)) {
-            if (event.getScrollDeltaY() > 0) {
+    public static boolean onMouseScroll(double scrollDeltaX, double scrollDeltaY) {
+        if (!DISABLE_SCROLL.get() && (((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)) && scrollDeltaY != 0)) {
+            if (scrollDeltaY > 0) {
                 SelectionMode.nextMode();
             } else {
                 SelectionMode.previousMode();
@@ -146,7 +136,8 @@ public class KeybindHandler {
             Minecraft.getInstance().player.displayClientMessage(
                     Component.literal(Component.translatable("excavein.overlay.current_mode").getString().replaceAll("_", " ") + currentMode.getName()), !DISPLAY_SELECTION_CHAT.get());
 
-            event.setCanceled(true);
+            return true;
         }
+        return false;
     }
 }

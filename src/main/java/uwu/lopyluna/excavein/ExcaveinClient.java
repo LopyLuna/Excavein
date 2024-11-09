@@ -1,21 +1,23 @@
 package uwu.lopyluna.excavein;
 
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.common.NeoForge;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import uwu.lopyluna.excavein.client.BlockOutlineRenderer;
 import uwu.lopyluna.excavein.client.KeybindHandler;
+import uwu.lopyluna.excavein.client.ModeOverlay;
 
-public class ExcaveinClient {
+public class ExcaveinClient implements ClientModInitializer {
 
-    public static void client(IEventBus modEventBus) {
-        modEventBus.addListener(ExcaveinClient::clientSetup);
-        modEventBus.addListener(KeybindHandler::register);
+    @Override
+    public void onInitializeClient() {
+        KeybindHandler.register();
+        //TODO: Hope this is the right event
+        WorldRenderEvents.BLOCK_OUTLINE.register(BlockOutlineRenderer::onRenderWorld);
+        ClientTickEvents.END_CLIENT_TICK.register(BlockOutlineRenderer::onClientTick);
 
-    }
-
-    private static void clientSetup(final FMLClientSetupEvent event) {
-        NeoForge.EVENT_BUS.register(KeybindHandler.class);
-        NeoForge.EVENT_BUS.register(BlockOutlineRenderer.class);
+        HudRenderCallback.EVENT.register(ModeOverlay::onRenderGuiOverlay);
+        ClientTickEvents.END_CLIENT_TICK.register(ModeOverlay::onClientTick);
     }
 }

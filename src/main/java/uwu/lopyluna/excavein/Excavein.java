@@ -1,36 +1,25 @@
 package uwu.lopyluna.excavein;
 
 import com.mojang.logging.LogUtils;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.networking.v1.;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.neoforged.fml.config.ModConfig;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.registration.HandlerThread;
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import org.slf4j.Logger;
 import uwu.lopyluna.excavein.config.ClientConfig;
 import uwu.lopyluna.excavein.config.ServerConfig;
 import uwu.lopyluna.excavein.network.*;
+import uwu.lopyluna.excavein.tracker.BlockPositionTracker;
+import uwu.lopyluna.excavein.tracker.CooldownTracker;
 
 @SuppressWarnings("unused")
-@Mod(Excavein.MOD_ID)
-public class Excavein {
+public class Excavein implements ModInitializer {
     public static final String NAME = "ExcaVein";
     public static final String MOD_ID = "excavein";
     public static final String VERSION = "1.0a.Release";
     public static final Logger LOGGER = LogUtils.getLogger();
-
-    public Excavein(IEventBus modEventBus, Dist dist, ModContainer container) {
-
-        container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_SPEC);
-        container.registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_SPEC);
-
-        if (FMLEnvironment.dist.isClient()) ExcaveinClient.client(modEventBus);
-        modEventBus.addListener(this::onRegisterPayloadHandlers);
-    }
 
     private void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(MOD_ID);
@@ -42,4 +31,19 @@ public class Excavein {
         registrar.playToClient(IsBreakingPacket.TYPE, IsBreakingPacket.CODEC, IsBreakingPacket::handle);
     }
 
+    @Override
+    public void onInitialize() {
+        container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_SPEC);
+        container.registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_SPEC);
+
+        if (FMLEnvironment.dist.isClient()) ExcaveinClient.client(modEventBus);
+        modEventBus.addListener(this::onRegisterPayloadHandlers);
+
+        ServerTickEvents.END_WORLD_TICK.register(CooldownTracker::onWorldTick);
+        ServerPlayConnectionEvents.JOIN.register(CooldownTracker::onPlayerLogin);
+
+        ServerTickEvents.END_WORLD_TICK.register(BlockPositionTracker::onWorldTick);
+
+        PlayerBlockBreakEvents.BEFORE.register(BlockPositionTracker::onBlockBreak);
+    }
 }

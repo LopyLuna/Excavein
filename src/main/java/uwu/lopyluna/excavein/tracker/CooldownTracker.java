@@ -1,11 +1,11 @@
 package uwu.lopyluna.excavein.tracker;
 
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.util.Mth;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.minecraft.world.level.Level;
 import uwu.lopyluna.excavein.Utils;
 
 import java.util.HashMap;
@@ -16,7 +16,6 @@ import static uwu.lopyluna.excavein.config.ServerConfig.SELECTION_ADD_COOLDOWN;
 import static uwu.lopyluna.excavein.config.ServerConfig.SELECTION_COOLDOWN;
 
 @SuppressWarnings("unused")
-@EventBusSubscriber
 public class CooldownTracker {
     private static final Map<UUID, Integer> playerCooldowns = new HashMap<>();
 
@@ -36,8 +35,7 @@ public class CooldownTracker {
         playerCooldowns.putIfAbsent(player.getUUID(), 0);
     }
 
-    @SubscribeEvent
-    public static void onWorldTick(ServerTickEvent.Post event) {
+    public static void onWorldTick(Level level) {
         for (Map.Entry<UUID, Integer> entry : playerCooldowns.entrySet()) {
             int remainingTicks = entry.getValue();
             if (remainingTicks > 0) {
@@ -46,9 +44,7 @@ public class CooldownTracker {
         }
     }
 
-    @SubscribeEvent
-    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        ServerPlayer player = (ServerPlayer) event.getEntity();
-        playerCooldowns.putIfAbsent(player.getUUID(), 0);
+    public static void onPlayerLogin(ServerGamePacketListenerImpl handler, PacketSender sender, MinecraftServer server) {
+        playerCooldowns.putIfAbsent(handler.player.getUUID(), 0);
     }
 }

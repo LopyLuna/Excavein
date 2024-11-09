@@ -1,5 +1,6 @@
 package uwu.lopyluna.excavein.tracker;
 
+import net.fabricmc.fabric.api.entity.FakePlayer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -52,7 +53,6 @@ import static uwu.lopyluna.excavein.tracker.CooldownTracker.getCoolDownCheck;
 import static uwu.lopyluna.excavein.tracker.CooldownTracker.getRemainingCooldown;
 
 @SuppressWarnings("unused")
-@EventBusSubscriber
 public class BlockPositionTracker {
     public static Set<BlockPos> currentBlocksPositions = new HashSet<>();
     public static Set<BlockPos> savedBlockPositions = new HashSet<>();
@@ -88,8 +88,7 @@ public class BlockPositionTracker {
         currentTickDelay = MAX_TICK_DELAY;
     }
 
-    @SubscribeEvent
-    public static void onWorldTick(LevelTickEvent.Post event) {
+    public static void onWorldTick(Level level) {
         if (player != null && cursorRayTrace != null) {
             PacketDistributor.sendToPlayer(player, new IsBreakingPacket(isBreaking));
             BlockPos cursorBlockPos = cursorRayTrace.getBlockPos();
@@ -166,10 +165,9 @@ public class BlockPositionTracker {
     }
 
 
-    @SubscribeEvent
-    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+    public static boolean onBlockBreak(Level world, Player player, BlockPos pos, BlockState state, BlockEntity entity) {
         if (isBreaking && WAIT_TILL_BROKEN.get()) {
-            event.setCanceled(true);
+            return false;
         } else if (DELAY_BETWEEN_BREAK.get() > 0 && (!isBreaking || !WAIT_TILL_BROKEN.get()) && flag()) {
             blocksToBreak.addAll(savedBlockPositions);
             isBreaking = true;
@@ -177,6 +175,7 @@ public class BlockPositionTracker {
         } else if (DELAY_BETWEEN_BREAK.get() == 0 && !isBreaking && flag()) {
             performBlockBreak();
         }
+        return true;
     }
 
     public static boolean isBreaking;
