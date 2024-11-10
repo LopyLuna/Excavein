@@ -22,6 +22,7 @@ public class ExcaveinClient implements ClientModInitializer {
     public void onInitializeClient() {
         ConfigScreenFactoryRegistry.INSTANCE.register(MOD_ID, ConfigurationScreen::new);
 
+        registerClientPackets();
         KeybindHandler.register();
         WorldRenderEvents.BLOCK_OUTLINE.register(BlockOutlineRenderer::onRenderWorld);
         ClientTickEvents.END_CLIENT_TICK.register(BlockOutlineRenderer::onClientTick);
