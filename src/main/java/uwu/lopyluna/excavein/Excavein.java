@@ -6,6 +6,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.neoforged.fml.config.ModConfig;
@@ -24,6 +25,12 @@ public class Excavein implements ModInitializer {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private void registerPackets() {
+        PayloadTypeRegistry.playC2S().register(KeybindPacket.TYPE, KeybindPacket.CODEC);
+        PayloadTypeRegistry.playC2S().register(SelectionInspectionPacket.TYPE, SelectionInspectionPacket.CODEC);
+        PayloadTypeRegistry.playS2C().register(SelectionOutlinePacket.TYPE, SelectionOutlinePacket.CODEC);
+        PayloadTypeRegistry.playS2C().register(CooldownPacket.TYPE, CooldownPacket.CODEC);
+        PayloadTypeRegistry.playS2C().register(IsBreakingPacket.TYPE, IsBreakingPacket.CODEC);
+
         ServerPlayNetworking.registerGlobalReceiver(KeybindPacket.TYPE, KeybindPacket::handle);
         ServerPlayNetworking.registerGlobalReceiver(SelectionInspectionPacket.TYPE, SelectionInspectionPacket::handle);
         ClientPlayNetworking.registerGlobalReceiver(SelectionOutlinePacket.TYPE, SelectionOutlinePacket::handle);

@@ -195,7 +195,7 @@ public class Utils {
                             BlockState neighborState = world.getBlockState(neighbor);
                             if (!checkedBlocks.contains(neighbor) && isBlockWhitelisted(neighborState) && isCorrectSpeeds(player, world, neighbor, startPos)) {
                                 toCheck.add(neighbor);
-                            } else if (!checkedBlocks.contains(neighbor) && player.hasCorrectToolForDrops(neighborState) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
+                            } else if (neighbor != null && !checkedBlocks.contains(neighbor) && player.hasCorrectToolForDrops(neighborState) && isBlockInTag(neighborState, getBlockTagFromTool(player.getMainHandItem()))) {
                                 toCheck.add(neighbor);
                             }
                         }

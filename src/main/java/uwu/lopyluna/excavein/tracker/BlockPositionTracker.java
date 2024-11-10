@@ -24,7 +24,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.GameMasterBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -32,7 +31,7 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import uwu.lopyluna.excavein.BlockAccessor;
+import uwu.lopyluna.excavein.CapturedDrops;
 import uwu.lopyluna.excavein.network.CooldownPacket;
 import uwu.lopyluna.excavein.network.IsBreakingPacket;
 
@@ -60,8 +59,6 @@ public class BlockPositionTracker {
     public static boolean keyIsDown = false;
     public static boolean save = false;
     private static boolean simpleCheck = false;
-
-    private static final Block block = new Block(BlockBehaviour.Properties.of());
 
     public static void setSavedBlocks(Set<BlockPos> blocks) {
         savedBlockPositions = blocks;
@@ -317,12 +314,12 @@ public class BlockPositionTracker {
     }
 
     private static void beginCapturingDrops() {
-        ((BlockAccessor) (block)).excavein$capturedDrops(new ArrayList<>());
+        CapturedDrops.capturedDrops = new ArrayList<>();
     }
 
     private static List<ItemEntity> stopCapturingDrops() {
-        List<ItemEntity> drops = ((BlockAccessor) (block)).excavein$capturedDrops();
-        ((BlockAccessor) (block)).excavein$capturedDrops(null);
+        List<ItemEntity> drops = CapturedDrops.capturedDrops;
+        CapturedDrops.capturedDrops = null;
         return drops;
     }
 
@@ -338,10 +335,10 @@ public class BlockPositionTracker {
         if (!pLevel.isClientSide && !pStack.isEmpty() && pLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)) {
             ItemEntity itementity = pItemEntitySupplier.get();
             itementity.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
-            List<ItemEntity> stacks = ((BlockAccessor) (block)).excavein$capturedDrops();
+            List<ItemEntity> stacks = CapturedDrops.capturedDrops;
             if (stacks != null) {
                 stacks.add(itementity);
-                ((BlockAccessor) (block)).excavein$capturedDrops(stacks);
+                CapturedDrops.capturedDrops = stacks;
             } else {
                 pLevel.addFreshEntity(itementity);
             }

@@ -17,14 +17,15 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import uwu.lopyluna.excavein.BlockAccessor;
 import uwu.lopyluna.excavein.tracker.BlockPositionTracker;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static uwu.lopyluna.excavein.CapturedDrops.capturedDrops;
+
 @Mixin(Block.class)
-public class BlockMixin implements BlockAccessor {
+public class BlockMixin {
 
     @Inject(
             method = "dropResources(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/item/ItemStack;)V",
@@ -63,9 +64,6 @@ public class BlockMixin implements BlockAccessor {
     }
 
     @Unique
-    private static List<ItemEntity> capturedDrops = null;
-
-    @Unique
     private static void beginCapturingDrops() {
         capturedDrops = new ArrayList<>();
     }
@@ -75,15 +73,5 @@ public class BlockMixin implements BlockAccessor {
         List<ItemEntity> drops = capturedDrops;
         capturedDrops = null;
         return drops;
-    }
-
-    @Override
-    public void excavein$capturedDrops(List<ItemEntity> drops) {
-        capturedDrops = drops;
-    }
-
-    @Override
-    public List<ItemEntity> excavein$capturedDrops() {
-        return capturedDrops;
     }
 }
