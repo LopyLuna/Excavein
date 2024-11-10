@@ -13,7 +13,6 @@ public class ExcaveinClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         KeybindHandler.register();
-        //TODO: Hope this is the right event
         WorldRenderEvents.BLOCK_OUTLINE.register(BlockOutlineRenderer::onRenderWorld);
         ClientTickEvents.END_CLIENT_TICK.register(BlockOutlineRenderer::onClientTick);
 

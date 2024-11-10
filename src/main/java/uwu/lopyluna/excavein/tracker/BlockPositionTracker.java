@@ -269,10 +269,6 @@ public class BlockPositionTracker {
                     player.awardStat(Stats.ITEM_USED.get(itemstack.getItem()));
                 }
                 playerDestroy(block, level, player, pPos, blockstate, blockentity, itemstack);
-                if (itemstack.isEmpty() && !itemstack1.isEmpty()) {
-                    //TODO: is this even needed?
-                    //EventHooks.onPlayerDestroyItem(player, itemstack, InteractionHand.MAIN_HAND);
-                }
             }
         }
     }
