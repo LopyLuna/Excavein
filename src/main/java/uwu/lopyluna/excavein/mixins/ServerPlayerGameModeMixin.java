@@ -2,7 +2,6 @@ package uwu.lopyluna.excavein.mixins;
 
 import net.fabricmc.fabric.api.entity.FakePlayer;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
@@ -95,7 +94,6 @@ public class ServerPlayerGameModeMixin {
         if (REQUIRES_FUEL_ITEM.get() && !pPlayer.isCreative() && Utils.findInInventory(pPlayer) == 0)
             pPlayer.displayClientMessage(Component.translatable("excavein.warning.require_fuel").withStyle(ChatFormatting.RED), true);
 
-        /*
         if (valid) {
             InteractionResult resulting = excavein$useItemOn(pPlayer, pLevel, pStack, pHand, pHitResult.withPosition(pos), pLevel.getBlockState(pos), pos);
 
@@ -113,10 +111,8 @@ public class ServerPlayerGameModeMixin {
                 }
             }
         }
-         */
     }
 
-    /*
     @Unique
     public InteractionResult excavein$useItemOn(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand, BlockHitResult pHitResult, BlockState blockstate, BlockPos blockpos) {
         if (!blockstate.getBlock().isEnabled(pLevel.enabledFeatures())) {
@@ -128,14 +124,10 @@ public class ServerPlayerGameModeMixin {
         if (eventResult.consumesAction()) return eventResult;
 
         UseOnContext useoncontext = new UseOnContext(pPlayer, pHand, pHitResult);
-        if (!pPlayer.getItemInHand(pHand).isEmpty()) {
-            InteractionResult result = pStack.onItemUseFirst(useoncontext);
-            if (result != InteractionResult.PASS) return result;
-        }
         boolean flag = !pPlayer.getMainHandItem().isEmpty() || !pPlayer.getOffhandItem().isEmpty();
-        boolean flag1 = (pPlayer.isSecondaryUseActive() && flag) && !(pPlayer.getMainHandItem().doesSneakBypassUse(pLevel, blockpos, pPlayer) && pPlayer.getOffhandItem().doesSneakBypassUse(pLevel, blockpos, pPlayer));
+        boolean flag1 = (pPlayer.isSecondaryUseActive() && flag);
         ItemStack itemstack = pStack.copy();
-        if (event.getUseBlock().isTrue() || (event.getUseBlock().isDefault() && !flag1)) {
+        if (true) {
             ItemInteractionResult iteminteractionresult = blockstate.useItemOn(pPlayer.getItemInHand(pHand), pLevel, pPlayer, pHand, pHitResult);
             if (ITEM_INTERACTION.get()) {
                 if (iteminteractionresult.consumesAction()) {
@@ -154,8 +146,8 @@ public class ServerPlayerGameModeMixin {
             }
         }
 
-        if (event.getUseItem().isTrue() || (!pStack.isEmpty() && !pPlayer.getCooldowns().isOnCooldown(pStack.getItem()))) {
-            if (event.getUseItem().isFalse()) return InteractionResult.PASS;
+        if (!itemstack.isEmpty() || (!pStack.isEmpty() && !pPlayer.getCooldowns().isOnCooldown(pStack.getItem()))) {
+            if (itemstack.isEmpty()) return InteractionResult.PASS;
             InteractionResult interactionresult1;
             if (this.isCreative()) {
                 int i = pStack.getCount();
@@ -175,8 +167,6 @@ public class ServerPlayerGameModeMixin {
         }
 
     }
-
-     */
 
     @Shadow
     public boolean isCreative() {
