@@ -11,8 +11,8 @@ import uwu.lopyluna.excavein.Utils;
 
 import java.awt.*;
 
+import static uwu.lopyluna.excavein.Utils.OffsetTime.SECONDS;
 import static uwu.lopyluna.excavein.Utils.ticksToTime;
-import static uwu.lopyluna.excavein.Utils.OffsetTime.*;
 import static uwu.lopyluna.excavein.client.BlockOutlineRenderer.*;
 import static uwu.lopyluna.excavein.client.KeybindHandler.SELECTION_ACTIVATION;
 import static uwu.lopyluna.excavein.client.KeybindHandler.keyActivated;
