@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import uwu.lopyluna.excavein.tracker.BlockPositionTracker;
 
@@ -61,6 +62,17 @@ public class BlockMixin {
     private static boolean onPopResourceWrap(Level instance, Entity entity, Operation<Boolean> original) {
         if (capturedDrops != null) capturedDrops.add((ItemEntity) entity);
         return original.call(instance, entity);
+    }
+
+    @ModifyArg(
+            method = "tryDropExperience",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/world/level/block/Block;popExperience(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;I)V"
+            ),
+            index = 2
+    )
+    private int onPopExperienceWrap(int amount, @Local(argsOnly = true) ItemStack heldItem, @Local(argsOnly = true) ServerLevel level, @Local(argsOnly = true) BlockPos pos) {
+        return BlockPositionTracker.onExperienceDrop(level, pos, amount, heldItem);
     }
 
     @Unique

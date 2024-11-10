@@ -11,9 +11,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.piglin.PiglinAi;
 import net.minecraft.world.entity.player.Player;
@@ -28,14 +30,17 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import uwu.lopyluna.excavein.CapturedDrops;
+import uwu.lopyluna.excavein.Excavein;
 import uwu.lopyluna.excavein.network.CooldownPacket;
 import uwu.lopyluna.excavein.network.IsBreakingPacket;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import static uwu.lopyluna.excavein.Utils.*;
@@ -141,12 +146,6 @@ public class BlockPositionTracker {
     public static void onBlockDrop(Entity breaker, List<ItemEntity> drops) {
         if (breaker instanceof Player pPlayer && pPlayer.is(player) && flag()) {
             Vec3 pos = player.position();
-            if (BLOCKS_AT_PLAYER.get()) {
-                /* //TODO: experience shit
-                pPlayer.giveExperiencePoints(event.getDroppedExperience());
-                event.setDroppedExperience(0);
-                 */
-            }
             drops.forEach(itemEntity -> {
                 itemEntity.setPickUpDelay((player.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
                 if (BLOCKS_AT_PLAYER.get()) {
@@ -154,6 +153,14 @@ public class BlockPositionTracker {
                 }
             });
         }
+    }
+
+    public static int onExperienceDrop(ServerLevel level, BlockPos pos, int amount, ItemStack heldItem) {
+        if (BLOCKS_AT_PLAYER.get() && flag() && player != null) {
+            player.giveExperiencePoints(amount);
+            return 0;
+        }
+        return amount;
     }
 
 
