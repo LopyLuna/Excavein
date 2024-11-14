@@ -18,6 +18,8 @@ import uwu.lopyluna.excavein.Excavein;
 import uwu.lopyluna.excavein.network.KeybindPacket;
 import uwu.lopyluna.excavein.network.SelectionInspectionPacket;
 
+import java.util.UUID;
+
 import static uwu.lopyluna.excavein.client.SelectionMode.setMode;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
 
@@ -100,10 +102,14 @@ public class KeybindHandler {
             tickCounter++;
             if (tickCounter >= TICK_INTERVAL) {
                 tickCounter = 0;
-                if ((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)) {
-                    PacketDistributor.sendToServer(new SelectionInspectionPacket(SelectionMode.getCurrentMode().ordinal()));
+                if (Minecraft.getInstance().player != null) {
+                    UUID uuid = Minecraft.getInstance().player.getUUID();
+                    if ((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)) {
+                        if (SelectionMode.getCurrentMode() != null)
+                            PacketDistributor.sendToServer(new SelectionInspectionPacket(SelectionMode.getCurrentMode().ordinal(), uuid));
+                    }
+                    PacketDistributor.sendToServer(new KeybindPacket((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated), uuid));
                 }
-                PacketDistributor.sendToServer(new KeybindPacket((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)));
             }
 
             if (TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.consumeClick()) { keyActivated = !keyActivated; }

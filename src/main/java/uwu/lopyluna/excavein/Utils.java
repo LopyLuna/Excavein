@@ -34,7 +34,7 @@ public class Utils {
     public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("vein_whitelist"));
 
     public static TagKey<Block> getBlockTagFromTool(ItemStack stack) {
-        if (stack.is(Tags.Items.TOOLS)) {
+        if (stack != null && stack.is(Tags.Items.TOOLS)) {
             if ((stack.is(universalTag("tools/axes")) || stack.is(ItemTags.AXES)) || stack.getItem() instanceof AxeItem)
                 return BlockTags.MINEABLE_WITH_AXE;
             if ((stack.is(universalTag("tools/pickaxes")) || stack.is(ItemTags.PICKAXES)) || stack.getItem() instanceof PickaxeItem)
@@ -48,15 +48,14 @@ public class Utils {
     }
 
     public static boolean getValidTools(ItemStack stack) {
-        return stack.isDamageableItem() || stack.is(Tags.Items.TOOLS) || stack.getItem() instanceof AxeItem || stack.getItem() instanceof PickaxeItem || stack.getItem() instanceof ShovelItem || stack.getItem() instanceof HoeItem ||
+        return stack != null && (stack.isDamageableItem() || stack.is(Tags.Items.TOOLS) || stack.getItem() instanceof AxeItem || stack.getItem() instanceof PickaxeItem || stack.getItem() instanceof ShovelItem || stack.getItem() instanceof HoeItem ||
                 stack.is(universalTag("tools/axes")) || stack.is(universalTag("tools/pickaxes")) || stack.is(universalTag("tools/shovels")) || stack.is(universalTag("tools/hoes")) ||
-                stack.is(ItemTags.AXES) || stack.is(ItemTags.PICKAXES) || stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.HOES)
+                stack.is(ItemTags.AXES) || stack.is(ItemTags.PICKAXES) || stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.HOES))
                 ;
     }
 
     public static boolean isBlockWhitelisted(BlockState currentState) {
         boolean isWhitelisted = currentState.is(VEIN_MINE_WHITELIST);
-
         return ServerConfig.INVERT_WHITELIST.get() != isWhitelisted;
     }
 
@@ -68,17 +67,19 @@ public class Utils {
                 veinTags.add(blockTag);
             }
         }
-        return veinTags;
+        return state != null ? veinTags : new ArrayList<>();
     }
 
     private static boolean isBlockInTag(BlockState state, TagKey<Block> tag) {
-        return state.is(tag);
+        return state != null && tag != null && state.is(tag);
     }
 
     private static boolean isBlockInTag(BlockState startState, BlockState currentState, List<TagKey<Block>> tags) {
-        for (TagKey<Block> tag : tags) {
-            if (startState.is(tag) && currentState.is(tag)) {
-                return true;
+        if (tags != null && !tags.isEmpty() && startState != null && currentState != null) {
+            for (TagKey<Block> tag : tags) {
+                if (startState.is(tag) && currentState.is(tag)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -140,7 +141,7 @@ public class Utils {
     }
 
     public static Set<BlockPos> selectionInspection(Level world, Player pPlayer, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, SelectionMode mode) {
-        if (mode == null)
+        if (mode == null || pPlayer == null || world == null || rayTrace == null || eyePos == null)
             return new HashSet<>();
         if (!(pPlayer instanceof ServerPlayer player))
             return new HashSet<>();

@@ -63,7 +63,8 @@ public class BlockPositionTracker {
 
     private static int currentBreakDelay = 0;
 
-    public static ServerPlayer player;
+    private static ServerPlayer player;
+    public static UUID uuid;
     public static BlockHitResult cursorRayTrace;
     public static boolean keyIsDown = false;
     public static boolean save = false;
@@ -80,16 +81,22 @@ public class BlockPositionTracker {
         currentBlocksPositions = blocks;
     }
 
-    public static void update(boolean SelectionKeyIsDown) {
+    public static void update(boolean SelectionKeyIsDown, UUID playerID) {
         keyIsDown = SelectionKeyIsDown;
+        uuid = playerID;
     }
 
     public static void resetTick() {
         currentTickDelay = MAX_TICK_DELAY;
     }
 
+    public static Player verifyPlayer(Player player) {
+        return player != null && uuid != null && player.getUUID().equals(uuid) ? player : null;
+    }
+
     @SubscribeEvent
     public static void onWorldTick(LevelTickEvent.Post event) {
+        ServerPlayer player = (ServerPlayer) verifyPlayer(BlockPositionTracker.player);
         if (player != null && cursorRayTrace != null) {
             PacketDistributor.sendToPlayer(player, new IsBreakingPacket(isBreaking));
             BlockPos cursorBlockPos = cursorRayTrace.getBlockPos();
@@ -114,7 +121,7 @@ public class BlockPositionTracker {
             if (DELAY_BETWEEN_BREAK.get() > 0 && isBreaking)
                 if (currentBreakDelay == 0) {
                     for (int i = 0; i < BLOCK_PER_BREAK.get(); i++)
-                        performBlockBreakTick();
+                        performBlockBreakTick(player);
                     currentBreakDelay = DELAY_BETWEEN_BREAK.get();
                 }
             if (currentBreakDelay > 0)
@@ -122,7 +129,7 @@ public class BlockPositionTracker {
 
 
             if (MINING_SPEED_NERF_MAX.get() != 0 && savedBlockPositions != null) {
-                harvestCheck(!flag());
+                harvestCheck(!flag(), player);
                 if (!simpleCheck) simpleCheck = true;
             } else if (simpleCheck) {
                 AttributeInstance speed = player.getAttribute(Attributes.BLOCK_BREAK_SPEED);
@@ -137,7 +144,7 @@ public class BlockPositionTracker {
     public static Set<BlockPos> blocksToBreak = new HashSet<>();
     static int i = 0;
 
-    public static void harvestCheck(boolean reset) {
+    public static void harvestCheck(boolean reset, Player player) {
         AttributeInstance speed = player.getAttribute(Attributes.BLOCK_BREAK_SPEED);
         double v = calculatePercentage(savedBlockPositions.size(), SELECTION_MAX_BLOCK.get(), MINING_SPEED_NERF_MIN.get(), MINING_SPEED_NERF_MAX.get(), true);
         assert speed != null;
@@ -150,7 +157,7 @@ public class BlockPositionTracker {
 
     @SubscribeEvent
     public static void onBlockDrop(BlockDropsEvent event) {
-        if (event.getBreaker() instanceof Player pPlayer && pPlayer.is(player) && flag()) {
+        if (event.getBreaker() instanceof Player pPlayer && verifyPlayer(BlockPositionTracker.player).is(pPlayer)) {
             Vec3 pos = player.position();
             if (BLOCKS_AT_PLAYER.get()) {
                 pPlayer.giveExperiencePoints(event.getDroppedExperience());
@@ -168,30 +175,34 @@ public class BlockPositionTracker {
 
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (isBreaking && WAIT_TILL_BROKEN.get()) {
-            event.setCanceled(true);
-        } else if (DELAY_BETWEEN_BREAK.get() > 0 && (!isBreaking || !WAIT_TILL_BROKEN.get()) && flag()) {
-            blocksToBreak.addAll(savedBlockPositions);
-            isBreaking = true;
-            save = true;
-        } else if (DELAY_BETWEEN_BREAK.get() == 0 && !isBreaking && flag()) {
-            performBlockBreak();
+        if (verifyPlayer(BlockPositionTracker.player).is(event.getPlayer())) {
+            if (isBreaking && WAIT_TILL_BROKEN.get()) {
+                event.setCanceled(true);
+            } else if (DELAY_BETWEEN_BREAK.get() > 0 && (!isBreaking || !WAIT_TILL_BROKEN.get()) && flag()) {
+                blocksToBreak.addAll(savedBlockPositions);
+                isBreaking = true;
+                save = true;
+            } else if (DELAY_BETWEEN_BREAK.get() == 0 && !isBreaking && flag()) {
+                performBlockBreak(event.getPlayer());
+            }
         }
     }
 
     public static boolean isBreaking;
 
-    public static void performBlockBreakTick() {
-        if (!blocksToBreak.isEmpty()) {
-            ServerLevel level = player.serverLevel();
+    public static void performBlockBreakTick(ServerPlayer pPlayer) {
+        if (verifyPlayer(BlockPositionTracker.player).is(pPlayer)) {
+            if (!blocksToBreak.isEmpty()) {
+                ServerLevel level = pPlayer.serverLevel();
 
-            BlockPos pos = blocksToBreak.stream().toList().get(getPos(blocksToBreak));
-            if (blockBreak(level, pos)) {
-                blocksToBreak.remove(pos);
-            } else reset();
+                BlockPos pos = blocksToBreak.stream().toList().get(getPos(blocksToBreak));
+                if (blockBreak(level, pos)) {
+                    blocksToBreak.remove(pos);
+                } else reset();
 
-            if (blocksToBreak.isEmpty())
-                reset();
+                if (blocksToBreak.isEmpty())
+                    reset();
+            }
         }
     }
 
@@ -206,11 +217,13 @@ public class BlockPositionTracker {
         return 0;
     }
 
-    public static void performBlockBreak() {
-        isBreaking = true;
+    public static void performBlockBreak(Player pPlayer) {
+        if (verifyPlayer(BlockPositionTracker.player).is(pPlayer)) {
+            isBreaking = true;
 
-        savedBlockPositions.forEach(pos -> blockBreak(player.serverLevel(), pos));
-        reset();
+            savedBlockPositions.forEach(pos -> blockBreak(player.serverLevel(), pos));
+            reset();
+        }
     }
 
     public static void reset() {
@@ -231,7 +244,7 @@ public class BlockPositionTracker {
     }
 
     public static boolean blockBreak(ServerLevel level, BlockPos pos) {
-        if (pos == null)
+        if (pos == null || player == null)
             return false;
 
         boolean valid = (!REQUIRES_XP.get() || player.isCreative() || player.totalExperience != 0) &&

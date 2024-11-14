@@ -53,13 +53,15 @@ public class ServerPlayerGameModeMixin {
 
     @Unique
     private InteractionResult excavein$performInteraction(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand, BlockHitResult pHitResult) {
-        if ((BLOCK_PLACING.get() && (pStack.getItem() instanceof BlockItem || !getValidTools(pStack))) || (ITEM_INTERACTION.get() && (!(pStack.getItem() instanceof BlockItem) || getValidTools(pStack))) || (HAND_INTERACTION.get() && pStack.isEmpty())) {
-            if ((!(pPlayer instanceof FakePlayer) && keyIsDown) && (CooldownTracker.isCooldownNotActive(pPlayer) && !isBreaking) && !savedBlockPositions.isEmpty()) {
-                savedBlockPositions.forEach(pos -> excavein$performInteraction(pPlayer, pLevel, pStack, pHand, pHitResult, pos)
-                );
-                excavein$reset(pPlayer);
-                CooldownTracker.resetCooldown(pPlayer, BLOCK_PLACING.get() && !pPlayer.isCreative() ? excavein$i : 0);
-                return excavein$result.get();
+        if (pPlayer != null && pLevel != null && pStack != null && pHand != null && pHitResult != null) {
+            if ((BLOCK_PLACING.get() && (pStack.getItem() instanceof BlockItem || !getValidTools(pStack))) || (ITEM_INTERACTION.get() && (!(pStack.getItem() instanceof BlockItem) || getValidTools(pStack))) || (HAND_INTERACTION.get() && pStack.isEmpty())) {
+                if ((!(pPlayer instanceof FakePlayer) && keyIsDown) && (CooldownTracker.isCooldownNotActive(pPlayer) && !isBreaking) && !savedBlockPositions.isEmpty()) {
+                    savedBlockPositions.forEach(pos -> excavein$performInteraction(pPlayer, pLevel, pStack, pHand, pHitResult, pos)
+                    );
+                    excavein$reset(pPlayer);
+                    CooldownTracker.resetCooldown(pPlayer, BLOCK_PLACING.get() && !pPlayer.isCreative() ? excavein$i : 0);
+                    return excavein$result.get();
+                }
             }
         }
         excavein$result.set(InteractionResult.FAIL);
