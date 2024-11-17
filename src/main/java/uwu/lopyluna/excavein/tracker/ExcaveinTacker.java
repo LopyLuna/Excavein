@@ -8,7 +8,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import uwu.lopyluna.excavein.data.SelectionPlayerData;
-import uwu.lopyluna.excavein.entries.ExcaveinEntries;
 
 import java.util.HashMap;
 import java.util.List;
@@ -20,10 +19,10 @@ import java.util.UUID;
 public class ExcaveinTacker {
     private static final Map<UUID, SelectionPlayerData> selectionDataMap = new HashMap<>();
 
-    public static void update(Player player, UUID uuid, boolean keyPressed, int switchMode) {
+    public static void update(ServerPlayer player, UUID uuid, boolean keyPressed, int switchMode) {
         if (player != null && uuid != null && player.getUUID().equals(uuid)) {
             if (!selectionDataMap.containsKey(uuid))
-                selectionDataMap.put(uuid, new SelectionPlayerData(player.level(), uuid));
+                selectionDataMap.put(uuid, new SelectionPlayerData(player.serverLevel(), uuid));
 
             SelectionPlayerData data = getSelectionData(uuid);
             if (data != null && data.getPlayer() != null && data.getLevel() != null && data.getPlayerUUID() != null) {
@@ -38,6 +37,21 @@ public class ExcaveinTacker {
                 } else if (switchMode == 1) {
                     data.previousShapeMode();
                 }
+            }
+        }
+    }
+
+    public static void updateKey(ServerPlayer player, UUID uuid, boolean keyPressed, int id, String type) {
+        if (player != null && uuid != null && player.getUUID().equals(uuid)) {
+            if (!selectionDataMap.containsKey(uuid))
+                selectionDataMap.put(uuid, new SelectionPlayerData(player.serverLevel(), uuid));
+
+            SelectionPlayerData data = getSelectionData(uuid);
+            if (data != null && data.getPlayer() != null && data.getLevel() != null && data.getPlayerUUID() != null) {
+                if (type.equals("shape") && keyPressed)
+                    data.setShapeMode(id);
+                if (type.equals("modifier") && keyPressed)
+                    data.setModifierMode(id);
             }
         }
     }
@@ -59,15 +73,6 @@ public class ExcaveinTacker {
             if (selectionData != null && selectionData.getPlayer() != null && selectionData.getLevel() != null && selectionData.getPlayerUUID() != null) {
                 selectionData.tick();
                 selectionData.updateCheck();
-
-                ExcaveinEntries.getShapeEntries().forEach((integer, shapeEntry) -> {
-                    if (shapeEntry.getKeybind().consumeClick())
-                        selectionData.setShapeMode(integer);
-                });
-                ExcaveinEntries.getShapeModifierEntries().forEach((integer, modifierEntry) -> {
-                    if (modifierEntry.getKeybind().consumeClick())
-                        selectionData.setModifierMode(integer);
-                });
             }
         });
     }

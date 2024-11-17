@@ -1,6 +1,5 @@
 package uwu.lopyluna.excavein.entries;
 
-import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.ResourceLocation;
 import uwu.lopyluna.excavein.shapes.Shape;
 
@@ -10,20 +9,20 @@ public class ShapeEntry<T extends Shape> {
     ResourceLocation id;
     T shape;
     String lang;
-    KeyMapping keybind;
     int index;
+    boolean hasKeybind;
 
-    public ShapeEntry(ResourceLocation id, T shape, String lang, KeyMapping keybind, int index) {
+    public ShapeEntry(ResourceLocation id, T shape, String lang, boolean keybind, int index) {
         this.id = id;
         this.shape = shape;
         this.lang = lang;
-        this.keybind = keybind;
         this.index = index;
+        this.hasKeybind = keybind;
         shapeEntries.put(index, this);
     }
 
-    public KeyMapping getKeybind() {
-        return keybind;
+    public boolean hasKeybind() {
+        return hasKeybind;
     }
 
     public int getIndex() {

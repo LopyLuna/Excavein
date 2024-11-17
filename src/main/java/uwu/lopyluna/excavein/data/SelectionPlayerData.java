@@ -4,6 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -17,6 +18,8 @@ import uwu.lopyluna.excavein.config.ServerConfig;
 import uwu.lopyluna.excavein.entries.ExcaveinEntries;
 import uwu.lopyluna.excavein.entries.ShapeEntry;
 import uwu.lopyluna.excavein.entries.ShapeModifierEntry;
+import uwu.lopyluna.excavein.packets.ClientHelperBoolsPacket;
+import uwu.lopyluna.excavein.packets.ClientHelperModesPacket;
 import uwu.lopyluna.excavein.packets.SelectedBlocksPacket;
 import uwu.lopyluna.excavein.shape_modifiers.ShapeModifier;
 import uwu.lopyluna.excavein.shapes.Shape;
@@ -35,26 +38,25 @@ import static uwu.lopyluna.excavein.utils.Utils.findInInventory;
 public class SelectionPlayerData {
 
     private final BreakingUtils breakingUtils;
-    private final Level level;
-    private final Player player;
+    private final ServerLevel level;
+    private final ServerPlayer player;
     private final UUID playerUUID;
     private int shapeMode;
     private int modifierMode;
     private boolean keyPressed;
 
-    public SelectionPlayerData(Level pLevel, UUID uuid) {
+    public SelectionPlayerData(ServerLevel pLevel, UUID uuid) {
         shapeMode = 0;
         modifierMode = 0;
         level = pLevel;
         playerUUID = uuid;
-        player = pLevel.getPlayerByUUID(uuid);
+        player = (ServerPlayer) pLevel.getPlayerByUUID(uuid);
         breakingUtils = new BreakingUtils(this);
     }
 
     public void updateKey(boolean keyPressed) {
         this.keyPressed = keyPressed;
     }
-
 
     //SHAPE MODE
 
@@ -173,7 +175,16 @@ public class SelectionPlayerData {
     }
 
     public void updateCheck() {
-        PacketDistributor.sendToPlayer((ServerPlayer) player, new SelectedBlocksPacket(getBlocks()));
+        PacketDistributor.sendToPlayer(player, new SelectedBlocksPacket(getBlocks()));
+        PacketDistributor.sendToPlayer(player, new ClientHelperBoolsPacket(getBreakingUtils().isBreaking(), requiredFlags(), flag()));
+        PacketDistributor.sendToPlayer(player, new ClientHelperModesPacket(
+                getShape().getShape().getName(),
+                getPrevShape().getShape().getName(),
+                getNextShape().getShape().getName(),
+                getModifier().getShapeModifier().getName(),
+                getPrevModifier().getShapeModifier().getName(),
+                getNextModifier().getShapeModifier().getName()
+        ));
         getCoolDownCheck(playerUUID);
     }
 
@@ -217,11 +228,11 @@ public class SelectionPlayerData {
         boolean hasFuel = !REQUIRES_FUEL_ITEM.get() || findInInventory(player) != 0 || player.isCreative();
 
         if (!hasXP)
-            player.displayClientMessage(Component.translatable("excavein.warning.require_xp").withStyle(ChatFormatting.RED), true);
+            player.sendSystemMessage(Component.translatable("excavein.warning.require_xp").withStyle(ChatFormatting.RED), true);
         else if (!hasFood)
-            player.displayClientMessage(Component.translatable("excavein.warning.require_hunger").withStyle(ChatFormatting.RED), true);
+            player.sendSystemMessage(Component.translatable("excavein.warning.require_hunger").withStyle(ChatFormatting.RED), true);
         else if (!hasFuel)
-            player.displayClientMessage(Component.translatable("excavein.warning.require_fuel").withStyle(ChatFormatting.RED), true);
+            player.sendSystemMessage(Component.translatable("excavein.warning.require_fuel").withStyle(ChatFormatting.RED), true);
 
         return flag();
     }
@@ -230,34 +241,35 @@ public class SelectionPlayerData {
         CooldownTracker.resetCooldown(playerUUID, amountOfBlocks);
     }
 
-    public int getRemainingCooldown() {
-        return CooldownTracker.getRemainingCooldown(playerUUID);
-    }
+    //public int getRemainingCooldown() {*
+    //    return CooldownTracker.getRemainingCooldown(playerUUID);
+    //}
 
     public boolean isCooldownActive() {
         return !CooldownTracker.isCooldownNotActive(playerUUID);
     }
 
-    public Player isPlayer(Player player) {
-        return player.getUUID().equals(playerUUID) ? player : null;
-    }
+    //public Player isPlayer(Player player) {*
+    //    return player.getUUID().equals(playerUUID) ? player : null;
+    //}
 
     public void displayShapeMode() {
         if (getShape() == null || getShape().getShape() == null || getModifier() == null || getModifier().getShapeModifier() == null)
             return;
         String string = getModifier().getShapeModifier().getName();
-        player.displayClientMessage(Component.literal(Component.translatable("excavein.overlay.current_mode").getString().replaceAll("_", " ") +
-                (!string.isEmpty() ? string + " " : "") + getShape().getShape().getName()), !DISPLAY_SELECTION_CHAT.get());
-    }
+        Component text = Component.literal(Component.translatable("excavein.overlay.current_mode").getString().replaceAll("_", " ") +
+                (!string.isEmpty() ? string + " " : "") + getShape().getShape().getName());
 
+        player.sendSystemMessage(text, !DISPLAY_SELECTION_CHAT.get());
+    }
 
     // GET VARIABLES
 
-    public Player getPlayer() {
+    public ServerPlayer getPlayer() {
         return player;
     }
 
-    public Level getLevel() {
+    public ServerLevel getLevel() {
         return level;
     }
 

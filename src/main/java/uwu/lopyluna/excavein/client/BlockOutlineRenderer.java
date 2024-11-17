@@ -25,8 +25,6 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 import uwu.lopyluna.excavein.Excavein;
 import uwu.lopyluna.excavein.config.ClientConfig;
-import uwu.lopyluna.excavein.data.SelectionPlayerData;
-import uwu.lopyluna.excavein.tracker.ExcaveinTacker;
 import uwu.lopyluna.excavein.utils.Utils;
 
 import java.util.HashMap;
@@ -95,13 +93,9 @@ public class BlockOutlineRenderer {
         Vector3f colorB = new Vector3f(red, green, blue);
         Vector4f colorAB = new Vector4f(red, green, blue, alpha);
 
-        SelectionPlayerData data = ExcaveinTacker.getSelectionData(mc.player.getUUID());
-        if (data == null)
-            return;
+        boolean currentlyBreaking = ClientHelper.currentlyBreaking;
 
-        boolean currentlyBreaking = data.getBreakingUtils().isBreaking();
-
-        Vector3f color = (!currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && data.flag() ? colorB : colorB.mul(1, 0.75f, 0.75f);
+        Vector3f color = (!currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && ClientHelper.flag ? colorB : colorB.mul(1, 0.75f, 0.75f);
         Vector4f colorA = (!currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) ? colorAB : colorAB.mul(1, 0.75f, 0.75f, 1);
 
         if (ClientConfig.DEBUG.get() && mc.player.isCreative()) {

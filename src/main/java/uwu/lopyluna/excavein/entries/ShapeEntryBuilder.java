@@ -1,16 +1,13 @@
 package uwu.lopyluna.excavein.entries;
 
-import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.ResourceLocation;
-import org.lwjgl.glfw.GLFW;
-import uwu.lopyluna.excavein.client.ClientHandler;
 import uwu.lopyluna.excavein.shapes.Shape;
 
 public class ShapeEntryBuilder<T extends Shape> {
     ResourceLocation id;
     T shape;
     String lang;
-    KeyMapping keybind;
+    boolean keybind;
     int index;
 
     public ShapeEntryBuilder(ResourceLocation id, T shape, int index) {
@@ -18,6 +15,7 @@ public class ShapeEntryBuilder<T extends Shape> {
         this.shape = shape;
         this.lang = id.toString().replace(":", ".shape.");
         this.index = index;
+        this.keybind = false;
         ExcaveinEntries.sizeShape++;
     }
 
@@ -31,8 +29,7 @@ public class ShapeEntryBuilder<T extends Shape> {
     }
 
     public ShapeEntryBuilder<T> keybind() {
-        keybind = ClientHandler.create(lang, GLFW.GLFW_KEY_UNKNOWN);
-        ClientHandler.KEYBINDS.add(keybind);
+        keybind = true;
         return this;
     }
 

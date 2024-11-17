@@ -14,11 +14,15 @@ import net.neoforged.neoforge.client.settings.KeyModifier;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 import uwu.lopyluna.excavein.Excavein;
+import uwu.lopyluna.excavein.entries.ExcaveinEntries;
+import uwu.lopyluna.excavein.entries.ShapeEntry;
+import uwu.lopyluna.excavein.entries.ShapeModifierEntry;
 import uwu.lopyluna.excavein.packets.ExcaveinPacket;
+import uwu.lopyluna.excavein.packets.KeybindPacket;
+import uwu.lopyluna.excavein.shape_modifiers.ShapeModifier;
+import uwu.lopyluna.excavein.shapes.Shape;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static uwu.lopyluna.excavein.config.ClientConfig.DISABLE_SCROLL;
 import static uwu.lopyluna.excavein.config.ClientConfig.TOGGLEABLE_KEY;
@@ -46,6 +50,8 @@ public class ClientHandler {
     public static KeyMapping PREV_MODIFIER;
     public static KeyMapping MODIFIER_SCROLL;
     public static List<KeyMapping> KEYBINDS = new ArrayList<>();
+    protected static final Map<ShapeEntry<? extends Shape>, KeyMapping> shapeKeys = new HashMap<>();
+    protected static final Map<ShapeModifierEntry<? extends ShapeModifier>, KeyMapping> modifierKeys = new HashMap<>();
     public static boolean keyActivated = false;
     public static boolean keyPressed = false;
     static UUID uuid;
@@ -62,12 +68,28 @@ public class ClientHandler {
 
         MODIFIER_SCROLL = create("modifier_scroll", GLFW.GLFW_MOD_ALT);
 
+        ExcaveinEntries.getShapeEntries().forEach((integer, shapeEntry) -> {
+            if (shapeEntry.hasKeybind()) {
+                KeyMapping keyMapping = ClientHandler.create(shapeEntry.getLang(), GLFW.GLFW_KEY_UNKNOWN);
+                shapeKeys.put(shapeEntry, keyMapping);
+                ClientHandler.KEYBINDS.add(keyMapping);
+            }
+        });
+        ExcaveinEntries.getShapeModifierEntries().forEach((integer, shapeModifierEntry) -> {
+            if (shapeModifierEntry.hasKeybind()) {
+                KeyMapping keyMapping = ClientHandler.create(shapeModifierEntry.getLang(), GLFW.GLFW_KEY_UNKNOWN);
+                modifierKeys.put(shapeModifierEntry, keyMapping);
+                ClientHandler.KEYBINDS.add(keyMapping);
+            }
+        });
+
         event.register(SELECTION_ACTIVATION);
         event.register(NEXT_MODE);
         event.register(PREV_MODE);
         event.register(NEXT_MODIFIER);
         event.register(PREV_MODIFIER);
         event.register(MODIFIER_SCROLL);
+
         KEYBINDS.forEach(event::register);
     }
 
@@ -108,6 +130,11 @@ public class ClientHandler {
                         else if (NEXT_MODE.consumeClick()) switchMode = 1;
                         else if (PREV_MODE.consumeClick()) switchMode = 2;
 
+                        ExcaveinEntries.getShapeEntries().forEach((integer, shapeEntry) ->
+                                PacketDistributor.sendToServer(new KeybindPacket(uuid, shapeKeys.get(shapeEntry).consumeClick(), integer, "shape")));
+                        ExcaveinEntries.getShapeModifierEntries().forEach((integer, modifierEntry) ->
+                                PacketDistributor.sendToServer(new KeybindPacket(uuid, modifierKeys.get(modifierEntry).consumeClick(), integer, "modifier")));
+
                         PacketDistributor.sendToServer(new ExcaveinPacket(uuid, keyPressed, switchMode));
                     }
                     if (TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.consumeClick()) {
@@ -135,4 +162,6 @@ public class ClientHandler {
             }
         }
     }
+
+
 }

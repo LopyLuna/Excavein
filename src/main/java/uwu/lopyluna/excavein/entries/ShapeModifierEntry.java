@@ -10,23 +10,23 @@ public class ShapeModifierEntry<T extends ShapeModifier> {
     ResourceLocation id;
     T modifier;
     String lang;
-    KeyMapping keybind;
     int index;
+    boolean hasKeybind;
 
-    public ShapeModifierEntry(ResourceLocation id, T modifier, String lang, KeyMapping keybind, int index) {
+    public ShapeModifierEntry(ResourceLocation id, T modifier, String lang, boolean keybind, int index) {
         this.id = id;
         this.modifier = modifier;
         this.lang = lang;
-        this.keybind = keybind;
+        this.hasKeybind = keybind;
         shapeModifierEntries.put(index, this);
+    }
+
+    public boolean hasKeybind() {
+        return hasKeybind;
     }
 
     public int getIndex() {
         return index;
-    }
-
-    public KeyMapping getKeybind() {
-        return keybind;
     }
 
     public ResourceLocation getId() {

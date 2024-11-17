@@ -2,6 +2,7 @@ package uwu.lopyluna.excavein.utils;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
@@ -76,7 +77,7 @@ public class Utils {
     public static boolean isCorrectSpeeds(ServerPlayer player, Level pLevel, BlockPos pos, BlockPos startPos, BlockState startState, BlockState state) {
         var inv = player.getInventory();
         float startSpeed = startState.getDestroySpeed(pLevel, startPos) * inv.getDestroySpeed(startState);
-        float speed = state.getDestroySpeed(pLevel, startPos) * inv.getDestroySpeed(state);
+        float speed = state.getDestroySpeed(pLevel, pos) * inv.getDestroySpeed(state);
         return startSpeed >= speed;
     }
 
@@ -93,10 +94,8 @@ public class Utils {
     public static <T extends Shape, I extends ShapeModifier> Set<BlockPos> constructSelection(SelectionPlayerData data, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, T shape, I modifier) {
         if (data == null || shape == null || modifier == null || rayTrace == null || eyePos == null)
             return new HashSet<>();
-        Player pPlayer = data.getPlayer();
-        Level pLevel = data.getLevel();
-        if (!(pPlayer instanceof ServerPlayer player))
-            return new HashSet<>();
+        ServerPlayer player = data.getPlayer();
+        ServerLevel pLevel = data.getLevel();
 
         Set<BlockPos> validBlocks = new HashSet<>();
         Set<BlockPos> checkedBlocks = new HashSet<>();
@@ -131,12 +130,12 @@ public class Utils {
                 continue;
             }
 
-            if (shape.shapeFilter(pLevel, pPlayer, rayTrace, validBlocks, checkedBlocks, startPos, currentPos, startState, currentState, maxBlocks, maxRange))
-                if (modifier.shapeModifierFilter(pLevel, pPlayer, rayTrace, validBlocks, checkedBlocks, startPos, currentPos, startState, currentState, maxBlocks, maxRange)) {
+            if (shape.shapeFilter(pLevel, player, rayTrace, validBlocks, checkedBlocks, startPos, currentPos, startState, currentState, maxBlocks, maxRange))
+                if (modifier.shapeModifierFilter(pLevel, player, rayTrace, validBlocks, checkedBlocks, startPos, currentPos, startState, currentState, maxBlocks, maxRange)) {
                     validBlocks.add(currentPos);
                     checkedBlocks.add(currentPos);
                     Set<BlockPos> building = new HashSet<>(Set.of());
-                    building.addAll(shape.shapeBuild(pLevel, pPlayer, rayTrace, startPos, currentPos, startState, currentState, maxBlocks, maxRange));
+                    building.addAll(shape.shapeBuild(pLevel, player, rayTrace, startPos, currentPos, startState, currentState, maxBlocks, maxRange));
                     building.removeIf(checkedBlocks::contains);
                     building.removeIf(toCheck::contains);
                     toCheck.addAll(building);

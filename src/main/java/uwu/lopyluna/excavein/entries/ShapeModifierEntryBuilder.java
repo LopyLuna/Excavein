@@ -2,6 +2,8 @@ package uwu.lopyluna.excavein.entries;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 import uwu.lopyluna.excavein.client.ClientHandler;
 import uwu.lopyluna.excavein.shape_modifiers.ShapeModifier;
@@ -10,7 +12,7 @@ public class ShapeModifierEntryBuilder<T extends ShapeModifier> {
     ResourceLocation id;
     T modifier;
     String lang;
-    KeyMapping keybind;
+    boolean keybind;
     int index;
 
     public ShapeModifierEntryBuilder(ResourceLocation id, T modifier, int index) {
@@ -18,6 +20,7 @@ public class ShapeModifierEntryBuilder<T extends ShapeModifier> {
         this.modifier = modifier;
         this.lang = id.toString().replace(":", ".modifier.");
         this.index = index;
+        this.keybind = false;
         ExcaveinEntries.sizeModifier++;
     }
 
@@ -31,8 +34,7 @@ public class ShapeModifierEntryBuilder<T extends ShapeModifier> {
     }
 
     public ShapeModifierEntryBuilder<T> keybind() {
-        keybind = ClientHandler.create(lang, GLFW.GLFW_KEY_UNKNOWN);
-        ClientHandler.KEYBINDS.add(keybind);
+        keybind = true;
         return this;
     }
 
