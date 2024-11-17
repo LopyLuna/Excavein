@@ -3,7 +3,7 @@ package uwu.lopyluna.excavein.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-public class  ClientConfig {
+public class ClientConfig {
 
     public static final ModConfigSpec.IntValue SELECTION_COLOR_R;
     public static final ModConfigSpec.IntValue SELECTION_COLOR_G;
@@ -23,6 +23,8 @@ public class  ClientConfig {
     public static final ModConfigSpec.IntValue SELECTION_OFFSET_X;
     public static final ModConfigSpec.BooleanValue DISPLAY_SELECTION_CHAT;
     public static final ModConfigSpec.IntValue MAX_BLOCK_VIEW;
+    public static final ModConfigSpec.IntValue COSMETIC_TYPE;
+    public static final ModConfigSpec.BooleanValue DEBUG;
 
     public static final ModConfigSpec CLIENT_SPEC;
 
@@ -100,6 +102,15 @@ public class  ClientConfig {
         MAX_BLOCK_VIEW = builder
                 .comment("Maximum of Selection Blocks that can be viewed (default = 128)")
                 .defineInRange("MaxBlockViewing", 128, 0, 2048);
+
+        COSMETIC_TYPE = builder
+                .comment("Whether to switch your Excavein Special Cosmetic Types if have one (default = 1) \n" +
+                        "0=DISABLE|1=ANNIVERSARY|2=CONTRIBUTOR|3=TEAM|4=･ω･")
+                .defineInRange("CosmeticType", 1, 0, 9999);
+
+        DEBUG = builder
+                .comment("for Devs mainly (default = false)")
+                .define("Debug", false);
 
         CLIENT_SPEC = builder.build();
     }

@@ -12,17 +12,25 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import uwu.lopyluna.excavein.Excavein;
-import uwu.lopyluna.excavein.Utils;
+import uwu.lopyluna.excavein.config.ClientConfig;
+import uwu.lopyluna.excavein.data.SelectionPlayerData;
+import uwu.lopyluna.excavein.entries.ExcaveinEntries;
+import uwu.lopyluna.excavein.entries.ShapeEntry;
+import uwu.lopyluna.excavein.entries.ShapeModifierEntry;
+import uwu.lopyluna.excavein.shape_modifiers.ShapeModifier;
+import uwu.lopyluna.excavein.shapes.Shape;
+import uwu.lopyluna.excavein.tracker.ExcaveinTacker;
+import uwu.lopyluna.excavein.utils.Utils;
 
 import java.awt.*;
 
-import static uwu.lopyluna.excavein.Utils.ticksToTime;
-import static uwu.lopyluna.excavein.Utils.OffsetTime.*;
-import static uwu.lopyluna.excavein.client.BlockOutlineRenderer.*;
-import static uwu.lopyluna.excavein.client.KeybindHandler.SELECTION_ACTIVATION;
-import static uwu.lopyluna.excavein.client.KeybindHandler.keyActivated;
+import static uwu.lopyluna.excavein.client.BlockOutlineRenderer.outlineBlocks;
+import static uwu.lopyluna.excavein.client.ClientHandler.SELECTION_ACTIVATION;
+import static uwu.lopyluna.excavein.client.ClientHandler.keyActivated;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
+import static uwu.lopyluna.excavein.utils.Utils.OffsetTime.SECONDS;
+import static uwu.lopyluna.excavein.utils.Utils.ticksToTime;
 
 @SuppressWarnings("unused")
 @EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
@@ -30,76 +38,207 @@ public class ModeOverlay {
 
     private static final Minecraft mc = Minecraft.getInstance();
     static int dots = 0;
+    static int i = 0;
+    static int tick = 0;
 
     @SubscribeEvent
     public static void onRenderGuiOverlay(RenderGuiEvent.Post event) {
         PoseStack poseStack = event.getGuiGraphics().pose();
-        if (mc.getConnection() == null || mc.player == null || mc.options.hideGui || mc.noRender || mc.showOnlyReducedInfo() || !((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)))
+        if (mc.getConnection() == null || mc.player == null || mc.options.hideGui || mc.noRender || mc.showOnlyReducedInfo())
             return;
 
         poseStack.pushPose();
+
+        if (ClientConfig.DEBUG.get() && mc.player.isCreative())
+            renderDebug(event, poseStack);
+
+        if (!((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)))
+            return;
+
+        SelectionPlayerData data = ExcaveinTacker.getSelectionData(mc.player.getUUID());
+
+        if (data == null)
+            return;
 
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int xPos = SELECTION_OFFSET_X.get();
         int yPos = SELECTION_OFFSET_Y.get();
 
-        SelectionMode currentMode = SelectionMode.getCurrentMode();
-        SelectionMode previousMode = SelectionMode.getPreviousMode();
-        SelectionMode nextMode = SelectionMode.getNextMode();
+        ShapeEntry<? extends Shape> currentMode = data.getShape();
+        ShapeEntry<? extends Shape> previousMode = data.getPrevShape();
+        ShapeEntry<? extends Shape> nextMode = data.getNextShape();
+
+        ShapeModifierEntry<? extends ShapeModifier> currentModifier = data.getModifier();
+        ShapeModifierEntry<? extends ShapeModifier> previousModifier = data.getPrevModifier();
+        ShapeModifierEntry<? extends ShapeModifier> nextModifier = data.getNextModifier();
 
         int r = SELECTION_COLOR_R.get();
         int g = SELECTION_COLOR_G.get();
         int b = SELECTION_COLOR_B.get();
 
         int color = color(r, g, b, 255).getRGB();
-        int colorA = color(r - 32, g - 32, b - 32, 255).getRGB();
+        int colorD = color((int) (r * 0.9), (int) (g * 0.9), (int) (b * 0.9), 255).getRGB();
+        int colorWarning = color(r, (int) (g * 0.75), (int) (b * 0.75), 255).getRGB();
 
         boolean dropShadow = TEXT_SHADOW.get();
         boolean background = TEXT_BACKGROUND.get();
         boolean leftSide = TEXT_LEFT_SIDE.get();
 
-        if (currentMode != null) {
-            renderText(translateText("mode") + currentMode.getName(), 1, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
-        }
+        String scrollUp = sideString(translateText("scroll_up"), "", " ", leftSide);
+        String scrollDown = sideString(translateText("scroll_down"), "", " ", leftSide);
+        String mode = sideString(translateText("mode"), "", ": ", leftSide);
+        String modifier = sideString(translateText("modifier"), "", ": ", leftSide);
 
-        if (!(isBreaking && WAIT_TILL_BROKEN.get()) && requiredFlag(mc.player)) {
-            String tag = "";
-            if (REQUIRES_XP.get() && !mc.player.isCreative() && mc.player.totalExperience == 0)
-                tag = "xp"; else
-            if (REQUIRES_HUNGER.get() && !mc.player.isCreative() && mc.player.getFoodData().getFoodLevel() == 0)
-                tag = "hunger"; else
-            if (REQUIRES_FUEL_ITEM.get() && !mc.player.isCreative() && Utils.findInInventory(mc.player) == 0)
-                tag = "fuel";
-            renderText(tag.isEmpty() ? "" : translateText("require_" + tag), 3, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
-        } else if (!(isBreaking && WAIT_TILL_BROKEN.get()) && !requiredFlag(mc.player)) {
-            int blockCount = outlineBlocks.isEmpty() ? 0 : outlineBlocks.size();
-            if (blockCount > 0 && !ClientCooldownHandler.isCooldownActive()) {
-                renderText(translateText("selecting") + blockCount + translateText("blocks"), 3, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
-            }
-            if (ClientCooldownHandler.isCooldownActive()) {
-                renderText(translateText("cooldown") + ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS), 3, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
-            }
-        } else if (isBreaking && WAIT_TILL_BROKEN.get()) renderText(translateText("breaking") + animatedDotsString(), 3, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        int order = 0;
 
         if (previousMode != null) {
-            renderText(translateText("scroll_up") + previousMode.getName(), 0, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            sideText(previousMode.getShape().getName(),
+                    scrollUp, "", leftSide, mode.length() - 1, order, true, event.getGuiGraphics());
+            order++;
+        }
+        if (currentMode != null) {
+            sideText(currentMode.getShape().getName(),
+                    mode, "", leftSide, 0, order, false, event.getGuiGraphics());
+            order++;
         }
         if (nextMode != null) {
-            renderText(translateText("scroll_down") + nextMode.getName(), 2, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            sideText(nextMode.getShape().getName(),
+                    scrollDown, "", leftSide, mode.length() - 1, order, true, event.getGuiGraphics());
+            order++;
         }
+
+        boolean currentlyBreaking = data.getBreakingUtils().isBreaking();
+
+        if (!currentlyBreaking && !data.requiredFlags()) {
+            String tag = "";
+            if (REQUIRES_XP.get() && !mc.player.isCreative() && mc.player.totalExperience == 0)
+                tag = "xp";
+            else if (REQUIRES_HUNGER.get() && !mc.player.isCreative() && mc.player.getFoodData().getFoodLevel() == 0)
+                tag = "hunger";
+            else if (REQUIRES_FUEL_ITEM.get() && !mc.player.isCreative() && Utils.findInInventory(mc.player) == 0)
+                tag = "fuel";
+
+            renderText(tag.isEmpty() ? "" : translateText("require_" + tag), order, xPos, yPos, event.getGuiGraphics(), leftSide, colorWarning, dropShadow, background);
+            order++;
+        } else if (!currentlyBreaking && data.requiredFlags()) {
+            int blockCount = outlineBlocks.isEmpty() ? 0 : outlineBlocks.size();
+            if (blockCount > 0 && !ClientCooldownHandler.isCooldownActive()) {
+                renderText(translateText("selecting") + blockCount + translateText("blocks"), order, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+                order++;
+            }
+            if (ClientCooldownHandler.isCooldownActive()) {
+                renderText(translateText("cooldown") + ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS), order, xPos, yPos, event.getGuiGraphics(), leftSide, colorD, dropShadow, background);
+                order++;
+            }
+        } else if (currentlyBreaking && WAIT_TILL_BROKEN.get()) {
+            renderText(translateText("breaking") + animatedDotsString(), order, xPos, yPos, event.getGuiGraphics(), leftSide, colorD, dropShadow, background);
+            order++;
+        }
+
+        order++;
+
+        if (previousModifier != null) {
+            sideText((previousModifier.getShapeModifier().getName().isEmpty() ? "None" : previousModifier.getShapeModifier().getName()),
+                    scrollUp, "", leftSide, modifier.length() - 1, order, true, event.getGuiGraphics());
+            order++;
+        }
+        if (currentModifier != null) {
+            sideText((currentModifier.getShapeModifier().getName().isEmpty() ? "None" : currentModifier.getShapeModifier().getName()),
+                    modifier, "", leftSide, 0, order, false, event.getGuiGraphics());
+            order++;
+        }
+        if (nextModifier != null) {
+            sideText((nextModifier.getShapeModifier().getName().isEmpty() ? "None" : nextModifier.getShapeModifier().getName()),
+                    scrollDown, "", leftSide, modifier.length() - 1, order, true, event.getGuiGraphics());
+        }
+
         poseStack.popPose();
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private static void sideText(String pText, String pPrefix, String pSuffix, boolean pLeftSide, int pSpaceAmount, int pOffsetOrder, boolean darken, GuiGraphics pGuiGraphics) {
+        boolean dropShadow = TEXT_SHADOW.get();
+        boolean background = TEXT_BACKGROUND.get();
+        int r = SELECTION_COLOR_R.get();
+        int g = SELECTION_COLOR_G.get();
+        int b = SELECTION_COLOR_B.get();
+        int color = color(r, g, b, 255).getRGB();
+        int colorD = color((int) (r * 0.9), (int) (g * 0.9), (int) (b * 0.9), 255).getRGB();
+        int xPos = SELECTION_OFFSET_X.get();
+        int yPos = SELECTION_OFFSET_Y.get();
+
+        if (pLeftSide)
+            renderText(" ".repeat(pSpaceAmount) + pPrefix + pText + pSuffix, pOffsetOrder, xPos, yPos, pGuiGraphics, true, darken ? colorD : color, dropShadow, background);
+        else
+            renderText(pSuffix + pText + pPrefix + " ".repeat(pSpaceAmount), pOffsetOrder, xPos, yPos, pGuiGraphics, false, darken ? colorD : color, dropShadow, background);
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private static String sideString(String pText, String pPrefix, String pSuffix, boolean pLeftSide) {
+        return pLeftSide ? pPrefix + pText + pSuffix : new StringBuilder(pSuffix).reverse() + pText + new StringBuilder(pPrefix).reverse();
+    }
+
+    private static void renderDebug(RenderGuiEvent.Post event, PoseStack poseStack) {
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
+        int xPos = SELECTION_OFFSET_X.get();
+        int yPos = SELECTION_OFFSET_Y.get();
+        int r = SELECTION_COLOR_R.get();
+        int g = SELECTION_COLOR_G.get();
+        int b = SELECTION_COLOR_B.get();
+        int color = color(r, g, b, 255).getRGB();
+        boolean dropShadow = TEXT_SHADOW.get();
+        boolean background = TEXT_BACKGROUND.get();
+        boolean leftSide = !TEXT_LEFT_SIDE.get();
+
+        renderText("-Shapes-", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        i++;
+        ExcaveinEntries.getShapeEntries().forEach((integer, shapeEntry) -> {
+            renderText(shapeEntry.getLang() + " :Entry | " + integer + " :ID", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            i++;
+        });
+        renderText("-Modifiers-", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        i++;
+        ExcaveinEntries.getShapeModifierEntries().forEach((integer, shapeEntry) -> {
+            renderText(shapeEntry.getLang() + " :Entry | " + integer + " :ID", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            i++;
+        });
+        renderText("-EntriesIDs-", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        i++;
+        ExcaveinEntries.getShapeValue().forEach((integer, resourceLocation) -> {
+            renderText(resourceLocation.toString() + " :Loc | " + integer + " :ID", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            i++;
+        });
+        ExcaveinEntries.getModifierValue().forEach((integer, resourceLocation) -> {
+            renderText(resourceLocation.toString() + " :Loc | " + integer + " :ID", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            i++;
+        });
+        ExcaveinEntries.getShapes().forEach((resourceLocation, shape) -> {
+            renderText(resourceLocation.toString() + " :Loc | " + shape.getName() + " :Shape", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            i++;
+        });
+        ExcaveinEntries.getShapeModifiers().forEach((resourceLocation, shapeModifier) -> {
+            renderText(resourceLocation.toString() + " :Loc | " + shapeModifier.getName() + " :Modifier", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            i++;
+        });
+        renderText("-Others-", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        i++;
+        renderText(ExcaveinEntries.sizeShape + " :Shape Size", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        i++;
+        renderText(ExcaveinEntries.sizeModifier + " :Modifier Size", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        i = 0;
     }
 
     public static String animatedDotsString() {
         return ".".repeat(Math.max(0, dots));
     }
 
-    static int tick = 0;
-
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        if (tick > 0) tick--; else { tick = 3;
-            if (dots < 3) dots++; else dots = 0;
+        if (tick > 0) tick--;
+        else {
+            tick = 3;
+            if (dots < 3) dots++;
+            else dots = 0;
         }
     }
 
@@ -120,7 +259,7 @@ public class ModeOverlay {
     }
 
     public static Color color(int r, int g, int b, int a) {
-        return new Color(Mth.clamp(r,0,255), Mth.clamp(g,0,255), Mth.clamp(b,0,255), Mth.clamp(a,0,255));
+        return new Color(Mth.clamp(r, 0, 255), Mth.clamp(g, 0, 255), Mth.clamp(b, 0, 255), Mth.clamp(a, 0, 255));
     }
 
     public static String translateText(String translate) {

@@ -3,9 +3,8 @@ package uwu.lopyluna.excavein.client;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.*;
+import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
@@ -19,52 +18,70 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderHighlightEvent;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import uwu.lopyluna.excavein.Excavein;
-import uwu.lopyluna.excavein.Utils;
 import uwu.lopyluna.excavein.config.ClientConfig;
+import uwu.lopyluna.excavein.data.SelectionPlayerData;
+import uwu.lopyluna.excavein.tracker.ExcaveinTacker;
+import uwu.lopyluna.excavein.utils.Utils;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static uwu.lopyluna.excavein.client.KeybindHandler.SELECTION_ACTIVATION;
-import static uwu.lopyluna.excavein.client.KeybindHandler.keyActivated;
+import static uwu.lopyluna.excavein.client.ClientHandler.keyPressed;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
-import static uwu.lopyluna.excavein.config.ServerConfig.*;
+import static uwu.lopyluna.excavein.config.ServerConfig.DELAY_BETWEEN_BREAK;
+import static uwu.lopyluna.excavein.config.ServerConfig.WAIT_TILL_BROKEN;
 
 @SuppressWarnings("unused")
 @EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
 public class BlockOutlineRenderer {
 
+    protected static final Vector3f diffPosTemp = new Vector3f();
+    protected static final Vector3f minPosTemp = new Vector3f();
+    protected static final Vector3f maxPosTemp = new Vector3f();
+    protected static final Vector4f pPosTransformTemp = new Vector4f();
+    protected static final Vector3f pNormalTransformTemp = new Vector3f();
+    protected static final Vector3f pos0Temp = new Vector3f();
+
+    //MOSTLY FROM CREATE'S OUTLINE.JAVA
+    protected static final Vector3f pos1Temp = new Vector3f();
+    protected static final Vector3f pos2Temp = new Vector3f();
+    protected static final Vector3f pos3Temp = new Vector3f();
+    protected static final Vector3f normalTemp = new Vector3f();
+    protected static final Vector3f originTemp = new Vector3f();
     private static final Minecraft mc = Minecraft.getInstance();
+    private static final Cluster cluster = new Cluster();
     public static Set<BlockPos> outlineBlocks = new HashSet<>();
-    private static boolean shouldRenderOutline = false;
-    public static boolean isBreaking = false;
+    private static Set<BlockPos> pos;
 
     public static void setOutlineBlocks(Set<BlockPos> blocks) {
-        outlineBlocks = blocks;
-    }
-
-    public static void setBreaking(boolean breaking) {
-        isBreaking = breaking;
+        if (RENDER_OUTLINE.get() || RENDER_FACE.get()) {
+            Set<BlockPos> renderedBlocks = new HashSet<>();
+            if (blocks != null && !blocks.isEmpty()) {
+                blocks.forEach(pos -> {
+                    if (mc.levelRenderer.isSectionCompiled(pos))
+                        renderedBlocks.add(pos);
+                });
+            }
+            outlineBlocks = renderedBlocks;
+        }
     }
 
     @SubscribeEvent
     public static void onRenderWorld(RenderHighlightEvent.Block event) {
         PoseStack poseStack = event.getPoseStack();
-        if (mc.getConnection() == null || mc.player == null || requiredFlag(mc.player) || !shouldRenderOutline || outlineBlocks.isEmpty() || (isBreaking && WAIT_TILL_BROKEN.get()) || outlineBlocks.size() > MAX_BLOCK_VIEW.get() || ClientCooldownHandler.isCooldownActive()) {
+        if (mc.getConnection() == null || mc.player == null || (!RENDER_OUTLINE.get() && !RENDER_FACE.get()))
             return;
-        }
+
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.defaultBlendFunc();
-        VoxelShape selectionShape = convertSelectionToVoxelShape(outlineBlocks);
 
         float red = ClientConfig.SELECTION_COLOR_R.get() / 255f;
         float green = ClientConfig.SELECTION_COLOR_G.get() / 255f;
@@ -72,34 +89,49 @@ public class BlockOutlineRenderer {
         float alpha = ClientConfig.SELECTION_ALPHA.get() / 255f;
         RenderType blank = RenderTypes.getOutline(Utils.asResource("textures/special/blank.png"), false);
         RenderType selection = RenderTypes.getOutline(Utils.asResource("textures/special/selection.png"), BLUR_FACE.get());
+        var multiBufferSource = event.getMultiBufferSource();
+        var camPos = event.getCamera().getPosition();
 
-        if (RENDER_OUTLINE.get())
-            renderShape(poseStack, event.getMultiBufferSource().getBuffer(blank), selectionShape, event.getCamera().getPosition(), red, green, blue);
-        if (RENDER_FACE.get())
-            renderFaces(poseStack, event.getMultiBufferSource().getBuffer(selection), outlineBlocks, event.getCamera().getPosition(), new Vector4f(red, green, blue, alpha));
+        Vector3f colorB = new Vector3f(red, green, blue);
+        Vector4f colorAB = new Vector4f(red, green, blue, alpha);
+
+        SelectionPlayerData data = ExcaveinTacker.getSelectionData(mc.player.getUUID());
+        if (data == null)
+            return;
+
+        boolean currentlyBreaking = data.getBreakingUtils().isBreaking();
+
+        Vector3f color = (!currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && data.flag() ? colorB : colorB.mul(1, 0.75f, 0.75f);
+        Vector4f colorA = (!currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) ? colorAB : colorAB.mul(1, 0.75f, 0.75f, 1);
+
+        if (ClientConfig.DEBUG.get() && mc.player.isCreative()) {
+            //MAINLY FOR DEV USE
+            if (!outlineBlocks.isEmpty() && outlineBlocks.size() <= MAX_BLOCK_VIEW.get()) {
+                VoxelShape debug = convertSelectionToVoxelShape(outlineBlocks);
+                renderShape(poseStack, multiBufferSource.getBuffer(blank), debug, camPos, color.x, color.y, color.z);
+                renderFaces(poseStack, multiBufferSource.getBuffer(selection), outlineBlocks, camPos, colorA);
+            }
+        } else {
+            if (!outlineBlocks.isEmpty() && keyPressed && outlineBlocks.size() <= MAX_BLOCK_VIEW.get()) {
+                if (RENDER_OUTLINE.get()) {
+                    VoxelShape selectionShape = convertSelectionToVoxelShape(outlineBlocks);
+                    renderShape(poseStack, multiBufferSource.getBuffer(blank), selectionShape, camPos, color.x, color.y, color.z);
+                }
+                if (RENDER_FACE.get())
+                    renderFaces(poseStack, multiBufferSource.getBuffer(selection), outlineBlocks, camPos, colorA);
+            }
+        }
 
         event.setCanceled(true);
     }
 
-    public static boolean requiredFlag(LocalPlayer player) {
-        return (REQUIRES_XP.get() && !player.isCreative() && player.totalExperience == 0) ||
-                (REQUIRES_HUNGER.get() && !player.isCreative() && player.getFoodData().getFoodLevel() == 0) ||
-                (REQUIRES_FUEL_ITEM.get() && !player.isCreative() && Utils.findInInventory(player) == 0);
-    }
-
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
-        if (mc.getConnection() != null) {
-            shouldRenderOutline = ((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated));
-        }
-    }
+    //MOSTLY FROM CREATE'S BLOCKCLUSTEROUTLINE.JAVA
 
     private static VoxelShape convertSelectionToVoxelShape(Set<BlockPos> selectedBlocks) {
         VoxelShape combinedShape = Shapes.empty();
 
         for (BlockPos pos : selectedBlocks) {
             VoxelShape blockShape = Shapes.block();
-
             blockShape = blockShape.move(pos.getX(), pos.getY(), pos.getZ());
             combinedShape = Shapes.or(combinedShape, blockShape);
         }
@@ -108,20 +140,12 @@ public class BlockOutlineRenderer {
     }
 
     private static void renderShape(PoseStack pPoseStack, VertexConsumer pConsumer, VoxelShape pShape, Vec3 camPos, float pRed, float pGreen, float pBlue) {
-        pShape.forAllEdges((x1, y1, z1, x2, y2, z2) -> bufferCuboidLine(pPoseStack, pConsumer, camPos, new Vec3(x1, y1, z1), new Vec3(x2, y2, z2),
+        pShape.optimize().forAllEdges((x1, y1, z1, x2, y2, z2) -> bufferCuboidLine(pPoseStack, pConsumer, camPos, new Vec3(x1, y1, z1), new Vec3(x2, y2, z2),
                 ClientConfig.OUTLINE_THICKNESS.get().floatValue() / 16.0f, new Vector4f(pRed, pGreen, pBlue, 1), LightTexture.FULL_BRIGHT, true));
     }
 
-    //MOSTLY FROM CREATE'S OUTLINE.JAVA
-
-    protected static final Vector3f diffPosTemp = new Vector3f();
-    protected static final Vector3f minPosTemp = new Vector3f();
-    protected static final Vector3f maxPosTemp = new Vector3f();
-    protected static final Vector4f pPosTransformTemp = new Vector4f();
-    protected static final Vector3f pNormalTransformTemp = new Vector3f();
-
     public static void bufferCuboidLine(PoseStack poseStack, VertexConsumer consumer, Vec3 camera, Vec3 start, Vec3 end,
-                                 float width, Vector4f color, int lightmap, boolean disableNormals) {
+                                        float width, Vector4f color, int lightmap, boolean disableNormals) {
         Vector3f diff = diffPosTemp;
         diff.set((float) (end.x - start.x), (float) (end.y - start.y), (float) (end.z - start.z));
 
@@ -161,7 +185,7 @@ public class BlockOutlineRenderer {
     }
 
     public static void bufferCuboidLine(PoseStack.Pose pose, VertexConsumer consumer, Vector3f origin, Direction direction,
-                                 float length, float width, Vector4f color, int lightmap, boolean disableNormals) {
+                                        float length, float width, Vector4f color, int lightmap, boolean disableNormals) {
         Vector3f minPos = minPosTemp;
         Vector3f maxPos = maxPosTemp;
 
@@ -182,7 +206,7 @@ public class BlockOutlineRenderer {
     }
 
     public static void bufferCuboid(PoseStack.Pose pose, VertexConsumer consumer, Vector3f minPos, Vector3f maxPos,
-                             Vector4f color, int lightmap, boolean disableNormals) {
+                                    Vector4f color, int lightmap, boolean disableNormals) {
         Vector4f posTransformTemp = pPosTransformTemp;
         Vector3f normalTransformTemp = pNormalTransformTemp;
 
@@ -488,12 +512,12 @@ public class BlockOutlineRenderer {
     }
 
     public static void bufferQuad(PoseStack.Pose pose, VertexConsumer consumer, Vector3f pos0, Vector3f pos1, Vector3f pos2,
-                           Vector3f pos3, Vector4f color, int lightmap, Vector3f normal) {
+                                  Vector3f pos3, Vector4f color, int lightmap, Vector3f normal) {
         bufferQuad(pose, consumer, pos0, pos1, pos2, pos3, color, 0, 0, 1, 1, lightmap, normal);
     }
 
     public static void bufferQuad(PoseStack.Pose pose, VertexConsumer consumer, Vector3f pos0, Vector3f pos1, Vector3f pos2,
-                           Vector3f pos3, Vector4f color, float minU, float minV, float maxU, float maxV, int lightmap, Vector3f normal) {
+                                  Vector3f pos3, Vector4f color, float minU, float minV, float maxU, float maxV, int lightmap, Vector3f normal) {
         Vector4f posTransformTemp = pPosTransformTemp;
         Vector3f normalTransformTemp = pNormalTransformTemp;
 
@@ -562,18 +586,6 @@ public class BlockOutlineRenderer {
                 .setLight(lightmap)
                 .setNormal(nx, ny, nz);
     }
-    
-    //MOSTLY FROM CREATE'S BLOCKCLUSTEROUTLINE.JAVA
-
-    private static final Cluster cluster = new Cluster();
-    private static Set<BlockPos> pos;
-
-    protected static final Vector3f pos0Temp = new Vector3f();
-    protected static final Vector3f pos1Temp = new Vector3f();
-    protected static final Vector3f pos2Temp = new Vector3f();
-    protected static final Vector3f pos3Temp = new Vector3f();
-    protected static final Vector3f normalTemp = new Vector3f();
-    protected static final Vector3f originTemp = new Vector3f();
 
     protected static void renderFaces(PoseStack ms, VertexConsumer consumer, Set<BlockPos> blocks, Vec3 camera, Vector4f color) {
         blocks.forEach(cluster::include);
@@ -595,7 +607,7 @@ public class BlockOutlineRenderer {
             cluster.visibleFaces.clear();
         ms.popPose();
     }
-    
+
     public static void loadFaceData(Direction face, Vector3f pos0, Vector3f pos1, Vector3f pos2, Vector3f pos3, Vector3f normal) {
         switch (face) {
             case DOWN -> {
@@ -671,10 +683,11 @@ public class BlockOutlineRenderer {
 
         bufferQuad(pose, consumer, pos0, pos1, pos2, pos3, color, LightTexture.FULL_BRIGHT, normal);
     }
+
     private static class Cluster {
 
-        private BlockPos anchor;
         private final Map<MergeEntry, Direction.AxisDirection> visibleFaces;
+        private BlockPos anchor;
 
         public Cluster() {
             visibleFaces = new HashMap<>();
@@ -693,7 +706,7 @@ public class BlockOutlineRenderer {
             // 6 FACES
             for (Direction.Axis axis : Direction.Axis.values()) {
                 Direction direction = Direction.get(Direction.AxisDirection.POSITIVE, axis);
-                for (int offset :  new int[]{0, 1}) {
+                for (int offset : new int[]{0, 1}) {
                     MergeEntry entry = new MergeEntry(axis, pos.relative(direction, offset));
                     if (visibleFaces.remove(entry) == null)
                         visibleFaces.put(entry, offset == 0 ? Direction.AxisDirection.NEGATIVE : Direction.AxisDirection.POSITIVE);
@@ -704,18 +717,18 @@ public class BlockOutlineRenderer {
 
     private record MergeEntry(Direction.Axis axis, BlockPos pos) {
         @Override
-            public boolean equals(Object o) {
-                if (this == o)
-                    return true;
-                if (!(o instanceof MergeEntry other))
-                    return false;
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (!(o instanceof MergeEntry other))
+                return false;
 
-                return this.axis == other.axis && this.pos.equals(other.pos);
-            }
-
-            @Override
-            public int hashCode() {
-                return this.pos.hashCode() * 31 + axis.ordinal();
-            }
+            return this.axis == other.axis && this.pos.equals(other.pos);
         }
+
+        @Override
+        public int hashCode() {
+            return this.pos.hashCode() * 31 + axis.ordinal();
+        }
+    }
 }

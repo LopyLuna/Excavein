@@ -13,7 +13,10 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import org.slf4j.Logger;
 import uwu.lopyluna.excavein.config.ClientConfig;
 import uwu.lopyluna.excavein.config.ServerConfig;
-import uwu.lopyluna.excavein.network.*;
+import uwu.lopyluna.excavein.packets.CooldownPacket;
+import uwu.lopyluna.excavein.packets.ExcaveinPacket;
+import uwu.lopyluna.excavein.packets.SelectedBlocksPacket;
+import uwu.lopyluna.excavein.registry.ExcaveinModes;
 
 @SuppressWarnings("unused")
 @Mod(Excavein.MOD_ID)
@@ -28,6 +31,8 @@ public class Excavein {
         container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_SPEC);
         container.registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_SPEC);
 
+        ExcaveinModes.register();
+
         if (FMLEnvironment.dist.isClient()) ExcaveinClient.client(modEventBus);
         modEventBus.addListener(this::onRegisterPayloadHandlers);
     }
@@ -35,11 +40,10 @@ public class Excavein {
     private void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(MOD_ID);
         registrar = registrar.executesOn(HandlerThread.NETWORK);
-        registrar.playToServer(KeybindPacket.TYPE, KeybindPacket.CODEC, KeybindPacket::handle);
-        registrar.playToServer(SelectionInspectionPacket.TYPE, SelectionInspectionPacket.CODEC, SelectionInspectionPacket::handle);
-        registrar.playToClient(SelectionOutlinePacket.TYPE, SelectionOutlinePacket.CODEC, SelectionOutlinePacket::handle);
+        registrar.playToServer(ExcaveinPacket.TYPE, ExcaveinPacket.CODEC, ExcaveinPacket::handle);
+
+        registrar.playToClient(SelectedBlocksPacket.TYPE, SelectedBlocksPacket.CODEC, SelectedBlocksPacket::handle);
         registrar.playToClient(CooldownPacket.TYPE, CooldownPacket.CODEC, CooldownPacket::handle);
-        registrar.playToClient(IsBreakingPacket.TYPE, IsBreakingPacket.CODEC, IsBreakingPacket::handle);
     }
 
 }

@@ -11,31 +11,31 @@ public class ServerConfig {
     public static final ModConfigSpec.IntValue SELECTION_ADD_COOLDOWN;
     public static final ModConfigSpec.IntValue SELECTION_ADD_RANGE;
     public static final ModConfigSpec.IntValue SELECTION_MAX_BLOCK;
-    public static final ModConfigSpec.BooleanValue REQUIRES_FUEL_ITEM; //NEW
-    public static final ModConfigSpec.IntValue FUEL_EXHAUSTION_AMOUNT; //NEW
+    public static final ModConfigSpec.BooleanValue REQUIRES_FUEL_ITEM;
+    public static final ModConfigSpec.IntValue FUEL_EXHAUSTION_AMOUNT;
     public static final ModConfigSpec.BooleanValue REQUIRES_HUNGER;
     public static final ModConfigSpec.DoubleValue FOOD_EXHAUSTION_MULTIPLIER;
-    public static final ModConfigSpec.BooleanValue REQUIRES_XP; //NEW
-    public static final ModConfigSpec.IntValue XP_EXHAUSTION_AMOUNT; //NEW
+    public static final ModConfigSpec.BooleanValue REQUIRES_XP;
+    public static final ModConfigSpec.IntValue XP_EXHAUSTION_AMOUNT;
     public static final ModConfigSpec.IntValue ITEM_PICKUP_DELAY;
-    public static final ModConfigSpec.BooleanValue XRAY_OUTLINE_SELECTION; //NEW
-    public static final ModConfigSpec.BooleanValue NO_DURABILITY_LOSS; //NEW
-    public static final ModConfigSpec.DoubleValue MINING_SPEED_NERF_MIN; //NEW
-    public static final ModConfigSpec.DoubleValue MINING_SPEED_NERF_MAX; //NEW
-    public static final ModConfigSpec.IntValue DELAY_BETWEEN_BREAK; //NEW
-    public static final ModConfigSpec.IntValue BLOCK_PER_BREAK; //NEW
-    public static final ModConfigSpec.BooleanValue WAIT_TILL_BROKEN; //NEW
+    public static final ModConfigSpec.BooleanValue XRAY_OUTLINE_SELECTION;
+    public static final ModConfigSpec.BooleanValue NO_DURABILITY_LOSS;
+    public static final ModConfigSpec.DoubleValue MINING_SPEED_NERF_MIN;
+    public static final ModConfigSpec.DoubleValue MINING_SPEED_NERF_MAX;
+    public static final ModConfigSpec.IntValue DELAY_BETWEEN_BREAK;
+    public static final ModConfigSpec.IntValue BLOCK_PER_BREAK;
+    public static final ModConfigSpec.BooleanValue WAIT_TILL_BROKEN;
     public static final ModConfigSpec.BooleanValue INVERT_WHITELIST;
     public static final ModConfigSpec.BooleanValue REQUIRES_MINEABLE;
     public static final ModConfigSpec.BooleanValue REQUIRES_TOOLS;
-    public static final ModConfigSpec.BooleanValue PREVENT_BREAKING_TOOL; //NEW
+    public static final ModConfigSpec.BooleanValue PREVENT_BREAKING_TOOL;
     public static final ModConfigSpec.BooleanValue BLOCKS_AT_PLAYER;
     public static final ModConfigSpec.BooleanValue BLOCK_PLACING;
     public static final ModConfigSpec.BooleanValue HAND_INTERACTION;
     public static final ModConfigSpec.BooleanValue ITEM_INTERACTION;
-    public static ModConfigSpec.ConfigValue<List<? extends String>> VEIN_BLOCK_TAGS;
-
+    public static final ModConfigSpec.BooleanValue DEBUG;
     public static final ModConfigSpec SERVER_SPEC;
+    public static ModConfigSpec.ConfigValue<List<? extends String>> VEIN_BLOCK_TAGS;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -103,7 +103,7 @@ public class ServerConfig {
         REQUIRES_MINEABLE = builder
                 .comment("Require Hand/Tools for said selected blocks that requires hand/tools to drop //Highly Recommended (default = true)")
                 .define("RequiresMineable", true);
-        
+
         REQUIRES_TOOLS = builder
                 .comment("Require Tools for said selected blocks (default = false)")
                 .define("RequiresTools", false);
@@ -147,6 +147,10 @@ public class ServerConfig {
         VEIN_BLOCK_TAGS = builder
                 .comment("List of block tags for vein mining as in Start Pos Block Tag needs to match said block in selection with the same tag.")
                 .defineList("VeinBlockTags", defaultVeinTags(), obj -> obj instanceof String);
+
+        DEBUG = builder
+                .comment("for devs (default = false)")
+                .define("Debug", false);
 
         SERVER_SPEC = builder.build();
     }

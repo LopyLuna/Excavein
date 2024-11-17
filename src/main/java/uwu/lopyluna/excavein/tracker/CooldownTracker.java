@@ -6,7 +6,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import uwu.lopyluna.excavein.Utils;
+import uwu.lopyluna.excavein.utils.Utils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,20 +20,20 @@ import static uwu.lopyluna.excavein.config.ServerConfig.SELECTION_COOLDOWN;
 public class CooldownTracker {
     private static final Map<UUID, Integer> playerCooldowns = new HashMap<>();
 
-    public static void resetCooldown(ServerPlayer player, int amountOfBlocks) {
-        playerCooldowns.put(player.getUUID(), Mth.clamp(Utils.calculateTimeFromBlocks(SELECTION_COOLDOWN.get(), amountOfBlocks) + SELECTION_ADD_COOLDOWN.get(), 0, SELECTION_COOLDOWN.get()));
+    public static void resetCooldown(UUID uuid, int amountOfBlocks) {
+        playerCooldowns.put(uuid, Mth.clamp(Utils.calculateTimeFromBlocks(SELECTION_COOLDOWN.get(), amountOfBlocks) + SELECTION_ADD_COOLDOWN.get(), 0, SELECTION_COOLDOWN.get()));
     }
 
-    public static boolean isCooldownNotActive(ServerPlayer player) {
-        return playerCooldowns.getOrDefault(player.getUUID(), 0) <= 0;
+    public static boolean isCooldownNotActive(UUID uuid) {
+        return playerCooldowns.getOrDefault(uuid, 0) <= 0;
     }
 
-    public static int getRemainingCooldown(ServerPlayer player) {
-        return playerCooldowns.getOrDefault(player.getUUID(), 0);
+    public static int getRemainingCooldown(UUID uuid) {
+        return playerCooldowns.getOrDefault(uuid, 0);
     }
 
-    public static void getCoolDownCheck(ServerPlayer player) {
-        playerCooldowns.putIfAbsent(player.getUUID(), 0);
+    public static void getCoolDownCheck(UUID uuid) {
+        playerCooldowns.putIfAbsent(uuid, 0);
     }
 
     @SubscribeEvent

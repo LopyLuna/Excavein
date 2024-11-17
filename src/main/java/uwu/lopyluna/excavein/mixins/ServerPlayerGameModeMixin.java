@@ -16,7 +16,6 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -24,44 +23,42 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import uwu.lopyluna.excavein.Utils;
 import uwu.lopyluna.excavein.tracker.CooldownTracker;
+import uwu.lopyluna.excavein.utils.Utils;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import static uwu.lopyluna.excavein.Utils.getValidTools;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
-import static uwu.lopyluna.excavein.tracker.BlockPositionTracker.*;
+import static uwu.lopyluna.excavein.utils.Utils.getValidTools;
 
 @Mixin(ServerPlayerGameMode.class)
 public class ServerPlayerGameModeMixin {
 
-    @Shadow private GameType gameModeForPlayer = GameType.DEFAULT_MODE;
-
     @Unique
     int excavein$i = 0;
+    @Unique
+    AtomicReference<InteractionResult> excavein$result = new AtomicReference<>(InteractionResult.FAIL);
+    @Shadow
+    private GameType gameModeForPlayer = GameType.DEFAULT_MODE;
 
     @Inject(method = "useItemOn", at = @At("HEAD"), cancellable = true)
     public void useItemOn(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand, BlockHitResult pHitResult, CallbackInfoReturnable<InteractionResult> cir) {
-        InteractionResult interactionResult = excavein$performInteraction(pPlayer, pLevel, pStack, pHand, pHitResult);
-        if (interactionResult.consumesAction())
-            cir.setReturnValue(interactionResult);
+        //InteractionResult interactionResult = excavein$performInteraction(pPlayer, pLevel, pStack, pHand, pHitResult);
+        //if (interactionResult.consumesAction())
+        //    cir.setReturnValue(interactionResult);
     }
-
-    @Unique
-    AtomicReference<InteractionResult> excavein$result = new AtomicReference<>(InteractionResult.FAIL);
 
     @Unique
     private InteractionResult excavein$performInteraction(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand, BlockHitResult pHitResult) {
         if (pPlayer != null && pLevel != null && pStack != null && pHand != null && pHitResult != null) {
             if ((BLOCK_PLACING.get() && (pStack.getItem() instanceof BlockItem || !getValidTools(pStack))) || (ITEM_INTERACTION.get() && (!(pStack.getItem() instanceof BlockItem) || getValidTools(pStack))) || (HAND_INTERACTION.get() && pStack.isEmpty())) {
-                if ((!(pPlayer instanceof FakePlayer) && keyIsDown) && (CooldownTracker.isCooldownNotActive(pPlayer) && !isBreaking) && !savedBlockPositions.isEmpty()) {
-                    savedBlockPositions.forEach(pos -> excavein$performInteraction(pPlayer, pLevel, pStack, pHand, pHitResult, pos)
-                    );
-                    excavein$reset(pPlayer);
-                    CooldownTracker.resetCooldown(pPlayer, BLOCK_PLACING.get() && !pPlayer.isCreative() ? excavein$i : 0);
-                    return excavein$result.get();
-                }
+                //if ((!(pPlayer instanceof FakePlayer) && keyIsDown) && (CooldownTracker.isCooldownNotActive(pPlayer.getUUID()) && !isBreaking) && !savedBlockPositions.isEmpty()) {
+                //savedBlockPositions.forEach(pos -> excavein$performInteraction(pPlayer, pLevel, pStack, pHand, pHitResult, pos)
+                //);
+                //excavein$reset(pPlayer);
+                //CooldownTracker.resetCooldown(pPlayer.getUUID(), BLOCK_PLACING.get() && !pPlayer.isCreative() ? excavein$i : 0);
+                //return excavein$result.get();
+                //}
             }
         }
         excavein$result.set(InteractionResult.FAIL);
@@ -70,15 +67,15 @@ public class ServerPlayerGameModeMixin {
 
     @Unique
     private void excavein$reset(ServerPlayer pPlayer) {
-        CooldownTracker.resetCooldown(pPlayer, pPlayer.isCreative() ? 0 : excavein$i);
+        CooldownTracker.resetCooldown(pPlayer.getUUID(), pPlayer.isCreative() ? 0 : excavein$i);
         if (!pPlayer.isCreative())
             if (excavein$i > 0) Utils.removingFuelItems(pPlayer, FUEL_EXHAUSTION_AMOUNT.get() * excavein$i);
-        if (isBreaking) isBreaking = false;
-
-        excavein$i = 0;
-        resetTick();
-        if (!savedBlockPositions.isEmpty()) savedBlockPositions.clear();
-        if (!blocksToBreak.isEmpty()) blocksToBreak.clear();
+        //if (isBreaking) isBreaking = false;
+//
+        //excavein$i = 0;
+        //resetTick();
+        //if (!savedBlockPositions.isEmpty()) savedBlockPositions.clear();
+        //if (!blocksToBreak.isEmpty()) blocksToBreak.clear();
     }
 
     @Unique
@@ -86,14 +83,13 @@ public class ServerPlayerGameModeMixin {
         boolean valid = !(REQUIRES_XP.get() && !pPlayer.isCreative() && pPlayer.totalExperience == 0) &&
                 !(REQUIRES_HUNGER.get() && !pPlayer.isCreative() && pPlayer.getFoodData().getFoodLevel() == 0) &&
                 !(REQUIRES_FUEL_ITEM.get() && !pPlayer.isCreative() && Utils.findInInventory(pPlayer) == 0) &&
-                !(PREVENT_BREAKING_TOOL.get() && !pPlayer.isCreative() && pStack.isDamageableItem() && pStack.getMaxDamage() - pStack.getDamageValue() == 1)
-                ;
+                !(PREVENT_BREAKING_TOOL.get() && !pPlayer.isCreative() && pStack.isDamageableItem() && pStack.getMaxDamage() - pStack.getDamageValue() == 1);
 
         if (REQUIRES_XP.get() && !pPlayer.isCreative() && pPlayer.totalExperience == 0)
-            pPlayer.displayClientMessage(Component.translatable("excavein.warning.require_xp").withStyle(ChatFormatting.RED), true); else
-        if (REQUIRES_HUNGER.get() && !pPlayer.isCreative() && pPlayer.getFoodData().getFoodLevel() == 0)
-            pPlayer.displayClientMessage(Component.translatable("excavein.warning.require_hunger").withStyle(ChatFormatting.RED), true); else
-        if (REQUIRES_FUEL_ITEM.get() && !pPlayer.isCreative() && Utils.findInInventory(pPlayer) == 0)
+            pPlayer.displayClientMessage(Component.translatable("excavein.warning.require_xp").withStyle(ChatFormatting.RED), true);
+        else if (REQUIRES_HUNGER.get() && !pPlayer.isCreative() && pPlayer.getFoodData().getFoodLevel() == 0)
+            pPlayer.displayClientMessage(Component.translatable("excavein.warning.require_hunger").withStyle(ChatFormatting.RED), true);
+        else if (REQUIRES_FUEL_ITEM.get() && !pPlayer.isCreative() && Utils.findInInventory(pPlayer) == 0)
             pPlayer.displayClientMessage(Component.translatable("excavein.warning.require_fuel").withStyle(ChatFormatting.RED), true);
 
         if (valid) {
@@ -105,12 +101,12 @@ public class ServerPlayerGameModeMixin {
             if (resulting.consumesAction()) {
                 excavein$i++;
 
-                if (!pPlayer.isCreative()) {
-                    if ((savedBlockPositions.size() * FOOD_EXHAUSTION_MULTIPLIER.get()) != 0)
-                        pPlayer.causeFoodExhaustion((float) (0.005F * (savedBlockPositions.size() * FOOD_EXHAUSTION_MULTIPLIER.get())));
-                    if (XP_EXHAUSTION_AMOUNT.get() != 0)
-                        pPlayer.giveExperiencePoints(-XP_EXHAUSTION_AMOUNT.get());
-                }
+                //if (!pPlayer.isCreative()) {
+                //    if ((savedBlockPositions.size() * FOOD_EXHAUSTION_MULTIPLIER.get()) != 0)
+                //        pPlayer.causeFoodExhaustion((float) (0.005F * (savedBlockPositions.size() * FOOD_EXHAUSTION_MULTIPLIER.get())));
+                //    if (XP_EXHAUSTION_AMOUNT.get() != 0)
+                //        pPlayer.giveExperiencePoints(-XP_EXHAUSTION_AMOUNT.get());
+                //}
             }
         }
     }

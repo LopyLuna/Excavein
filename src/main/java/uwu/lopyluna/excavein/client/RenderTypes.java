@@ -12,6 +12,11 @@ import static uwu.lopyluna.excavein.Excavein.MOD_ID;
 
 public class RenderTypes extends RenderStateShard {
 
+    @SuppressWarnings("all")
+    public RenderTypes() {
+        super(null, null, null);
+    }
+
     public static RenderType getOutline(ResourceLocation loc, boolean blur) {
         return RenderType.create(MOD_ID + ":outline", DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, false, true,
                 RenderType.CompositeState.builder()
@@ -23,10 +28,5 @@ public class RenderTypes extends RenderStateShard {
                         .setOverlayState(OVERLAY)
                         .setDepthTestState(ServerConfig.XRAY_OUTLINE_SELECTION.get() && ClientConfig.XRAY_OUTLINE_SELECTION.get() ? NO_DEPTH_TEST : LEQUAL_DEPTH_TEST)
                         .createCompositeState(false));
-    }
-
-    @SuppressWarnings("all")
-    public RenderTypes() {
-        super(null, null, null);
     }
 }
