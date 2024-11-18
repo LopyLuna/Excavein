@@ -9,7 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -20,10 +20,10 @@ import uwu.lopyluna.excavein.entries.ShapeEntry;
 import uwu.lopyluna.excavein.entries.ShapeModifierEntry;
 import uwu.lopyluna.excavein.packets.ClientHelperBoolsPacket;
 import uwu.lopyluna.excavein.packets.ClientHelperModesPacket;
+import uwu.lopyluna.excavein.packets.CooldownPacket;
 import uwu.lopyluna.excavein.packets.SelectedBlocksPacket;
 import uwu.lopyluna.excavein.shape_modifiers.ShapeModifier;
 import uwu.lopyluna.excavein.shapes.Shape;
-import uwu.lopyluna.excavein.tracker.CooldownTracker;
 import uwu.lopyluna.excavein.utils.BreakingUtils;
 import uwu.lopyluna.excavein.utils.Utils;
 
@@ -32,12 +32,13 @@ import java.util.UUID;
 
 import static uwu.lopyluna.excavein.config.ClientConfig.DISPLAY_SELECTION_CHAT;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
-import static uwu.lopyluna.excavein.tracker.CooldownTracker.getCoolDownCheck;
 import static uwu.lopyluna.excavein.utils.Utils.findInInventory;
 
+@SuppressWarnings("unused")
 public class SelectionPlayerData {
 
     private final BreakingUtils breakingUtils;
+    private final CooldownData cooldownData;
     private final ServerLevel level;
     private final ServerPlayer player;
     private final UUID playerUUID;
@@ -52,6 +53,7 @@ public class SelectionPlayerData {
         playerUUID = uuid;
         player = (ServerPlayer) pLevel.getPlayerByUUID(uuid);
         breakingUtils = new BreakingUtils(this);
+        cooldownData = new CooldownData(this);
     }
 
     public void updateKey(boolean keyPressed) {
@@ -152,13 +154,14 @@ public class SelectionPlayerData {
         getBreakingUtils().tick();
     }
 
-    public void blockBreak(BlockPos pos) {
-        if (!getBreakingUtils().isBreaking() || !WAIT_TILL_BROKEN.get())
-            getBreakingUtils().breakBlocks(pos);
+    public boolean blockBreak(GameType gameModeForPlayer) {
+        if (isKeyPressed())
+            return getBreakingUtils().breakBlocks(gameModeForPlayer);
+        return false;
     }
 
     public Set<BlockPos> getBlocks() {
-        if (level == null || playerUUID == null || player == null || !flag() || (!getBreakingUtils().getBlockPositions().isEmpty() && WAIT_TILL_BROKEN.get()))
+        if (level == null || playerUUID == null || player == null)
             return Set.of();
 
         BlockHitResult rayTrace = getPlayerRayTraceToBlock(player);
@@ -174,18 +177,22 @@ public class SelectionPlayerData {
                 getModifier().getShapeModifier()) : Set.of();
     }
 
+    int i = 0;
     public void updateCheck() {
-        PacketDistributor.sendToPlayer(player, new SelectedBlocksPacket(getBlocks()));
-        PacketDistributor.sendToPlayer(player, new ClientHelperBoolsPacket(getBreakingUtils().isBreaking(), requiredFlags(), flag()));
-        PacketDistributor.sendToPlayer(player, new ClientHelperModesPacket(
-                getShape().getShape().getName(),
-                getPrevShape().getShape().getName(),
-                getNextShape().getShape().getName(),
-                getModifier().getShapeModifier().getName(),
-                getPrevModifier().getShapeModifier().getName(),
-                getNextModifier().getShapeModifier().getName()
-        ));
-        getCoolDownCheck(playerUUID);
+        if (i >= 5) {
+            PacketDistributor.sendToPlayer(player, new SelectedBlocksPacket(getBlocks()));
+            PacketDistributor.sendToPlayer(player, new CooldownPacket(getRemainingCooldown()));
+            PacketDistributor.sendToPlayer(player, new ClientHelperBoolsPacket(getBreakingUtils().isBreaking(), requiredFlags(), flag()));
+            PacketDistributor.sendToPlayer(player, new ClientHelperModesPacket(
+                    getShape().getShape().getName(),
+                    getPrevShape().getShape().getName(),
+                    getNextShape().getShape().getName(),
+                    getModifier().getShapeModifier().getName(),
+                    getPrevModifier().getShapeModifier().getName(),
+                    getNextModifier().getShapeModifier().getName()
+            ));
+            i = 0;
+        } else i++;
     }
 
     public BlockHitResult getPlayerRayTraceToBlock(Player player) {
@@ -238,20 +245,16 @@ public class SelectionPlayerData {
     }
 
     public void resetCooldown(int amountOfBlocks) {
-        CooldownTracker.resetCooldown(playerUUID, amountOfBlocks);
+        cooldownData.resetCooldown(amountOfBlocks);
     }
 
-    //public int getRemainingCooldown() {*
-    //    return CooldownTracker.getRemainingCooldown(playerUUID);
-    //}
+    public int getRemainingCooldown() {
+        return cooldownData.getRemainingCooldown();
+    }
 
     public boolean isCooldownActive() {
-        return !CooldownTracker.isCooldownNotActive(playerUUID);
+        return !cooldownData.isCooldownNotActive();
     }
-
-    //public Player isPlayer(Player player) {*
-    //    return player.getUUID().equals(playerUUID) ? player : null;
-    //}
 
     public void displayShapeMode() {
         if (getShape() == null || getShape().getShape() == null || getModifier() == null || getModifier().getShapeModifier() == null)
@@ -264,6 +267,11 @@ public class SelectionPlayerData {
     }
 
     // GET VARIABLES
+
+
+    public CooldownData getCooldownData() {
+        return cooldownData;
+    }
 
     public ServerPlayer getPlayer() {
         return player;

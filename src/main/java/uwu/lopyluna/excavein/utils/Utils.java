@@ -81,14 +81,21 @@ public class Utils {
         return startSpeed >= speed;
     }
 
-    public static boolean isNotValidBlock(Level pLevel, ServerPlayer player, BlockPos pos, BlockState state) {
+    public static boolean isNotValidBlock(Level pLevel, ServerPlayer player, BlockPos pos, BlockState state, boolean isCreative) {
         var main = player.getMainHandItem();
         return (!isBlockWhitelisted(state) ||
                 !pLevel.getWorldBorder().isWithinBounds(pos) ||
-                isNotValidForSelection(player, pLevel, pos, state, main) ||
+                (isNotValidForSelection(player, pLevel, pos, state, main) && !isCreative) ||
                 state.isAir() ||
                 (pLevel.getFluidState(pos).getType() instanceof FlowingFluid) ||
-                ((state.getDestroySpeed(pLevel, pos) < 0) && !player.isCreative()));
+                ((state.getDestroySpeed(pLevel, pos) < 0) && !isCreative));
+    }
+
+    public static boolean check(ServerPlayer player, ServerLevel pLevel, BlockPos startPos, BlockPos currentPos, BlockState startState, BlockState currentState, BlockPos eyePos, int maxRange, boolean creative) {
+        return (eyePos.distManhattan(currentPos) > maxRange) || startState.isAir() || ((startState.getDestroySpeed(pLevel, startPos) < 0) && !creative) ||
+                isNotValidBlock(pLevel, player, currentPos, currentState, creative) ||
+                (REQUIRES_TOOLS.get() && player.getMainHandItem().isEmpty() ||
+                !isCorrectSpeeds(player, pLevel, currentPos, startPos, startState, currentState) && !creative);
     }
 
     public static <T extends Shape, I extends ShapeModifier> Set<BlockPos> constructSelection(SelectionPlayerData data, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, T shape, I modifier) {
@@ -104,6 +111,19 @@ public class Utils {
 
         toCheck.add(startPos);
 
+        boolean creative = player.isCreative();
+        BlockState startState = pLevel.getBlockState(startPos);
+        int straightRange = 0;
+
+        for (int range = 0; range < maxRange; range++) {
+            BlockPos currentPos = startPos.relative(rayTrace.getDirection().getOpposite(), range);
+            BlockState currentState = pLevel.getBlockState(currentPos);
+            boolean quickCheck = check(player, pLevel, startPos, currentPos, startState, currentState, eyePos, maxRange, creative);
+            if (quickCheck)
+                break;
+            straightRange++;
+        }
+
         while (!toCheck.isEmpty() && validBlocks.size() < maxBlocks) {
             BlockPos currentPos = toCheck.poll();
 
@@ -115,14 +135,8 @@ public class Utils {
                 continue;
             }
 
-            boolean creative = player.isCreative();
-
             BlockState currentState = pLevel.getBlockState(currentPos);
-            BlockState startState = pLevel.getBlockState(startPos);
-            boolean quickCheck = (eyePos.distManhattan(currentPos) > maxRange) ||
-                    (REQUIRES_TOOLS.get() && player.getMainHandItem().isEmpty() && !creative) ||
-                    (isNotValidBlock(pLevel, player, currentPos, currentState) || startState.isAir() || ((startState.getDestroySpeed(pLevel, startPos) < 0) && !creative)) ||
-                    (!isCorrectSpeeds(player, pLevel, currentPos, startPos, startState, currentState) && !creative);
+            boolean quickCheck = check(player, pLevel, startPos, currentPos, startState, currentState, eyePos, maxRange, creative);
 
             if (quickCheck) {
                 checkedBlocks.add(currentPos);
@@ -130,12 +144,12 @@ public class Utils {
                 continue;
             }
 
-            if (shape.shapeFilter(pLevel, player, rayTrace, validBlocks, checkedBlocks, startPos, currentPos, startState, currentState, maxBlocks, maxRange))
-                if (modifier.shapeModifierFilter(pLevel, player, rayTrace, validBlocks, checkedBlocks, startPos, currentPos, startState, currentState, maxBlocks, maxRange)) {
+            if (shape.shapeFilter(pLevel, player, rayTrace, validBlocks, checkedBlocks, startPos, currentPos, startState, currentState, maxBlocks, maxRange, straightRange))
+                if (modifier.shapeModifierFilter(pLevel, player, rayTrace, validBlocks, checkedBlocks, startPos, currentPos, startState, currentState, maxBlocks, maxRange, straightRange)) {
                     validBlocks.add(currentPos);
                     checkedBlocks.add(currentPos);
                     Set<BlockPos> building = new HashSet<>(Set.of());
-                    building.addAll(shape.shapeBuild(pLevel, player, rayTrace, startPos, currentPos, startState, currentState, maxBlocks, maxRange));
+                    building.addAll(shape.shapeBuild(pLevel, player, rayTrace, startPos, currentPos, startState, currentState, maxBlocks, maxRange, straightRange));
                     building.removeIf(checkedBlocks::contains);
                     building.removeIf(toCheck::contains);
                     toCheck.addAll(building);
@@ -153,40 +167,6 @@ public class Utils {
     public static double calculatePercentage(double currentValue, double maxValue, double minOutputValue, double maxOutputValue, boolean invert) {
         double ratio = Math.max(0, Math.min(currentValue / maxValue, 1));
         return Math.round((invert ? maxOutputValue - ratio * (maxOutputValue - minOutputValue) : minOutputValue + ratio * (maxOutputValue - minOutputValue)) * 1000.0) / 1000.0;
-    }
-
-    @SuppressWarnings("all")
-    public static String ticksToTime(int value, OffsetTime off) {
-        boolean bT = off == OffsetTime.TICKS;
-        boolean bS = off == OffsetTime.SECONDS || bT;
-        boolean bM = off == OffsetTime.MINUTES || bS;
-        boolean bH = off == OffsetTime.HOURS || bM;
-        boolean bD = off == OffsetTime.DAYS || bH;
-        boolean bMTH = off == OffsetTime.MONTHS || bD;
-        int t = value;
-        int s = t / 20;
-        int m = s / 60;
-        int h = m / 60;
-        int d = h / 24;
-        int mth = d / 30;
-        int y = mth / 12;
-        t %= 20;
-        s %= 60;
-        m %= 60;
-        h %= 24;
-        mth %= 30;
-        String ticks = bT ? conversion(t, "t", d > 0 || mth > 0 || y > 0 || s > 0 || m > 0 || h > 0, bT) : "";
-        String secs = bS ? conversion(s, "s", d > 0 || mth > 0 || y > 0 || m > 0 || h > 0, off == OffsetTime.SECONDS) : "";
-        String mins = bM ? conversion(m, "m", d > 0 || mth > 0 || y > 0 || h > 0, off == OffsetTime.MINUTES) : "";
-        String hours = bH ? conversion(h, "h", d > 0 || mth > 0 || y > 0, off == OffsetTime.HOURS) : "";
-        String days = bD ? conversion(d, "d", mth > 0 || y > 0, off == OffsetTime.DAYS) : "";
-        String months = bMTH ? conversion(mth, "m", y > 0, off == OffsetTime.MONTHS) : "";
-        String years = y > 0 ? y + "y" : "";
-        return years + months + days + hours + mins + secs + ticks;
-    }
-
-    public static String conversion(int value, String inc, boolean above, boolean isEnding) {
-        return value > 0 ? above ? value < 10 ? ":0" + value + inc : ":" + value + inc : value + inc : above ? ":00" + inc : isEnding ? "0" + inc : "";
     }
 
     public static TagKey<Item> universalTag(String name) {

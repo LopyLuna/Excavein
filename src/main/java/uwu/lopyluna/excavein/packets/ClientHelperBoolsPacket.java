@@ -9,7 +9,8 @@ import org.jetbrains.annotations.NotNull;
 import uwu.lopyluna.excavein.client.ClientHelper;
 import uwu.lopyluna.excavein.utils.Utils;
 
-public record ClientHelperBoolsPacket(boolean currentlyBreaking, boolean requiredFlags, boolean flag) implements CustomPacketPayload {
+public record ClientHelperBoolsPacket(boolean currentlyBreaking, boolean requiredFlags,
+                                      boolean flag) implements CustomPacketPayload {
     public static final Type<ClientHelperBoolsPacket> TYPE = new Type<>(Utils.asResource("chelperbools"));
 
     public static final StreamCodec<FriendlyByteBuf, ClientHelperBoolsPacket> CODEC = StreamCodec.composite(

@@ -1,11 +1,6 @@
 package uwu.lopyluna.excavein.entries;
 
-import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import org.lwjgl.glfw.GLFW;
-import uwu.lopyluna.excavein.client.ClientHandler;
 import uwu.lopyluna.excavein.shape_modifiers.ShapeModifier;
 
 public class ShapeModifierEntryBuilder<T extends ShapeModifier> {

@@ -4,6 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerPlayerGameMode;
 import net.minecraft.world.InteractionHand;
@@ -17,29 +18,40 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import uwu.lopyluna.excavein.tracker.CooldownTracker;
 import uwu.lopyluna.excavein.utils.Utils;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
+import static uwu.lopyluna.excavein.tracker.ExcaveinTacker.getSelectionData;
 import static uwu.lopyluna.excavein.utils.Utils.getValidTools;
 
 @Mixin(ServerPlayerGameMode.class)
 public class ServerPlayerGameModeMixin {
 
+    @Shadow protected ServerLevel level;
+    @Shadow @Final protected ServerPlayer player;
     @Unique
     int excavein$i = 0;
     @Unique
     AtomicReference<InteractionResult> excavein$result = new AtomicReference<>(InteractionResult.FAIL);
     @Shadow
     private GameType gameModeForPlayer = GameType.DEFAULT_MODE;
+
+    @Inject(method = "destroyBlock", at = @At("HEAD"), cancellable = true)
+    public void destroyBlock(CallbackInfoReturnable<Boolean> cir) {
+        if (getSelectionData(player.getUUID()).blockBreak(gameModeForPlayer)) {
+            cir.setReturnValue(true);
+        }
+    }
+
 
     @Inject(method = "useItemOn", at = @At("HEAD"), cancellable = true)
     public void useItemOn(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand, BlockHitResult pHitResult, CallbackInfoReturnable<InteractionResult> cir) {
@@ -67,7 +79,7 @@ public class ServerPlayerGameModeMixin {
 
     @Unique
     private void excavein$reset(ServerPlayer pPlayer) {
-        CooldownTracker.resetCooldown(pPlayer.getUUID(), pPlayer.isCreative() ? 0 : excavein$i);
+        //CooldownTracker.resetCooldown(pPlayer.getUUID(), pPlayer.isCreative() ? 0 : excavein$i);
         if (!pPlayer.isCreative())
             if (excavein$i > 0) Utils.removingFuelItems(pPlayer, FUEL_EXHAUSTION_AMOUNT.get() * excavein$i);
         //if (isBreaking) isBreaking = false;

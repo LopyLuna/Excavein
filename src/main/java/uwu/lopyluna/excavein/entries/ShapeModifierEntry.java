@@ -1,6 +1,5 @@
 package uwu.lopyluna.excavein.entries;
 
-import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.ResourceLocation;
 import uwu.lopyluna.excavein.shape_modifiers.ShapeModifier;
 

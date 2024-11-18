@@ -96,24 +96,15 @@ public class BlockOutlineRenderer {
         boolean currentlyBreaking = ClientHelper.currentlyBreaking;
 
         Vector3f color = (!currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && ClientHelper.flag ? colorB : colorB.mul(1, 0.75f, 0.75f);
-        Vector4f colorA = (!currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) ? colorAB : colorAB.mul(1, 0.75f, 0.75f, 1);
+        Vector4f colorA = (!currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && ClientHelper.flag ? colorAB : colorAB.mul(1, 0.75f, 0.75f, 1);
 
-        if (ClientConfig.DEBUG.get() && mc.player.isCreative()) {
-            //MAINLY FOR DEV USE
-            if (!outlineBlocks.isEmpty() && outlineBlocks.size() <= MAX_BLOCK_VIEW.get()) {
-                VoxelShape debug = convertSelectionToVoxelShape(outlineBlocks);
-                renderShape(poseStack, multiBufferSource.getBuffer(blank), debug, camPos, color.x, color.y, color.z);
+        if (!outlineBlocks.isEmpty() && keyPressed && outlineBlocks.size() <= MAX_BLOCK_VIEW.get()) {
+            if (RENDER_OUTLINE.get()) {
+                VoxelShape selectionShape = convertSelectionToVoxelShape(outlineBlocks);
+                renderShape(poseStack, multiBufferSource.getBuffer(blank), selectionShape, camPos, color.x, color.y, color.z);
+            }
+            if (RENDER_FACE.get())
                 renderFaces(poseStack, multiBufferSource.getBuffer(selection), outlineBlocks, camPos, colorA);
-            }
-        } else {
-            if (!outlineBlocks.isEmpty() && keyPressed && outlineBlocks.size() <= MAX_BLOCK_VIEW.get()) {
-                if (RENDER_OUTLINE.get()) {
-                    VoxelShape selectionShape = convertSelectionToVoxelShape(outlineBlocks);
-                    renderShape(poseStack, multiBufferSource.getBuffer(blank), selectionShape, camPos, color.x, color.y, color.z);
-                }
-                if (RENDER_FACE.get())
-                    renderFaces(poseStack, multiBufferSource.getBuffer(selection), outlineBlocks, camPos, colorA);
-            }
         }
 
         event.setCanceled(true);

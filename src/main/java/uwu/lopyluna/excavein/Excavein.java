@@ -39,6 +39,7 @@ public class Excavein {
         PayloadRegistrar registrar = event.registrar(MOD_ID);
         registrar = registrar.executesOn(HandlerThread.NETWORK);
         registrar.playToServer(ExcaveinPacket.TYPE, ExcaveinPacket.CODEC, ExcaveinPacket::handle);
+        registrar.playToServer(ModesPacket.TYPE, ModesPacket.CODEC, ModesPacket::handle);
         registrar.playToServer(KeybindPacket.TYPE, KeybindPacket.CODEC, KeybindPacket::handle);
 
         registrar.playToClient(SelectedBlocksPacket.TYPE, SelectedBlocksPacket.CODEC, SelectedBlocksPacket::handle);

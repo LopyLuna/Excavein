@@ -10,7 +10,8 @@ import uwu.lopyluna.excavein.client.ClientHelper;
 import uwu.lopyluna.excavein.utils.Utils;
 
 public record ClientHelperModesPacket(String currentMode, String previousMode, String nextMode,
-                                      String currentModifier, String previousModifier, String nextModifier) implements CustomPacketPayload {
+                                      String currentModifier, String previousModifier,
+                                      String nextModifier) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<ClientHelperModesPacket> TYPE = new CustomPacketPayload.Type<>(Utils.asResource("chelpermodes"));
 
     public static final StreamCodec<FriendlyByteBuf, ClientHelperModesPacket> CODEC = StreamCodec.composite(

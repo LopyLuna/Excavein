@@ -6,15 +6,13 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
-import net.minecraft.util.Mth;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 import uwu.lopyluna.excavein.config.ServerConfig;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public interface ShapeAdditions {
 
@@ -40,51 +38,46 @@ public interface ShapeAdditions {
         return false;
     }
 
-    default Set<BlockPos> getNeighborsDirectional(BlockPos pos, Direction direction) {
-        Set<BlockPos> offsets = new HashSet<>();
-        for (Direction directional : Direction.values()) {
-            if (directional.getAxis() != direction.getAxis()) {
-                offsets.add(pos.relative(directional));
-            }
-        }
-        return offsets;
-    }
-
-    default BlockPos getDiagonalPosBasedOnView(ServerPlayer player, BlockPos currentPos, Direction direction) {
-        float pitch = player.getXRot();
-        Direction horizontalDirection = direction.getAxis().isVertical() ? player.getDirection() : direction;
-
-        BlockPos diagonalPos = currentPos;
-
-        diagonalPos = diagonalPos.relative(horizontalDirection);
-        if (pitch <= 0) {
-            diagonalPos = diagonalPos.above();
-        } else if (pitch > 0) {
-            diagonalPos = diagonalPos.below();
-        }
-
-        return diagonalPos;
-    }
-
     default Set<BlockPos> getNeighborsIncludingDiagonals(BlockPos pos) {
         Set<BlockPos> neighbors = new HashSet<>();
-        for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++)
-            if (dx != 0 || dy != 0 || dz != 0) neighbors.add(pos.offset(dx, dy, dz));
+        for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++)
+                for (int dz = -1; dz <= 1; dz++)
+                    if (dx != 0 || dy != 0 || dz != 0) neighbors.add(pos.offset(dx, dy, dz));
         return neighbors;
     }
 
-    default Set<BlockPos> getNeighborsTunnel(BlockPos start, BlockPos pos, Direction direction, int size) {
-        Set<BlockPos> offsets = new HashSet<>();
-        Set<Integer> offsetStart = new HashSet<>();
-        int i = Mth.clamp(size, 0, 64);
-        if (i != 0) for (int x = -i; x <= i; x++) for (int y = -i; y <= i; y++)
-            switch (direction.getAxis()) {
-                case X -> { offsets.add(pos.offset(0, y, x)); offsetStart.add(start.offset(0, y, x).get(direction.getAxis())); }
-                case Y -> { offsets.add(pos.offset(x, 0, y)); offsetStart.add(start.offset(x, 0, y).get(direction.getAxis())); }
-                case Z -> { offsets.add(pos.offset(x, y, 0)); offsetStart.add(start.offset(x, y, 0).get(direction.getAxis())); }
-            }
-        offsets.add(pos.relative(direction));
-        offsets.removeIf(blockPos -> offsetStart.contains(blockPos.get(direction.getAxis())));
-        return offsets;
+    default Set<BlockPos> getDiagonalTunnel(ServerPlayer player, BlockPos startPosition, BlockPos currentPosition, BlockHitResult rayTrace) {
+        Set<BlockPos> neighbors = new HashSet<>();
+        Direction direction = rayTrace.getDirection();
+        boolean isBottom = direction != Direction.DOWN && (direction == Direction.UP || !(rayTrace.getLocation().y - (double)startPosition.getY() > 0.5));
+
+        Direction horizontalDirection = direction.getAxis().isVertical() ? player.getDirection() : direction.getOpposite();
+        BlockPos diagonalPos = currentPosition;
+        diagonalPos = diagonalPos.relative(horizontalDirection);
+
+        if (isBottom) diagonalPos = diagonalPos.below();
+        else diagonalPos = diagonalPos.above();
+
+        neighbors.add(diagonalPos);
+        return neighbors;
+    }
+
+    default boolean makeTunnel(BlockPos startPosition, BlockPos currentPosition, Direction direction, int size, int pMaxRange) {
+        int distance = switch (direction) {
+            case NORTH -> startPosition.getZ() - currentPosition.getZ();
+            case SOUTH -> currentPosition.getZ() - startPosition.getZ();
+            case WEST -> startPosition.getX() - currentPosition.getX();
+            case EAST -> currentPosition.getX() - startPosition.getX();
+            case UP -> currentPosition.getY() - startPosition.getY();
+            case DOWN -> startPosition.getY() - currentPosition.getY();
+        };
+        if (distance < 0 || distance > pMaxRange)
+            return false;
+        int offsetX = direction.getAxis() == Direction.Axis.X ? 0 : Math.abs(startPosition.getX() - currentPosition.getX());
+        int offsetY = direction.getAxis() == Direction.Axis.Y ? 0 : Math.abs(startPosition.getY() - currentPosition.getY());
+        int offsetZ = direction.getAxis() == Direction.Axis.Z ? 0 : Math.abs(startPosition.getZ() - currentPosition.getZ());
+
+        return offsetX <= size && offsetY <= size && offsetZ <= size;
     }
 }

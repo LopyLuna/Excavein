@@ -24,7 +24,6 @@ import static uwu.lopyluna.excavein.client.ClientHandler.keyActivated;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 import static uwu.lopyluna.excavein.utils.Utils.OffsetTime.SECONDS;
-import static uwu.lopyluna.excavein.utils.Utils.ticksToTime;
 
 @SuppressWarnings("unused")
 @EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
@@ -96,7 +95,7 @@ public class ModeOverlay {
             order++;
         }
 
-        if (!ClientHelper.currentlyBreaking && !ClientHelper.requiredFlags) {
+        if ((!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && !ClientHelper.flag) {
             String tag = "";
             if (REQUIRES_XP.get() && !mc.player.isCreative() && mc.player.totalExperience == 0)
                 tag = "xp";
@@ -107,7 +106,7 @@ public class ModeOverlay {
 
             renderText(tag.isEmpty() ? "" : translateText("require_" + tag), order, xPos, yPos, event.getGuiGraphics(), leftSide, colorWarning, dropShadow, background);
             order++;
-        } else if (!ClientHelper.currentlyBreaking && ClientHelper.requiredFlags) {
+        } else if ((!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && ClientHelper.flag) {
             int blockCount = outlineBlocks.isEmpty() ? 0 : outlineBlocks.size();
             if (blockCount > 0 && !ClientCooldownHandler.isCooldownActive()) {
                 renderText(translateText("selecting") + blockCount + translateText("blocks"), order, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
@@ -117,7 +116,7 @@ public class ModeOverlay {
                 renderText(translateText("cooldown") + ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS), order, xPos, yPos, event.getGuiGraphics(), leftSide, colorD, dropShadow, background);
                 order++;
             }
-        } else if (ClientHelper.currentlyBreaking && WAIT_TILL_BROKEN.get()) {
+        } else if (!(!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get())) {
             renderText(translateText("breaking") + animatedDotsString(), order, xPos, yPos, event.getGuiGraphics(), leftSide, colorD, dropShadow, background);
             order++;
         }
@@ -251,5 +250,39 @@ public class ModeOverlay {
 
     public static String translateText(String translate) {
         return Component.translatable("excavein.overlay." + translate).getString().replaceAll("_", " ");
+    }
+
+    @SuppressWarnings("all")
+    public static String ticksToTime(int value, Utils.OffsetTime off) {
+        boolean bT = off == Utils.OffsetTime.TICKS;
+        boolean bS = off == Utils.OffsetTime.SECONDS || bT;
+        boolean bM = off == Utils.OffsetTime.MINUTES || bS;
+        boolean bH = off == Utils.OffsetTime.HOURS || bM;
+        boolean bD = off == Utils.OffsetTime.DAYS || bH;
+        boolean bMTH = off == Utils.OffsetTime.MONTHS || bD;
+        int t = value;
+        int s = t / 20;
+        int m = s / 60;
+        int h = m / 60;
+        int d = h / 24;
+        int mth = d / 30;
+        int y = mth / 12;
+        t %= 20;
+        s %= 60;
+        m %= 60;
+        h %= 24;
+        mth %= 30;
+        String ticks = bT ? conversion(t, "t", d > 0 || mth > 0 || y > 0 || s > 0 || m > 0 || h > 0, bT) : "";
+        String secs = bS ? conversion(s, "s", d > 0 || mth > 0 || y > 0 || m > 0 || h > 0, off == Utils.OffsetTime.SECONDS) : "";
+        String mins = bM ? conversion(m, "m", d > 0 || mth > 0 || y > 0 || h > 0, off == Utils.OffsetTime.MINUTES) : "";
+        String hours = bH ? conversion(h, "h", d > 0 || mth > 0 || y > 0, off == Utils.OffsetTime.HOURS) : "";
+        String days = bD ? conversion(d, "d", mth > 0 || y > 0, off == Utils.OffsetTime.DAYS) : "";
+        String months = bMTH ? conversion(mth, "m", y > 0, off == Utils.OffsetTime.MONTHS) : "";
+        String years = y > 0 ? y + "y" : "";
+        return years + months + days + hours + mins + secs + ticks;
+    }
+
+    public static String conversion(int value, String inc, boolean above, boolean isEnding) {
+        return value > 0 ? above ? value < 10 ? ":0" + value + inc : ":" + value + inc : value + inc : above ? ":00" + inc : isEnding ? "0" + inc : "";
     }
 }

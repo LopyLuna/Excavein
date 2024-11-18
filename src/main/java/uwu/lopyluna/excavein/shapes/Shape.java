@@ -28,9 +28,9 @@ public abstract class Shape implements ShapeAdditions {
 
     public abstract boolean shapeFilter(Level pLevel, Player pPlayer, BlockHitResult pRayTrace,
                                         Set<BlockPos> pValidBlocks, Set<BlockPos> pCheckedBlocks, BlockPos pStartPos, BlockPos pCurrentPos, BlockState pStartState, BlockState pCurrentState,
-                                        int pMaxBlocks, int pMaxRange);
+                                        int pMaxBlocks, int pMaxRange, int pDirectionRange);
 
     public abstract Set<BlockPos> shapeBuild(Level pLevel, Player pPlayer, BlockHitResult pRayTrace,
                                              BlockPos pStartPos, BlockPos pCurrentPos, BlockState pStartState, BlockState pCurrentState,
-                                             int pMaxBlocks, int pMaxRange);
+                                             int pMaxBlocks, int pMaxRange, int pDirectionRange);
 }

@@ -19,6 +19,7 @@ import uwu.lopyluna.excavein.entries.ShapeEntry;
 import uwu.lopyluna.excavein.entries.ShapeModifierEntry;
 import uwu.lopyluna.excavein.packets.ExcaveinPacket;
 import uwu.lopyluna.excavein.packets.KeybindPacket;
+import uwu.lopyluna.excavein.packets.ModesPacket;
 import uwu.lopyluna.excavein.shape_modifiers.ShapeModifier;
 import uwu.lopyluna.excavein.shapes.Shape;
 
@@ -57,7 +58,7 @@ public class ClientHandler {
     static UUID uuid;
     private static int tickCounter = 0;
 
-    public static void register(RegisterKeyMappingsEvent event) {
+    public ClientHandler(RegisterKeyMappingsEvent event) {
         SELECTION_ACTIVATION = create("selection_activation", GLFW.GLFW_KEY_GRAVE_ACCENT);
 
         NEXT_MODE = create("next_shape", GLFW.GLFW_KEY_UP);
@@ -66,7 +67,7 @@ public class ClientHandler {
         NEXT_MODIFIER = create("next_modifier", GLFW.GLFW_KEY_UP, KeyModifier.ALT);
         PREV_MODIFIER = create("prev_modifier", GLFW.GLFW_KEY_DOWN, KeyModifier.ALT);
 
-        MODIFIER_SCROLL = create("modifier_scroll", GLFW.GLFW_MOD_ALT);
+        MODIFIER_SCROLL = create("modifier_scroll", GLFW.GLFW_KEY_LEFT_ALT);
 
         ExcaveinEntries.getShapeEntries().forEach((integer, shapeEntry) -> {
             if (shapeEntry.hasKeybind()) {
@@ -124,24 +125,34 @@ public class ClientHandler {
                         uuid = player.getUUID();
                         keyPressed = (!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated);
 
-                        int switchMode = 0;
-                        if (NEXT_MODIFIER.consumeClick()) switchMode = 3;
-                        else if (NEXT_MODIFIER.consumeClick()) switchMode = 4;
-                        else if (NEXT_MODE.consumeClick()) switchMode = 1;
-                        else if (PREV_MODE.consumeClick()) switchMode = 2;
-
-                        ExcaveinEntries.getShapeEntries().forEach((integer, shapeEntry) ->
-                                PacketDistributor.sendToServer(new KeybindPacket(uuid, shapeKeys.get(shapeEntry).consumeClick(), integer, "shape")));
-                        ExcaveinEntries.getShapeModifierEntries().forEach((integer, modifierEntry) ->
-                                PacketDistributor.sendToServer(new KeybindPacket(uuid, modifierKeys.get(modifierEntry).consumeClick(), integer, "modifier")));
-
-                        PacketDistributor.sendToServer(new ExcaveinPacket(uuid, keyPressed, switchMode));
+                        if (uuid != null) PacketDistributor.sendToServer(new ExcaveinPacket(uuid, keyPressed));
                     }
-                    if (TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.consumeClick()) {
-                        keyActivated = !keyActivated;
-                    }
+                    if (TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.consumeClick()) keyActivated = !keyActivated;
                 }
             });
+        }
+    }
+
+    @SubscribeEvent
+    public static void onKey(InputEvent.Key event) {
+        if (uuid != null) {
+            int switchMode = 0;
+            if (NEXT_MODIFIER.consumeClick()) switchMode = 3;
+            else if (NEXT_MODIFIER.consumeClick()) switchMode = 4;
+            else if (NEXT_MODE.consumeClick()) switchMode = 1;
+            else if (PREV_MODE.consumeClick()) switchMode = 2;
+            PacketDistributor.sendToServer(new ModesPacket(uuid, keyPressed, switchMode));
+
+            if (!shapeKeys.isEmpty())
+                ExcaveinEntries.getShapeEntries().forEach((integer, shapeEntry) -> {
+                    if (shapeEntry.hasKeybind())
+                        PacketDistributor.sendToServer(new KeybindPacket(uuid, shapeKeys.get(shapeEntry).consumeClick(), integer, "shape"));
+                });
+            if (!modifierKeys.isEmpty())
+                ExcaveinEntries.getShapeModifierEntries().forEach((integer, modifierEntry) -> {
+                    if (modifierEntry.hasKeybind())
+                        PacketDistributor.sendToServer(new KeybindPacket(uuid, modifierKeys.get(modifierEntry).consumeClick(), integer, "modifier"));
+                });
         }
     }
 
@@ -150,14 +161,12 @@ public class ClientHandler {
         if (uuid != null) {
             if (keyPressed && !DISABLE_SCROLL.get()) {
                 int switchMode = 0;
-                if ((MODIFIER_SCROLL.isDown() && event.getScrollDeltaY() > 0) || NEXT_MODIFIER.consumeClick())
-                    switchMode = 3;
-                else if ((MODIFIER_SCROLL.isDown() && event.getScrollDeltaY() < 0) || NEXT_MODIFIER.consumeClick())
-                    switchMode = 4;
-                else if ((event.getScrollDeltaY() > 0) || NEXT_MODE.consumeClick()) switchMode = 1;
-                else if ((event.getScrollDeltaY() < 0) || PREV_MODE.consumeClick()) switchMode = 2;
+                if (MODIFIER_SCROLL.isDown() && event.getScrollDeltaY() > 0) switchMode = 3;
+                else if (MODIFIER_SCROLL.isDown() && event.getScrollDeltaY() < 0) switchMode = 4;
+                else if (event.getScrollDeltaY() > 0) switchMode = 1;
+                else if (event.getScrollDeltaY() < 0) switchMode = 2;
 
-                PacketDistributor.sendToServer(new ExcaveinPacket(uuid, true, switchMode));
+                PacketDistributor.sendToServer(new ModesPacket(uuid, true, switchMode));
                 event.setCanceled(true);
             }
         }

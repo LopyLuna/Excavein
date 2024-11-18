@@ -189,7 +189,7 @@ public class BlockPositionTracker {
     }
 
     public static void reset() {
-        CooldownTracker.resetCooldown(player.getUUID(), player.isCreative() ? 0 : i);
+        //CooldownTracker.resetCooldown(player.getUUID(), player.isCreative() ? 0 : i);
         if (!player.isCreative())
             if (i > 0) removingFuelItems(player, FUEL_EXHAUSTION_AMOUNT.get() * i);
         if (isBreaking) isBreaking = false;

@@ -5,8 +5,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import uwu.lopyluna.excavein.data.CooldownData;
 import uwu.lopyluna.excavein.data.SelectionPlayerData;
 
 import java.util.HashMap;
@@ -19,15 +21,21 @@ import java.util.UUID;
 public class ExcaveinTacker {
     private static final Map<UUID, SelectionPlayerData> selectionDataMap = new HashMap<>();
 
-    public static void update(ServerPlayer player, UUID uuid, boolean keyPressed, int switchMode) {
+    public static void updateTick(ServerPlayer player, UUID uuid, boolean keyPressed) {
         if (player != null && uuid != null && player.getUUID().equals(uuid)) {
             if (!selectionDataMap.containsKey(uuid))
                 selectionDataMap.put(uuid, new SelectionPlayerData(player.serverLevel(), uuid));
 
             SelectionPlayerData data = getSelectionData(uuid);
-            if (data != null && data.getPlayer() != null && data.getLevel() != null && data.getPlayerUUID() != null) {
+            if (data != null && data.getPlayer() != null && data.getLevel() != null && data.getPlayerUUID() != null)
                 data.updateKey(keyPressed);
+        }
+    }
 
+    public static void update(ServerPlayer player, UUID uuid, boolean keyPressed, int switchMode) {
+        if (player != null && uuid != null && player.getUUID().equals(uuid)) {
+            SelectionPlayerData data = getSelectionData(uuid);
+            if (data != null && data.getPlayer() != null && data.getLevel() != null && data.getPlayerUUID() != null) {
                 if (switchMode == 4) {
                     data.nextModifierMode();
                 } else if (switchMode == 3) {
@@ -43,15 +51,14 @@ public class ExcaveinTacker {
 
     public static void updateKey(ServerPlayer player, UUID uuid, boolean keyPressed, int id, String type) {
         if (player != null && uuid != null && player.getUUID().equals(uuid)) {
-            if (!selectionDataMap.containsKey(uuid))
-                selectionDataMap.put(uuid, new SelectionPlayerData(player.serverLevel(), uuid));
-
             SelectionPlayerData data = getSelectionData(uuid);
             if (data != null && data.getPlayer() != null && data.getLevel() != null && data.getPlayerUUID() != null) {
-                if (type.equals("shape") && keyPressed)
-                    data.setShapeMode(id);
-                if (type.equals("modifier") && keyPressed)
-                    data.setModifierMode(id);
+                if (keyPressed) {
+                    if (type.equals("shape"))
+                        data.setShapeMode(id);
+                    if (type.equals("modifier"))
+                        data.setModifierMode(id);
+                }
             }
         }
     }
@@ -59,6 +66,8 @@ public class ExcaveinTacker {
     public static SelectionPlayerData getSelectionData(UUID uuid) {
         return uuid != null ? selectionDataMap.getOrDefault(uuid, null) : null;
     }
+
+    public static final Map<SelectionPlayerData, CooldownData> playerCooldowns = new HashMap<>();
 
     @SubscribeEvent
     public static void onWorldTick(LevelTickEvent.Post event) {
@@ -73,12 +82,17 @@ public class ExcaveinTacker {
             if (selectionData != null && selectionData.getPlayer() != null && selectionData.getLevel() != null && selectionData.getPlayerUUID() != null) {
                 selectionData.tick();
                 selectionData.updateCheck();
+                if (selectionData.getCooldownData() != null) selectionData.getCooldownData().tick();
             }
         });
     }
 
     @SubscribeEvent
-    public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        getSelectionData(event.getPlayer().getUUID()).blockBreak(event.getPos());
+    public static void onBlockDrop(BlockDropsEvent event) {
+        if (event.getBreaker() instanceof ServerPlayer player) {
+            SelectionPlayerData selectionData = getSelectionData(player.getUUID());
+            if (selectionData != null && selectionData.getBreakingUtils().isBreaking())
+                selectionData.getBreakingUtils().sendBlocksToPlayers(event, player);
+        }
     }
 }

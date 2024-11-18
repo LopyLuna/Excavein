@@ -22,6 +22,7 @@ public class ClientHelper {
         ClientHelper.previousModifier = previousModifier;
         ClientHelper.nextModifier = nextModifier;
     }
+
     public static void update(boolean currentlyBreaking, boolean requiredFlags, boolean flag) {
         ClientHelper.currentlyBreaking = currentlyBreaking;
         ClientHelper.requiredFlags = requiredFlags;

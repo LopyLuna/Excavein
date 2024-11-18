@@ -28,5 +28,5 @@ public abstract class ShapeModifier implements ShapeAdditions {
 
     public abstract boolean shapeModifierFilter(Level pLevel, Player pPlayer, BlockHitResult pRayTrace,
                                                 Set<BlockPos> pValidBlocks, Set<BlockPos> pCheckedBlocks, BlockPos pStartPos, BlockPos pCurrentPos, BlockState pStartState, BlockState pCurrentState,
-                                                int pMaxBlocks, int pMaxRange);
+                                                int pMaxBlocks, int pMaxRange, int pDirectionRange);
 }

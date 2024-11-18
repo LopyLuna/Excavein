@@ -3,6 +3,7 @@ package uwu.lopyluna.excavein.utils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
@@ -16,6 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.Tool;
 import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.GameMasterBlock;
@@ -27,6 +29,7 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.CommonHooks;
 import net.neoforged.neoforge.event.EventHooks;
+import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import uwu.lopyluna.excavein.data.SelectionPlayerData;
 import uwu.lopyluna.excavein.mixins.BlockAccessor;
 
@@ -42,6 +45,7 @@ public class BreakingUtils {
     private int breakDelay = 0;
     private int amount = 0;
     private boolean breaking = false;
+    private GameType gameModeForPlayer = GameType.DEFAULT_MODE;
 
     public BreakingUtils(SelectionPlayerData data) {
         player = data;
@@ -56,18 +60,17 @@ public class BreakingUtils {
         if (isBreaking()) {
             if (getBlockPositions().isEmpty()) {
                 end();
-            } else {
-                if (DELAY_BETWEEN_BREAK.get() == 0) {
-                    getBlockPositions().forEach(this::removeBlockPos);
-                } else if (ready()) {
-                    for (int i = 0; i < BLOCK_PER_BREAK.get(); i++) removeAnyBlockPos();
-                    resetDelay();
-                }
+            } else if (ready()) {
+                if (DELAY_BETWEEN_BREAK.get() == 0) { savedBlockPositions.forEach(this::removeBlockPos); savedBlockPositions.clear(); }
+                else for (int i = 0; i < (BLOCK_PER_BREAK.get()); i++) removeAnyBlockPos();
+                resetDelay();
             }
         }
     }
 
     public void resetDelay() {
+        if (DELAY_BETWEEN_BREAK.get() == 0)
+            return;
         breakDelay = DELAY_BETWEEN_BREAK.get();
     }
 
@@ -83,10 +86,29 @@ public class BreakingUtils {
         return breaking;
     }
 
-    public void breakBlocks(BlockPos pos) {
-        saveBlockPositions();
-        getBlockPositions().remove(pos);
-        breaking = true;
+    public void sendBlocksToPlayers(BlockDropsEvent event, ServerPlayer pPlayer) {
+        if (!pPlayer.getUUID().equals(player.getPlayerUUID()))
+            return;
+        Vec3 pos = pPlayer.position();
+        if (BLOCKS_AT_PLAYER.get()) {
+            pPlayer.giveExperiencePoints(event.getDroppedExperience());
+            event.setDroppedExperience(0);
+
+            event.getDrops().forEach(itemEntity -> {
+                itemEntity.setPickUpDelay((pPlayer.isCreative() ? 0 : ITEM_PICKUP_DELAY.get()));
+                itemEntity.teleportTo(pos.x, pos.y, pos.z);
+            });
+        }
+    }
+
+    public boolean breakBlocks(GameType gameModeForPlayer) {
+        if (player.flag() && (getBlockPositions().isEmpty() || !WAIT_TILL_BROKEN.get())) {
+            this.gameModeForPlayer = gameModeForPlayer;
+            saveBlockPositions();
+            breaking = true;
+            return true;
+        }
+        return false;
     }
 
     public void end() {
@@ -109,7 +131,6 @@ public class BreakingUtils {
         if (pos == null)
             return;
         destroyBlock(pos);
-        savedBlockPositions.remove(pos);
         amount++;
     }
 
@@ -139,11 +160,14 @@ public class BreakingUtils {
     }
 
     public void destroyBlock(BlockPos pPos) {
-        Level level = player.getLevel();
-        Player player = this.player.getPlayer();
+        ServerLevel level = player.getLevel();
+        ServerPlayer player = this.player.getPlayer();
         BlockState blockstate = level.getBlockState(pPos);
         BlockEntity blockentity = level.getBlockEntity(pPos);
         Block block = blockstate.getBlock();
+        var event = net.neoforged.neoforge.common.CommonHooks.fireBlockBreak(level, gameModeForPlayer, player, pPos, blockstate);
+        if (event.isCanceled())
+            return;
         if (block instanceof GameMasterBlock && !player.canUseGameMasterBlocks()) {
             level.sendBlockUpdated(pPos, blockstate, blockstate, 3);
         } else {
@@ -178,20 +202,13 @@ public class BreakingUtils {
             if (XP_EXHAUSTION_AMOUNT.get() != 0)
                 pPlayer.giveExperiencePoints(-XP_EXHAUSTION_AMOUNT.get());
         }
-        dropResources(pState, pLevel, pPos, pBlockEntity, pPlayer, pTool, BLOCKS_AT_PLAYER.get());
+        dropResources(pState, pLevel, pPos, pBlockEntity, pPlayer, pTool);
     }
 
-    public void dropResources(BlockState pState, Level pLevel, BlockPos pPos, @Nullable BlockEntity pBlockEntity, @Nullable Entity pEntity, ItemStack pTool, boolean isPlayerPos) {
+    public void dropResources(BlockState pState, Level pLevel, BlockPos pPos, @Nullable BlockEntity pBlockEntity, @Nullable Entity pEntity, ItemStack pTool) {
         if (pLevel instanceof ServerLevel) {
             beginCapturingDrops();
-            Vec3 vec;
-            if (isPlayerPos) {
-                assert pEntity != null;
-                vec = pEntity.position();
-            } else {
-                vec = Vec3.atCenterOf(pPos);
-            }
-            getDrops(pState, (ServerLevel) pLevel, pPos, pBlockEntity, pEntity, pTool).forEach(p_49944_ -> popResource(pLevel, vec, p_49944_, isPlayerPos));
+            getDrops(pState, (ServerLevel) pLevel, pPos, pBlockEntity, pEntity, pTool).forEach(p_49944_ -> popResource(pLevel, Vec3.atCenterOf(pPos), p_49944_));
             List<ItemEntity> captured = stopCapturingDrops();
             CommonHooks.handleBlockDrops((ServerLevel) pLevel, pPos, pState, pBlockEntity, captured, pEntity, pTool);
         }
@@ -216,11 +233,11 @@ public class BreakingUtils {
         return drops;
     }
 
-    public void popResource(Level pLevel, Vec3 pPos, ItemStack pStack, boolean isPlayerPos) {
+    public void popResource(Level pLevel, Vec3 pPos, ItemStack pStack) {
         double f = (double) EntityType.ITEM.getHeight() / 2.0;
-        double d0 = (double) ((float) pPos.x() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25, 0.25);
-        double d1 = (double) ((float) pPos.y() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25, 0.25) - f;
-        double d2 = (double) ((float) pPos.z() + (isPlayerPos ? 0 : 0.5F)) + Mth.nextDouble(pLevel.random, -0.25, 0.25);
+        double d0 = (double) ((float) pPos.x()) + Mth.nextDouble(pLevel.random, -0.25, 0.25);
+        double d1 = (double) ((float) pPos.y()) + Mth.nextDouble(pLevel.random, -0.25, 0.25) - f;
+        double d2 = (double) ((float) pPos.z()) + Mth.nextDouble(pLevel.random, -0.25, 0.25);
         popResource(pLevel, () -> new ItemEntity(pLevel, d0, d1, d2, pStack), pStack);
     }
 
