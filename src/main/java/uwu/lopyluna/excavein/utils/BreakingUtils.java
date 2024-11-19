@@ -40,7 +40,7 @@ import java.util.function.Supplier;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
 public class BreakingUtils {
-    public static Set<BlockPos> savedBlockPositions = new HashSet<>();
+    public Set<BlockPos> savedBlockPositions = new HashSet<>();
     private final SelectionPlayerData player;
     private int breakDelay = 0;
     private int amount = 0;
@@ -147,7 +147,7 @@ public class BreakingUtils {
     }
 
     public void saveBlockPositions() {
-        savedBlockPositions = randomizePositions(player.getBlocks());
+        savedBlockPositions.addAll(randomizePositions(player.getBlocks()));
     }
 
     public Set<BlockPos> randomizePositions(Set<BlockPos> blockPosSet) {

@@ -13,16 +13,17 @@ import uwu.lopyluna.excavein.utils.Utils;
 
 import java.util.UUID;
 
-public record ExcaveinPacket(UUID playerID, boolean keyPressed) implements CustomPacketPayload {
+public record ExcaveinPacket(UUID playerID, boolean keyPressed, boolean displayChat) implements CustomPacketPayload {
     public static final Type<ExcaveinPacket> TYPE = new Type<>(Utils.asResource("excavein"));
     public static final StreamCodec<FriendlyByteBuf, ExcaveinPacket> CODEC = StreamCodec.composite(
             UUIDUtil.STREAM_CODEC, ExcaveinPacket::playerID,
             ByteBufCodecs.BOOL, ExcaveinPacket::keyPressed,
+            ByteBufCodecs.BOOL, ExcaveinPacket::displayChat,
             ExcaveinPacket::new
     );
 
     public static void handle(final ExcaveinPacket msg, final IPayloadContext ctx) {
-        ctx.enqueueWork(() -> ExcaveinTacker.updateTick((ServerPlayer) ctx.player(), ctx.player().getUUID().equals(msg.playerID) ? ctx.player().getUUID() : msg.playerID, msg.keyPressed));
+        ctx.enqueueWork(() -> ExcaveinTacker.updateTick((ServerPlayer) ctx.player(), ctx.player().getUUID().equals(msg.playerID) ? ctx.player().getUUID() : msg.playerID, msg.keyPressed, msg.displayChat));
     }
 
     @Override

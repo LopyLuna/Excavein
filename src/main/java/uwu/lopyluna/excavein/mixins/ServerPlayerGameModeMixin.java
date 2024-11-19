@@ -64,7 +64,7 @@ public class ServerPlayerGameModeMixin {
     private InteractionResult excavein$performInteraction(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand, BlockHitResult pHitResult) {
         if (pPlayer != null && pLevel != null && pStack != null && pHand != null && pHitResult != null) {
             if ((BLOCK_PLACING.get() && (pStack.getItem() instanceof BlockItem || !getValidTools(pStack))) || (ITEM_INTERACTION.get() && (!(pStack.getItem() instanceof BlockItem) || getValidTools(pStack))) || (HAND_INTERACTION.get() && pStack.isEmpty())) {
-                //if ((!(pPlayer instanceof FakePlayer) && keyIsDown) && (CooldownTracker.isCooldownNotActive(pPlayer.getUUID()) && !isBreaking) && !savedBlockPositions.isEmpty()) {
+                //if ((!(pPlayer instanceof FakePlayer) && keyIsDown) && (CooldownTracker.isCooldownActive(pPlayer.getUUID()) && !isBreaking) && !savedBlockPositions.isEmpty()) {
                 //savedBlockPositions.forEach(pos -> excavein$performInteraction(pPlayer, pLevel, pStack, pHand, pHitResult, pos)
                 //);
                 //excavein$reset(pPlayer);

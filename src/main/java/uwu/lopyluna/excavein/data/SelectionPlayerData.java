@@ -30,7 +30,6 @@ import uwu.lopyluna.excavein.utils.Utils;
 import java.util.Set;
 import java.util.UUID;
 
-import static uwu.lopyluna.excavein.config.ClientConfig.DISPLAY_SELECTION_CHAT;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 import static uwu.lopyluna.excavein.utils.Utils.findInInventory;
 
@@ -45,6 +44,7 @@ public class SelectionPlayerData {
     private int shapeMode;
     private int modifierMode;
     private boolean keyPressed;
+    private boolean displayChat;
 
     public SelectionPlayerData(ServerLevel pLevel, UUID uuid) {
         shapeMode = 0;
@@ -56,8 +56,9 @@ public class SelectionPlayerData {
         cooldownData = new CooldownData(this);
     }
 
-    public void updateKey(boolean keyPressed) {
+    public void updateKey(boolean keyPressed, boolean displayChat) {
         this.keyPressed = keyPressed;
+        this.displayChat = displayChat;
     }
 
     //SHAPE MODE
@@ -179,7 +180,7 @@ public class SelectionPlayerData {
 
     int i = 0;
     public void updateCheck() {
-        if (i >= 5) {
+        if (i >= 2) {
             PacketDistributor.sendToPlayer(player, new SelectedBlocksPacket(getBlocks()));
             PacketDistributor.sendToPlayer(player, new CooldownPacket(getRemainingCooldown()));
             PacketDistributor.sendToPlayer(player, new ClientHelperBoolsPacket(getBreakingUtils().isBreaking(), requiredFlags(), flag()));
@@ -263,7 +264,7 @@ public class SelectionPlayerData {
         Component text = Component.literal(Component.translatable("excavein.overlay.current_mode").getString().replaceAll("_", " ") +
                 (!string.isEmpty() ? string + " " : "") + getShape().getShape().getName());
 
-        player.sendSystemMessage(text, !DISPLAY_SELECTION_CHAT.get());
+        player.sendSystemMessage(text, !displayChat);
     }
 
     // GET VARIABLES

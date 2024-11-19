@@ -19,8 +19,7 @@ import uwu.lopyluna.excavein.utils.Utils;
 import java.awt.*;
 
 import static uwu.lopyluna.excavein.client.BlockOutlineRenderer.outlineBlocks;
-import static uwu.lopyluna.excavein.client.ClientHandler.SELECTION_ACTIVATION;
-import static uwu.lopyluna.excavein.client.ClientHandler.keyActivated;
+import static uwu.lopyluna.excavein.client.ClientHandler.*;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 import static uwu.lopyluna.excavein.utils.Utils.OffsetTime.SECONDS;
@@ -95,7 +94,7 @@ public class ModeOverlay {
             order++;
         }
 
-        if ((!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && !ClientHelper.flag) {
+        if ((!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && !ClientHelper.requiredFlags) {
             String tag = "";
             if (REQUIRES_XP.get() && !mc.player.isCreative() && mc.player.totalExperience == 0)
                 tag = "xp";
@@ -106,16 +105,13 @@ public class ModeOverlay {
 
             renderText(tag.isEmpty() ? "" : translateText("require_" + tag), order, xPos, yPos, event.getGuiGraphics(), leftSide, colorWarning, dropShadow, background);
             order++;
-        } else if ((!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && ClientHelper.flag) {
+        } else if ((!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && ClientHelper.requiredFlags) {
             int blockCount = outlineBlocks.isEmpty() ? 0 : outlineBlocks.size();
-            if (blockCount > 0 && !ClientCooldownHandler.isCooldownActive()) {
-                renderText(translateText("selecting") + blockCount + translateText("blocks"), order, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
-                order++;
-            }
             if (ClientCooldownHandler.isCooldownActive()) {
-                //ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS)
-                renderText("Cooldown", order, xPos, yPos, event.getGuiGraphics(), leftSide, colorD, dropShadow, background);
-                //renderText(translateText("cooldown") + " (" + ClientCooldownHandler.getRemainingCooldown() + ")", order, xPos, yPos, event.getGuiGraphics(), leftSide, colorD, dropShadow, background);
+                renderText(translateText("cooldown") + ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS), order, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+                order++;
+            } else if (blockCount > 0) {
+                renderText(translateText("selecting") + blockCount + translateText("blocks"), order, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
                 order++;
             }
         } else if (!(!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get())) {

@@ -25,8 +25,7 @@ import uwu.lopyluna.excavein.shapes.Shape;
 
 import java.util.*;
 
-import static uwu.lopyluna.excavein.config.ClientConfig.DISABLE_SCROLL;
-import static uwu.lopyluna.excavein.config.ClientConfig.TOGGLEABLE_KEY;
+import static uwu.lopyluna.excavein.config.ClientConfig.*;
 
 @SuppressWarnings("unused")
 @EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
@@ -125,7 +124,7 @@ public class ClientHandler {
                         uuid = player.getUUID();
                         keyPressed = (!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated);
 
-                        if (uuid != null) PacketDistributor.sendToServer(new ExcaveinPacket(uuid, keyPressed));
+                        if (uuid != null) PacketDistributor.sendToServer(new ExcaveinPacket(uuid, keyPressed, DISPLAY_SELECTION_CHAT.get()));
                     }
                     if (TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.consumeClick()) keyActivated = !keyActivated;
                 }

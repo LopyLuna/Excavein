@@ -7,7 +7,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import uwu.lopyluna.excavein.data.CooldownData;
 import uwu.lopyluna.excavein.data.SelectionPlayerData;
 
@@ -21,14 +20,14 @@ import java.util.UUID;
 public class ExcaveinTacker {
     private static final Map<UUID, SelectionPlayerData> selectionDataMap = new HashMap<>();
 
-    public static void updateTick(ServerPlayer player, UUID uuid, boolean keyPressed) {
+    public static void updateTick(ServerPlayer player, UUID uuid, boolean keyPressed, boolean displayChat) {
         if (player != null && uuid != null && player.getUUID().equals(uuid)) {
             if (!selectionDataMap.containsKey(uuid))
                 selectionDataMap.put(uuid, new SelectionPlayerData(player.serverLevel(), uuid));
 
             SelectionPlayerData data = getSelectionData(uuid);
             if (data != null && data.getPlayer() != null && data.getLevel() != null && data.getPlayerUUID() != null)
-                data.updateKey(keyPressed);
+                data.updateKey(keyPressed, displayChat);
         }
     }
 
