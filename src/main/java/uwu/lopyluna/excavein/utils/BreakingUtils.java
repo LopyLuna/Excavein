@@ -113,6 +113,7 @@ public class BreakingUtils {
 
     public void end() {
         if (breaking) player.resetCooldown(amount);
+        savedBlockPositions.clear();
         breaking = false;
         amount = 0;
     }
@@ -122,9 +123,7 @@ public class BreakingUtils {
     }
 
     public void removeBlockPos(BlockPos pos) {
-        if (!isBreaking())
-            return;
-        if (!player.flagMessage()) {
+        if (!isBreaking() || !player.flagMessage()) {
             end();
             return;
         }
@@ -135,9 +134,7 @@ public class BreakingUtils {
     }
 
     public void removeAnyBlockPos() {
-        if (!isBreaking())
-            return;
-        if (!player.flagMessage()) {
+        if (!isBreaking() || !player.flagMessage()) {
             end();
             return;
         }

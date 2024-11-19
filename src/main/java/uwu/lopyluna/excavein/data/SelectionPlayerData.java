@@ -241,7 +241,7 @@ public class SelectionPlayerData {
         else if (!hasFuel)
             player.sendSystemMessage(Component.translatable("excavein.warning.require_fuel").withStyle(ChatFormatting.RED), true);
 
-        return flag();
+        return requiredFlags() && !isCooldownActive();
     }
 
     public void resetCooldown(int amountOfBlocks) {

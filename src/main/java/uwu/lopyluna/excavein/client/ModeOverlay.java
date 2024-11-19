@@ -113,7 +113,9 @@ public class ModeOverlay {
                 order++;
             }
             if (ClientCooldownHandler.isCooldownActive()) {
-                renderText(translateText("cooldown") + ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS), order, xPos, yPos, event.getGuiGraphics(), leftSide, colorD, dropShadow, background);
+                //ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS)
+                renderText("Cooldown", order, xPos, yPos, event.getGuiGraphics(), leftSide, colorD, dropShadow, background);
+                //renderText(translateText("cooldown") + " (" + ClientCooldownHandler.getRemainingCooldown() + ")", order, xPos, yPos, event.getGuiGraphics(), leftSide, colorD, dropShadow, background);
                 order++;
             }
         } else if (!(!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get())) {
