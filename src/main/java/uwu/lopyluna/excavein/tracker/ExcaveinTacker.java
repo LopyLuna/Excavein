@@ -98,6 +98,5 @@ public class ExcaveinTacker {
 
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        selectionDataMap.remove(event)
     }
 }
