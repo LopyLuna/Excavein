@@ -5,6 +5,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import uwu.lopyluna.excavein.data.CooldownData;
@@ -28,7 +29,7 @@ public class ExcaveinTacker {
             SelectionPlayerData data = getSelectionData(uuid);
             if (data != null && data.getPlayer() != null && data.getLevel() != null && data.getPlayerUUID() != null)
                 data.updateKey(keyPressed, displayChat);
-        }
+        } else selectionDataMap.remove(uuid);
     }
 
     public static void update(ServerPlayer player, UUID uuid, boolean keyPressed, int switchMode) {
@@ -93,5 +94,10 @@ public class ExcaveinTacker {
             if (selectionData != null && selectionData.getBreakingUtils().isBreaking())
                 selectionData.getBreakingUtils().sendBlocksToPlayers(event, player);
         }
+    }
+
+    @SubscribeEvent
+    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        selectionDataMap.remove(event)
     }
 }

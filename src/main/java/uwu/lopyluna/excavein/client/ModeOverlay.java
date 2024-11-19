@@ -44,7 +44,7 @@ public class ModeOverlay {
         if (ClientConfig.DEBUG.get() && mc.player.isCreative())
             renderDebug(event, poseStack);
 
-        if (!((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated)))
+        if (!((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyPressed)))
             return;
 
         int screenWidth = mc.getWindow().getGuiScaledWidth();

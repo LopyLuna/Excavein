@@ -57,14 +57,12 @@ public class BreakingUtils {
     }
 
     public void preformBreak() {
-        if (isBreaking()) {
-            if (getBlockPositions().isEmpty()) {
-                end();
-            } else if (ready()) {
-                if (DELAY_BETWEEN_BREAK.get() == 0) { savedBlockPositions.forEach(this::removeBlockPos); savedBlockPositions.clear(); }
-                else for (int i = 0; i < (BLOCK_PER_BREAK.get()); i++) removeAnyBlockPos();
-                resetDelay();
-            }
+        if (getBlockPositions().isEmpty()) {
+            end();
+        } else if (ready() && isBreaking()) {
+            if (DELAY_BETWEEN_BREAK.get() == 0) { savedBlockPositions.forEach(this::removeBlockPos); savedBlockPositions.clear(); }
+            else for (int i = 0; i < (BLOCK_PER_BREAK.get()); i++) removeAnyBlockPos();
+            resetDelay();
         }
     }
 

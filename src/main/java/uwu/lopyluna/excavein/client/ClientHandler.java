@@ -26,6 +26,7 @@ import uwu.lopyluna.excavein.shapes.Shape;
 import java.util.*;
 
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
+import static uwu.lopyluna.excavein.utils.Utils.isNotFakePlayer;
 
 @SuppressWarnings("unused")
 @EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
@@ -34,16 +35,6 @@ public class ClientHandler {
     private static final Minecraft mc = Minecraft.getInstance();
     private static final int TICK_INTERVAL = 1;
     public static KeyMapping SELECTION_ACTIVATION;
-    public static KeyMapping SELECTION;
-    public static KeyMapping VEIN;
-    public static KeyMapping EXCAVATE;
-    public static KeyMapping TUNNEL;
-    public static KeyMapping LARGE_TUNNEL;
-    public static KeyMapping DIAGONAL_TUNNEL;
-    public static KeyMapping SIDE_SELECTION;
-    public static KeyMapping SIDE_VEIN;
-    public static KeyMapping SIDE_EXCAVATE;
-    public static KeyMapping SURFACE;
     public static KeyMapping NEXT_MODE;
     public static KeyMapping PREV_MODE;
     public static KeyMapping NEXT_MODIFIER;
@@ -52,7 +43,7 @@ public class ClientHandler {
     public static List<KeyMapping> KEYBINDS = new ArrayList<>();
     protected static final Map<ShapeEntry<? extends Shape>, KeyMapping> shapeKeys = new HashMap<>();
     protected static final Map<ShapeModifierEntry<? extends ShapeModifier>, KeyMapping> modifierKeys = new HashMap<>();
-    public static boolean keyActivated = false;
+    private static boolean keyActivated = false;
     public static boolean keyPressed = false;
     static UUID uuid;
     private static int tickCounter = 0;
@@ -115,26 +106,24 @@ public class ClientHandler {
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        if (mc.getConnection() != null && !Minecraft.getInstance().isPaused() && mc.level != null) {
-            mc.level.players().forEach(player -> {
-                if (player != null) {
-                    tickCounter++;
-                    if (tickCounter >= TICK_INTERVAL) {
-                        tickCounter = 0;
-                        uuid = player.getUUID();
-                        keyPressed = (!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated);
+        if (mc.getConnection() != null && !Minecraft.getInstance().isPaused() && mc.player != null) {
+            uuid = mc.player.getUUID();
+            if (isNotFakePlayer(mc.player)) {
+                tickCounter++;
+                if (tickCounter >= TICK_INTERVAL) {
+                    tickCounter = 0;
+                    keyPressed = (!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated);
 
-                        if (uuid != null) PacketDistributor.sendToServer(new ExcaveinPacket(uuid, keyPressed, DISPLAY_SELECTION_CHAT.get()));
-                    }
-                    if (TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.consumeClick()) keyActivated = !keyActivated;
+                    if (uuid != null) PacketDistributor.sendToServer(new ExcaveinPacket(uuid, keyPressed, DISPLAY_SELECTION_CHAT.get()));
                 }
-            });
+                if (TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.consumeClick()) keyActivated = !keyActivated;
+            }
         }
     }
 
     @SubscribeEvent
     public static void onKey(InputEvent.Key event) {
-        if (uuid != null) {
+        if (mc.getConnection() != null && !Minecraft.getInstance().isPaused() && mc.level != null && uuid != null && isNotFakePlayer(mc.level.getPlayerByUUID(uuid))) {
             int switchMode = 0;
             if (NEXT_MODIFIER.consumeClick()) switchMode = 3;
             else if (NEXT_MODIFIER.consumeClick()) switchMode = 4;
@@ -144,20 +133,18 @@ public class ClientHandler {
 
             if (!shapeKeys.isEmpty())
                 ExcaveinEntries.getShapeEntries().forEach((integer, shapeEntry) -> {
-                    if (shapeEntry.hasKeybind())
-                        PacketDistributor.sendToServer(new KeybindPacket(uuid, shapeKeys.get(shapeEntry).consumeClick(), integer, "shape"));
+                    if (shapeEntry.hasKeybind()) PacketDistributor.sendToServer(new KeybindPacket(uuid, shapeKeys.get(shapeEntry).consumeClick(), integer, "shape"));
                 });
             if (!modifierKeys.isEmpty())
                 ExcaveinEntries.getShapeModifierEntries().forEach((integer, modifierEntry) -> {
-                    if (modifierEntry.hasKeybind())
-                        PacketDistributor.sendToServer(new KeybindPacket(uuid, modifierKeys.get(modifierEntry).consumeClick(), integer, "modifier"));
+                    if (modifierEntry.hasKeybind()) PacketDistributor.sendToServer(new KeybindPacket(uuid, modifierKeys.get(modifierEntry).consumeClick(), integer, "modifier"));
                 });
         }
     }
 
     @SubscribeEvent
     public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
-        if (uuid != null) {
+        if (mc.getConnection() != null && !Minecraft.getInstance().isPaused() && mc.level != null && uuid != null && isNotFakePlayer(mc.level.getPlayerByUUID(uuid))) {
             if (keyPressed && !DISABLE_SCROLL.get()) {
                 int switchMode = 0;
                 if (MODIFIER_SCROLL.isDown() && event.getScrollDeltaY() > 0) switchMode = 3;
@@ -170,6 +157,4 @@ public class ClientHandler {
             }
         }
     }
-
-
 }

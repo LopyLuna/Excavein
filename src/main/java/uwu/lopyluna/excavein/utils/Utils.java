@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.common.Tags;
+import net.neoforged.neoforge.common.util.FakePlayer;
 import uwu.lopyluna.excavein.data.SelectionPlayerData;
 import uwu.lopyluna.excavein.shape_modifiers.ShapeModifier;
 import uwu.lopyluna.excavein.shapes.Shape;
@@ -96,6 +97,10 @@ public class Utils {
                 isNotValidBlock(pLevel, player, currentPos, currentState, creative) ||
                 (REQUIRES_TOOLS.get() && player.getMainHandItem().isEmpty() ||
                 !isCorrectSpeeds(player, pLevel, currentPos, startPos, startState, currentState) && !creative);
+    }
+
+    public static boolean isNotFakePlayer(Player player) {
+        return player != null && !(player instanceof FakePlayer);
     }
 
     public static <T extends Shape, I extends ShapeModifier> Set<BlockPos> constructSelection(SelectionPlayerData data, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, T shape, I modifier) {
