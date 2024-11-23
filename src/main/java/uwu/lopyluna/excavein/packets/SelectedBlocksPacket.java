@@ -13,16 +13,17 @@ import uwu.lopyluna.excavein.utils.Utils;
 import java.util.List;
 import java.util.Set;
 
-public record SelectedBlocksPacket(Set<BlockPos> blockPositions) implements CustomPacketPayload {
+public record SelectedBlocksPacket(Set<BlockPos> breaking, Set<BlockPos> interaction) implements CustomPacketPayload {
 
     public static final Type<SelectedBlocksPacket> TYPE = new Type<>(Utils.asResource("block_selection"));
     public static final StreamCodec<FriendlyByteBuf, SelectedBlocksPacket> CODEC = StreamCodec.composite(
-            BlockPos.STREAM_CODEC.apply(ByteBufCodecs.list()).map(Set::copyOf, List::copyOf), SelectedBlocksPacket::blockPositions,
+            BlockPos.STREAM_CODEC.apply(ByteBufCodecs.list()).map(Set::copyOf, List::copyOf), SelectedBlocksPacket::breaking,
+            BlockPos.STREAM_CODEC.apply(ByteBufCodecs.list()).map(Set::copyOf, List::copyOf), SelectedBlocksPacket::interaction,
             SelectedBlocksPacket::new
     );
 
     public static void handle(SelectedBlocksPacket msg, IPayloadContext context) {
-        context.enqueueWork(() -> BlockOutlineRenderer.setOutlineBlocks(msg.blockPositions));
+        context.enqueueWork(() -> BlockOutlineRenderer.updateBlocks(msg.breaking, msg.interaction));
     }
 
     @Override

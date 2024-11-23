@@ -34,8 +34,7 @@ import java.util.Set;
 
 import static uwu.lopyluna.excavein.client.ClientHandler.keyPressed;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
-import static uwu.lopyluna.excavein.config.ServerConfig.DELAY_BETWEEN_BREAK;
-import static uwu.lopyluna.excavein.config.ServerConfig.WAIT_TILL_BROKEN;
+import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
 @SuppressWarnings("unused")
 @EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
@@ -56,20 +55,33 @@ public class BlockOutlineRenderer {
     protected static final Vector3f originTemp = new Vector3f();
     private static final Minecraft mc = Minecraft.getInstance();
     private static final Cluster cluster = new Cluster();
+    public static int amountBreak = 0;
+    public static int amountInteract = 0;
     public static Set<BlockPos> outlineBlocks = new HashSet<>();
+    public static Set<BlockPos> outlineBlocksPlacing = new HashSet<>();
+    public static Set<BlockPos> outlineBlocksMixed = new HashSet<>();
     private static Set<BlockPos> pos;
 
-    public static void setOutlineBlocks(Set<BlockPos> blocks) {
-        if (RENDER_OUTLINE.get() || RENDER_FACE.get()) {
-            Set<BlockPos> renderedBlocks = new HashSet<>();
-            if (blocks != null && !blocks.isEmpty()) {
-                blocks.forEach(pos -> {
-                    if (mc.levelRenderer.isSectionCompiled(pos))
-                        renderedBlocks.add(pos);
-                });
-            }
-            outlineBlocks = renderedBlocks;
-        }
+    public static void updateBlocks(Set<BlockPos> breaking, Set<BlockPos> interaction) {
+        boolean flag = BLOCK_PLACING.get() || HAND_INTERACTION.get() || ITEM_INTERACTION.get();
+        Set<BlockPos> breaks = fixBlocks(breaking);
+        Set<BlockPos> interactions = flag ? fixBlocks(interaction) : new HashSet<>();
+        Set<BlockPos> mixes = new HashSet<>();
+        breaks.forEach(position -> {if (position != null && interactions.contains(position)) mixes.add(position);});
+        breaks.removeAll(mixes);
+        interactions.removeAll(mixes);
+        outlineBlocksMixed = fixBlocks(mixes);
+        outlineBlocksPlacing = interactions;
+        outlineBlocks = breaks;
+        amountBreak = breaking.size();
+        amountInteract = flag ? interaction.size() : 0;
+    }
+
+    public static Set<BlockPos> fixBlocks(Set<BlockPos> blocks) {
+        Set<BlockPos> renderedBlocks = new HashSet<>();
+        if (blocks != null && (RENDER_OUTLINE.get() || RENDER_FACE.get() && !blocks.isEmpty()))
+            blocks.forEach(pos -> { if (mc.levelRenderer.isSectionCompiled(pos)) renderedBlocks.add(pos); });
+        return renderedBlocks;
     }
 
     @SubscribeEvent
@@ -81,30 +93,57 @@ public class BlockOutlineRenderer {
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.defaultBlendFunc();
 
-        float red = ClientConfig.SELECTION_COLOR_R.get() / 255f;
-        float green = ClientConfig.SELECTION_COLOR_G.get() / 255f;
-        float blue = ClientConfig.SELECTION_COLOR_B.get() / 255f;
-        float alpha = ClientConfig.SELECTION_ALPHA.get() / 255f;
-        RenderType blank = RenderTypes.getOutline(Utils.asResource("textures/special/blank.png"), false);
-        RenderType selection = RenderTypes.getOutline(Utils.asResource("textures/special/selection.png"), BLUR_FACE.get());
+        boolean additive = ADDITIVE_SHADER_SELECTION.get();
+
+        float divide = additive ? 512f : 255f;
+
+        float redM = ClientConfig.MIXED_SELECTION_COLOR_R.get() / divide;
+        float greenM = ClientConfig.MIXED_SELECTION_COLOR_G.get() / divide;
+        float blueM = ClientConfig.MIXED_SELECTION_COLOR_B.get() / divide;
+        float alphaM = ClientConfig.MIXED_SELECTION_ALPHA.get() / divide;
+
+        float redD = ClientConfig.DESTROY_SELECTION_COLOR_R.get() / divide;
+        float greenD = ClientConfig.DESTROY_SELECTION_COLOR_G.get() / divide;
+        float blueD = ClientConfig.DESTROY_SELECTION_COLOR_B.get() / divide;
+        float alphaD = ClientConfig.DESTROY_SELECTION_ALPHA.get() / divide;
+
+        float redI = ClientConfig.INTERACTION_SELECTION_COLOR_R.get() / divide;
+        float greenI = ClientConfig.INTERACTION_SELECTION_COLOR_G.get() / divide;
+        float blueI = ClientConfig.INTERACTION_SELECTION_COLOR_B.get() / divide;
+        float alphaI = ClientConfig.INTERACTION_SELECTION_ALPHA.get() / divide;
+
+        float redW = ClientConfig.WARN_SELECTION_COLOR_R.get() / divide;
+        float greenW = ClientConfig.WARN_SELECTION_COLOR_G.get() / divide;
+        float blueW = ClientConfig.WARN_SELECTION_COLOR_B.get() / divide;
+        float alphaW = ClientConfig.WARN_SELECTION_ALPHA.get() / divide;
+
+        boolean flagI = ClientHelper.flag;
+        boolean flagB = (!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && ClientHelper.flag;
+
+        RenderType warn = RenderTypes.getOutline(Utils.asResource("textures/special/warn.png"), WARN_BLUR_FACE.get(), additive);
+        RenderType blank = RenderTypes.getOutline(Utils.asResource("textures/special/blank.png"), false, additive);
+        RenderType selection = flagB ? RenderTypes.getOutline(Utils.asResource("textures/special/hazard.png"), DESTROY_BLUR_FACE.get(), additive) : warn;
+        RenderType interaction = flagI ? RenderTypes.getOutline(Utils.asResource("textures/special/plated.png"), INTERACTION_BLUR_FACE.get(), additive) : warn;
+        RenderType mixed = flagI && flagB ? RenderTypes.getOutline(Utils.asResource("textures/special/checker.png"), MIXED_BLUR_FACE.get(), additive) : warn;
         var multiBufferSource = event.getMultiBufferSource();
         var camPos = event.getCamera().getPosition();
 
-        Vector3f colorB = new Vector3f(red, green, blue);
-        Vector4f colorAB = new Vector4f(red, green, blue, alpha);
+        Vector4f wColor = new Vector4f(redW, greenW, blueW, alphaW);
+        Vector4f mColor = flagI && flagB ? new Vector4f(redM, greenM, blueM, alphaM) : wColor;
+        Vector4f dColor = flagB ? new Vector4f(redM, greenD, blueD, alphaD) : wColor;
+        Vector4f iColor = flagI ? new Vector4f(redI, greenI, blueI, alphaI) : wColor;
 
-        boolean currentlyBreaking = ClientHelper.currentlyBreaking;
-
-        Vector3f color = (!currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && ClientHelper.flag ? colorB : colorB.mul(1, 0.75f, 0.75f);
-        Vector4f colorA = (!currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && ClientHelper.flag ? colorAB : colorAB.mul(1, 0.75f, 0.75f, 1);
-
-        if (!outlineBlocks.isEmpty() && keyPressed && outlineBlocks.size() <= MAX_BLOCK_VIEW.get()) {
-            if (RENDER_OUTLINE.get()) {
-                VoxelShape selectionShape = convertSelectionToVoxelShape(outlineBlocks);
-                renderShape(poseStack, multiBufferSource.getBuffer(blank), selectionShape, camPos, color.x, color.y, color.z);
+        if (keyPressed) {
+            if (outlineBlocks != null && !outlineBlocks.isEmpty() && outlineBlocks.size() <= MAX_BLOCK_VIEW.get()) {
+                if (RENDER_OUTLINE.get()) renderShape(poseStack, multiBufferSource.getBuffer(blank), outlineBlocks, camPos, dColor, 0.9f);
+                if (RENDER_FACE.get()) renderFaces(poseStack, multiBufferSource.getBuffer(selection), outlineBlocks, camPos, dColor);
+            } if (outlineBlocksPlacing != null && !outlineBlocksPlacing.isEmpty() && outlineBlocksPlacing.size() <= MAX_BLOCK_VIEW.get()) {
+                if (RENDER_OUTLINE.get()) renderShape(poseStack, multiBufferSource.getBuffer(blank), outlineBlocksPlacing, camPos, iColor, 0.95f);
+                if (RENDER_FACE.get()) renderFaces(poseStack, multiBufferSource.getBuffer(interaction), outlineBlocksPlacing, camPos, iColor);
+            } if (outlineBlocksMixed != null && !outlineBlocksMixed.isEmpty() && outlineBlocksMixed.size() <= MAX_BLOCK_VIEW.get()) {
+                if (RENDER_OUTLINE.get()) renderShape(poseStack, multiBufferSource.getBuffer(blank), outlineBlocksMixed, camPos, mColor, 1f);
+                if (RENDER_FACE.get()) renderFaces(poseStack, multiBufferSource.getBuffer(mixed), outlineBlocksMixed, camPos, mColor);
             }
-            if (RENDER_FACE.get())
-                renderFaces(poseStack, multiBufferSource.getBuffer(selection), outlineBlocks, camPos, colorA);
         }
 
         event.setCanceled(true);
@@ -124,9 +163,9 @@ public class BlockOutlineRenderer {
         return combinedShape;
     }
 
-    private static void renderShape(PoseStack pPoseStack, VertexConsumer pConsumer, VoxelShape pShape, Vec3 camPos, float pRed, float pGreen, float pBlue) {
-        pShape.optimize().forAllEdges((x1, y1, z1, x2, y2, z2) -> bufferCuboidLine(pPoseStack, pConsumer, camPos, new Vec3(x1, y1, z1), new Vec3(x2, y2, z2),
-                ClientConfig.OUTLINE_THICKNESS.get().floatValue() / 16.0f, new Vector4f(pRed, pGreen, pBlue, 1), LightTexture.FULL_BRIGHT, true));
+    private static void renderShape(PoseStack pPoseStack, VertexConsumer pConsumer, Set<BlockPos> pPositions, Vec3 camPos, Vector4f pColor, float pThicknessMultiplier) {
+        convertSelectionToVoxelShape(pPositions).optimize().forAllEdges((x1, y1, z1, x2, y2, z2) -> bufferCuboidLine(pPoseStack, pConsumer, camPos, new Vec3(x1, y1, z1), new Vec3(x2, y2, z2),
+                (ClientConfig.OUTLINE_THICKNESS.get().floatValue() / 16.0f) * pThicknessMultiplier, new Vector4f(pColor.x, pColor.y, pColor.z, 1), LightTexture.FULL_BRIGHT, true));
     }
 
     public static void bufferCuboidLine(PoseStack poseStack, VertexConsumer consumer, Vec3 camera, Vec3 start, Vec3 end,

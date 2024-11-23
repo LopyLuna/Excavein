@@ -18,13 +18,13 @@ import uwu.lopyluna.excavein.utils.Utils;
 
 import java.awt.*;
 
-import static uwu.lopyluna.excavein.client.BlockOutlineRenderer.outlineBlocks;
+import static uwu.lopyluna.excavein.client.BlockOutlineRenderer.*;
 import static uwu.lopyluna.excavein.client.ClientHandler.*;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 import static uwu.lopyluna.excavein.utils.Utils.OffsetTime.SECONDS;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "all"})
 @EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
 public class ModeOverlay {
 
@@ -59,9 +59,9 @@ public class ModeOverlay {
         String previousModifier = ClientHelper.previousModifier;
         String nextModifier = ClientHelper.nextModifier;
 
-        int r = SELECTION_COLOR_R.get();
-        int g = SELECTION_COLOR_G.get();
-        int b = SELECTION_COLOR_B.get();
+        int r = MIXED_SELECTION_COLOR_R.get();
+        int g = MIXED_SELECTION_COLOR_G.get();
+        int b = MIXED_SELECTION_COLOR_B.get();
 
         int color = color(r, g, b, 255).getRGB();
         int colorD = color((int) (r * 0.9), (int) (g * 0.9), (int) (b * 0.9), 255).getRGB();
@@ -93,8 +93,9 @@ public class ModeOverlay {
                     scrollDown, "", leftSide, mode.length() - 1, order, true, event.getGuiGraphics());
             order++;
         }
+        boolean breaking = (!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get());
 
-        if ((!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && !ClientHelper.requiredFlags) {
+        if (!breaking && !ClientHelper.requiredFlags) {
             String tag = "";
             if (REQUIRES_XP.get() && !mc.player.isCreative() && mc.player.totalExperience == 0)
                 tag = "xp";
@@ -105,16 +106,23 @@ public class ModeOverlay {
 
             renderText(tag.isEmpty() ? "" : translateText("require_" + tag), order, xPos, yPos, event.getGuiGraphics(), leftSide, colorWarning, dropShadow, background);
             order++;
-        } else if ((!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && ClientHelper.requiredFlags) {
-            int blockCount = outlineBlocks.isEmpty() ? 0 : outlineBlocks.size();
+        } else if (breaking && ClientHelper.requiredFlags) {
+            int breakCount = amountBreak;
+            int interactCount = amountInteract;
             if (ClientCooldownHandler.isCooldownActive()) {
                 renderText(translateText("cooldown") + ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS), order, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
                 order++;
-            } else if (blockCount > 0) {
-                renderText(translateText("selecting") + blockCount + translateText("blocks"), order, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
-                order++;
+            } else {
+                if (breakCount > 0) {
+                    renderText(translateText("selecting") + breakCount + translateText("break_blocks"), order, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+                    order++;
+                }
+                if (interactCount > 0) {
+                    renderText(translateText("selecting") + interactCount + translateText("interact_blocks"), order, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+                    order++;
+                }
             }
-        } else if (!(!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get())) {
+        } else if (breaking) {
             renderText(translateText("breaking") + animatedDotsString(), order, xPos, yPos, event.getGuiGraphics(), leftSide, colorD, dropShadow, background);
             order++;
         }
@@ -143,9 +151,9 @@ public class ModeOverlay {
     private static void sideText(String pText, String pPrefix, String pSuffix, boolean pLeftSide, int pSpaceAmount, int pOffsetOrder, boolean darken, GuiGraphics pGuiGraphics) {
         boolean dropShadow = TEXT_SHADOW.get();
         boolean background = TEXT_BACKGROUND.get();
-        int r = SELECTION_COLOR_R.get();
-        int g = SELECTION_COLOR_G.get();
-        int b = SELECTION_COLOR_B.get();
+        int r = MIXED_SELECTION_COLOR_R.get();
+        int g = MIXED_SELECTION_COLOR_G.get();
+        int b = MIXED_SELECTION_COLOR_B.get();
         int color = color(r, g, b, 255).getRGB();
         int colorD = color((int) (r * 0.9), (int) (g * 0.9), (int) (b * 0.9), 255).getRGB();
         int xPos = SELECTION_OFFSET_X.get();
@@ -166,9 +174,9 @@ public class ModeOverlay {
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int xPos = SELECTION_OFFSET_X.get();
         int yPos = SELECTION_OFFSET_Y.get();
-        int r = SELECTION_COLOR_R.get();
-        int g = SELECTION_COLOR_G.get();
-        int b = SELECTION_COLOR_B.get();
+        int r = MIXED_SELECTION_COLOR_R.get();
+        int g = MIXED_SELECTION_COLOR_G.get();
+        int b = MIXED_SELECTION_COLOR_B.get();
         int color = color(r, g, b, 255).getRGB();
         boolean dropShadow = TEXT_SHADOW.get();
         boolean background = TEXT_BACKGROUND.get();

@@ -50,12 +50,12 @@ public class Utils {
         return null;
     }
 
-    public static boolean getValidTools(ItemStack stack) {
-        return stack != null && (stack.isDamageableItem() || stack.is(Tags.Items.TOOLS) || stack.getItem() instanceof AxeItem || stack.getItem() instanceof PickaxeItem || stack.getItem() instanceof ShovelItem || stack.getItem() instanceof HoeItem ||
-                stack.is(universalTag("tools/axes")) || stack.is(universalTag("tools/pickaxes")) || stack.is(universalTag("tools/shovels")) || stack.is(universalTag("tools/hoes")) ||
-                stack.is(ItemTags.AXES) || stack.is(ItemTags.PICKAXES) || stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.HOES))
-                ;
-    }
+    //public static boolean getValidTools(ItemStack stack) {*
+    //    return stack != null && (stack.isDamageableItem() || stack.is(Tags.Items.TOOLS) || stack.getItem() instanceof AxeItem || stack.getItem() instanceof PickaxeItem || stack.getItem() instanceof ShovelItem || stack.getItem() instanceof HoeItem ||
+    //            stack.is(universalTag("tools/axes")) || stack.is(universalTag("tools/pickaxes")) || stack.is(universalTag("tools/shovels")) || stack.is(universalTag("tools/hoes")) ||
+    //            stack.is(ItemTags.AXES) || stack.is(ItemTags.PICKAXES) || stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.HOES))
+    //            ;
+    //}
 
     public static boolean isBlockWhitelisted(BlockState currentState) {
         boolean isWhitelisted = currentState.is(VEIN_MINE_WHITELIST);
@@ -82,6 +82,10 @@ public class Utils {
         return startSpeed >= speed;
     }
 
+    public static boolean isNotValidBlock(Level pLevel, BlockPos pos, BlockState state) {
+        return (!pLevel.getWorldBorder().isWithinBounds(pos) || state.isAir() || (pLevel.getFluidState(pos).getType() instanceof FlowingFluid));
+    }
+
     public static boolean isNotValidBlock(Level pLevel, ServerPlayer player, BlockPos pos, BlockState state, boolean isCreative) {
         var main = player.getMainHandItem();
         return (!isBlockWhitelisted(state) ||
@@ -99,23 +103,23 @@ public class Utils {
                 !isCorrectSpeeds(player, pLevel, currentPos, startPos, startState, currentState) && !creative);
     }
 
+    public static boolean check(ServerLevel pLevel, BlockPos currentPos, BlockState startState, BlockState currentState, BlockPos eyePos, int maxRange) {
+        return (eyePos.distManhattan(currentPos) > maxRange) || startState.isAir() || isNotValidBlock(pLevel, currentPos, currentState);
+    }
+
     public static boolean isNotFakePlayer(Player player) {
         return player != null && !(player instanceof FakePlayer);
     }
 
-    public static <T extends Shape, I extends ShapeModifier> Set<BlockPos> constructSelection(SelectionPlayerData data, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, T shape, I modifier) {
-        if (data == null || shape == null || modifier == null || rayTrace == null || eyePos == null)
-            return new HashSet<>();
+    public static <T extends Shape, I extends ShapeModifier> Set<BlockPos> constructSelection(boolean isBreaking, SelectionPlayerData data, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, T shape, I modifier) {
+        if (data == null || shape == null || modifier == null || rayTrace == null || eyePos == null) return new HashSet<>();
         ServerPlayer player = data.getPlayer();
         ServerLevel pLevel = data.getLevel();
-
         Set<BlockPos> validBlocks = new HashSet<>();
         Set<BlockPos> checkedBlocks = new HashSet<>();
         Queue<BlockPos> toCheck = new LinkedList<>();
         BlockPos startPos = rayTrace.getBlockPos();
-
         toCheck.add(startPos);
-
         boolean creative = player.isCreative();
         BlockState startState = pLevel.getBlockState(startPos);
         int straightRange = 0;
@@ -123,32 +127,26 @@ public class Utils {
         for (int range = 0; range < maxRange; range++) {
             BlockPos currentPos = startPos.relative(rayTrace.getDirection().getOpposite(), range);
             BlockState currentState = pLevel.getBlockState(currentPos);
-            boolean quickCheck = check(player, pLevel, startPos, currentPos, startState, currentState, eyePos, maxRange, creative);
+            boolean quickCheck = isBreaking ? check(player, pLevel, startPos, currentPos, startState, currentState, eyePos, maxRange, creative) : check(pLevel, currentPos, startState, currentState, eyePos, maxRange);
             if (quickCheck)
                 break;
             straightRange++;
         }
-
         while (!toCheck.isEmpty() && validBlocks.size() < maxBlocks) {
             BlockPos currentPos = toCheck.poll();
-
             if (currentPos == null)
                 continue;
-
             if (checkedBlocks.contains(currentPos)) {
                 toCheck.remove(currentPos);
                 continue;
             }
-
             BlockState currentState = pLevel.getBlockState(currentPos);
-            boolean quickCheck = check(player, pLevel, startPos, currentPos, startState, currentState, eyePos, maxRange, creative);
-
+            boolean quickCheck = isBreaking ? check(player, pLevel, startPos, currentPos, startState, currentState, eyePos, maxRange, creative) : check(pLevel, currentPos, startState, currentState, eyePos, maxRange);
             if (quickCheck) {
                 checkedBlocks.add(currentPos);
                 toCheck.remove(currentPos);
                 continue;
             }
-
             if (shape.shapeFilter(pLevel, player, rayTrace, validBlocks, checkedBlocks, startPos, currentPos, startState, currentState, maxBlocks, maxRange, straightRange))
                 if (modifier.shapeModifierFilter(pLevel, player, rayTrace, validBlocks, checkedBlocks, startPos, currentPos, startState, currentState, maxBlocks, maxRange, straightRange)) {
                     validBlocks.add(currentPos);
@@ -160,7 +158,6 @@ public class Utils {
                     toCheck.addAll(building);
                 }
         }
-
         return validBlocks;
     }
 

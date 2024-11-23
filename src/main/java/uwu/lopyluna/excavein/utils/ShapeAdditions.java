@@ -6,7 +6,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -59,6 +58,8 @@ public interface ShapeAdditions {
         if (isBottom) diagonalPos = diagonalPos.below();
         else diagonalPos = diagonalPos.above();
 
+        if (player.level().getBlockState(diagonalPos).isAir())
+            return neighbors;
         neighbors.add(diagonalPos);
         return neighbors;
     }

@@ -23,13 +23,14 @@ public class ExcaveinTacker {
 
     public static void updateTick(ServerPlayer player, UUID uuid, boolean keyPressed, boolean displayChat) {
         if (player != null && uuid != null && player.getUUID().equals(uuid)) {
-            if (!selectionDataMap.containsKey(uuid))
-                selectionDataMap.put(uuid, new SelectionPlayerData(player.serverLevel(), uuid));
-
             SelectionPlayerData data = getSelectionData(uuid);
             if (data != null && data.getPlayer() != null && data.getLevel() != null && data.getPlayerUUID() != null)
                 data.updateKey(keyPressed, displayChat);
-        } else selectionDataMap.remove(uuid);
+            else selectionDataMap.remove(uuid);
+        } else {
+            boolean equals = selectionDataMap.remove(uuid) == null;
+            if (equals) selectionDataMap.clear();
+        }
     }
 
     public static void update(ServerPlayer player, UUID uuid, boolean keyPressed, int switchMode) {
@@ -72,31 +73,55 @@ public class ExcaveinTacker {
     @SubscribeEvent
     public static void onWorldTick(LevelTickEvent.Post event) {
         Level level = event.getLevel();
-        List<? extends Player> players = level.players();
-        if (level.isClientSide)
-            return;
-        players.forEach(pPlayer -> {
-            if (!(pPlayer instanceof ServerPlayer player))
-                return;
-            SelectionPlayerData selectionData = getSelectionData(player.getUUID());
-            if (selectionData != null && selectionData.getPlayer() != null && selectionData.getLevel() != null && selectionData.getPlayerUUID() != null) {
-                selectionData.tick();
-                selectionData.updateCheck();
-                if (selectionData.getCooldownData() != null) selectionData.getCooldownData().tick();
-            }
-        });
+        if (!level.isClientSide()) {
+            List<? extends Player> players = level.players();
+            players.forEach(pPlayer -> {
+                if (!(pPlayer instanceof ServerPlayer player))
+                    return;
+                SelectionPlayerData selectionData = getSelectionData(player.getUUID());
+                if (selectionData != null && selectionData.getPlayer() != null && selectionData.getLevel() != null && selectionData.getPlayerUUID() != null) {
+                    selectionData.tick();
+                    selectionData.updateCheck();
+                    if (selectionData.getCooldownData() != null) selectionData.getCooldownData().tick();
+                }
+            });
+        }
     }
 
     @SubscribeEvent
     public static void onBlockDrop(BlockDropsEvent event) {
-        if (event.getBreaker() instanceof ServerPlayer player) {
+        if (!event.getLevel().isClientSide() && event.getBreaker() instanceof ServerPlayer player) {
             SelectionPlayerData selectionData = getSelectionData(player.getUUID());
             if (selectionData != null && selectionData.getBreakingUtils().isBreaking())
                 selectionData.getBreakingUtils().sendBlocksToPlayers(event, player);
         }
     }
 
+    public static void updateFixSelection(Level level, Player player) {
+        if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
+            selectionDataMap.remove(serverPlayer.getUUID());
+            if (!selectionDataMap.containsKey(serverPlayer.getUUID())) selectionDataMap.put(serverPlayer.getUUID(), new SelectionPlayerData(serverPlayer.serverLevel(), serverPlayer.getUUID()));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onChangeDim(PlayerEvent.PlayerChangedDimensionEvent event) {
+        updateFixSelection(event.getEntity().level(), event.getEntity());
+    }
+
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        updateFixSelection(event.getEntity().level(), event.getEntity());
+    }
+
+    @SubscribeEvent
+    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        updateFixSelection(event.getEntity().level(), event.getEntity());
+    }
+
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof ServerPlayer player)
+            selectionDataMap.remove(player.getUUID());
     }
 }

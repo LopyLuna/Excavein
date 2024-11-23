@@ -60,7 +60,7 @@ public class BreakingUtils {
         if (getBlockPositions().isEmpty()) {
             end();
         } else if (ready() && isBreaking()) {
-            if (DELAY_BETWEEN_BREAK.get() == 0) { savedBlockPositions.forEach(this::removeBlockPos); savedBlockPositions.clear(); }
+            if (DELAY_BETWEEN_BREAK.get() == 0) { randomizePositions(getBlockPositions()).forEach(this::removeBlockPos); savedBlockPositions.clear(); }
             else for (int i = 0; i < (BLOCK_PER_BREAK.get()); i++) removeAnyBlockPos();
             resetDelay();
         }
@@ -99,12 +99,11 @@ public class BreakingUtils {
         }
     }
 
-    public boolean breakBlocks(GameType gameModeForPlayer) {
+    public boolean breakBlocks(GameType gameModeForPlayer, BlockPos pos) {
         if (player.flag() && (getBlockPositions().isEmpty() || !WAIT_TILL_BROKEN.get())) {
             this.gameModeForPlayer = gameModeForPlayer;
-            saveBlockPositions();
             breaking = true;
-            return true;
+            return saveBlockPositions(pos);
         }
         return false;
     }
@@ -121,31 +120,26 @@ public class BreakingUtils {
     }
 
     public void removeBlockPos(BlockPos pos) {
-        if (!isBreaking() || !player.flagMessage()) {
-            end();
-            return;
-        }
-        if (pos == null)
-            return;
+        if (!isBreaking() || !player.flagMessage()) { end(); return; }
+        if (pos == null) return;
         destroyBlock(pos);
         amount++;
     }
 
     public void removeAnyBlockPos() {
-        if (!isBreaking() || !player.flagMessage()) {
-            end();
-            return;
-        }
-        Optional<BlockPos> pos = savedBlockPositions.stream().findAny();
-        if (pos.isEmpty())
-            return;
+        if (!isBreaking() || !player.flagMessage()) { end(); return; }
+        Optional<BlockPos> pos = randomizePositions(getBlockPositions()).stream().findAny();
+        if (pos.isEmpty()) return;
         destroyBlock(pos.get());
         savedBlockPositions.remove(pos.get());
         amount++;
     }
 
-    public void saveBlockPositions() {
-        savedBlockPositions.addAll(randomizePositions(player.getBlocks()));
+    public boolean saveBlockPositions(BlockPos initialPos) {
+        Set<BlockPos> positions = randomizePositions(player.getBlocks(true));
+        positions.remove(initialPos);
+        removeBlockPos(initialPos);
+        return savedBlockPositions.addAll(positions);
     }
 
     public Set<BlockPos> randomizePositions(Set<BlockPos> blockPosSet) {
@@ -192,10 +186,8 @@ public class BreakingUtils {
     public void playerDestroy(Block block, Level pLevel, Player pPlayer, BlockPos pPos, BlockState pState, @Nullable BlockEntity pBlockEntity, ItemStack pTool) {
         pPlayer.awardStat(Stats.BLOCK_MINED.get(block));
         if (!pPlayer.isCreative()) {
-            if ((savedBlockPositions.size() * FOOD_EXHAUSTION_MULTIPLIER.get()) != 0)
-                pPlayer.causeFoodExhaustion((float) (0.005F * (savedBlockPositions.size() * FOOD_EXHAUSTION_MULTIPLIER.get())));
-            if (XP_EXHAUSTION_AMOUNT.get() != 0)
-                pPlayer.giveExperiencePoints(-XP_EXHAUSTION_AMOUNT.get());
+            if ((savedBlockPositions.size() * FOOD_EXHAUSTION_MULTIPLIER.get()) != 0) pPlayer.causeFoodExhaustion((float) (0.005F * (savedBlockPositions.size() * FOOD_EXHAUSTION_MULTIPLIER.get())));
+            if (XP_EXHAUSTION_AMOUNT.get() != 0) pPlayer.giveExperiencePoints(-XP_EXHAUSTION_AMOUNT.get());
         }
         dropResources(pState, pLevel, pPos, pBlockEntity, pPlayer, pTool);
     }

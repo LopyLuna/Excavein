@@ -6,9 +6,11 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -25,8 +27,11 @@ import uwu.lopyluna.excavein.packets.SelectedBlocksPacket;
 import uwu.lopyluna.excavein.shape_modifiers.ShapeModifier;
 import uwu.lopyluna.excavein.shapes.Shape;
 import uwu.lopyluna.excavein.utils.BreakingUtils;
+import uwu.lopyluna.excavein.utils.Interact;
+import uwu.lopyluna.excavein.utils.InteractionUtils;
 import uwu.lopyluna.excavein.utils.Utils;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -37,6 +42,7 @@ import static uwu.lopyluna.excavein.utils.Utils.findInInventory;
 public class SelectionPlayerData {
 
     private final BreakingUtils breakingUtils;
+    private final InteractionUtils interactionUtils;
     private final CooldownData cooldownData;
     private final ServerLevel level;
     private final ServerPlayer player;
@@ -53,6 +59,7 @@ public class SelectionPlayerData {
         playerUUID = uuid;
         player = (ServerPlayer) pLevel.getPlayerByUUID(uuid);
         breakingUtils = new BreakingUtils(this);
+        interactionUtils = new InteractionUtils(this);
         cooldownData = new CooldownData(this);
     }
 
@@ -155,21 +162,27 @@ public class SelectionPlayerData {
         getBreakingUtils().tick();
     }
 
-    public boolean blockBreak(GameType gameModeForPlayer) {
+    public boolean blockBreak(GameType gameModeForPlayer, BlockPos pos) {
         if (isKeyPressed())
-            return getBreakingUtils().breakBlocks(gameModeForPlayer);
+            return getBreakingUtils().breakBlocks(gameModeForPlayer, pos);
         return false;
     }
 
-    public Set<BlockPos> getBlocks() {
-        if (level == null || playerUUID == null || player == null)
-            return Set.of();
+    public List<InteractionResult> blockInteract(GameType gameModeForPlayer, Interact interact) {
+        if (isKeyPressed())
+            return getInteractionUtils().interactBlocks(gameModeForPlayer, interact);
+        return List.of();
+    }
 
+    public Set<BlockPos> getBlocks(boolean isBreaking) {
+        if (level == null || playerUUID == null || player == null || (!isBreaking && !BLOCK_PLACING.get() && !HAND_INTERACTION.get() && !ITEM_INTERACTION.get()))
+            return Set.of();
         BlockHitResult rayTrace = getPlayerRayTraceToBlock(player);
         AttributeInstance attribute = player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE);
         int playerBlockRange = attribute == null ? 0 : (int) attribute.getValue();
         Vec3 eye = player.getEyePosition();
-        return rayTrace != null ? Utils.constructSelection(this,
+        return rayTrace != null ? Utils.constructSelection(isBreaking,
+                this,
                 rayTrace,
                 new BlockPos(new Vec3i((int) eye.x, (int) eye.y, (int) eye.z)),
                 ServerConfig.SELECTION_MAX_BLOCK.get(),
@@ -178,22 +191,18 @@ public class SelectionPlayerData {
                 getModifier().getShapeModifier()) : Set.of();
     }
 
-    int i = 0;
     public void updateCheck() {
-        if (i >= 2) {
-            PacketDistributor.sendToPlayer(player, new SelectedBlocksPacket(getBlocks()));
-            PacketDistributor.sendToPlayer(player, new CooldownPacket(getRemainingCooldown()));
-            PacketDistributor.sendToPlayer(player, new ClientHelperBoolsPacket(getBreakingUtils().isBreaking(), requiredFlags(), flag()));
-            PacketDistributor.sendToPlayer(player, new ClientHelperModesPacket(
-                    getShape().getShape().getName(),
-                    getPrevShape().getShape().getName(),
-                    getNextShape().getShape().getName(),
-                    getModifier().getShapeModifier().getName(),
-                    getPrevModifier().getShapeModifier().getName(),
-                    getNextModifier().getShapeModifier().getName()
-            ));
-            i = 0;
-        } else i++;
+        PacketDistributor.sendToPlayer(player, new SelectedBlocksPacket(getBlocks(true), getBlocks(false)));
+        PacketDistributor.sendToPlayer(player, new CooldownPacket(getRemainingCooldown()));
+        PacketDistributor.sendToPlayer(player, new ClientHelperBoolsPacket(getBreakingUtils().isBreaking(), requiredFlags(), flag()));
+        PacketDistributor.sendToPlayer(player, new ClientHelperModesPacket(
+                getShape().getShape().getName(),
+                getPrevShape().getShape().getName(),
+                getNextShape().getShape().getName(),
+                getModifier().getShapeModifier().getName(),
+                getPrevModifier().getShapeModifier().getName(),
+                getNextModifier().getShapeModifier().getName()
+        ));
     }
 
     public BlockHitResult getPlayerRayTraceToBlock(Player player) {
@@ -203,17 +212,15 @@ public class SelectionPlayerData {
         Vec3 lookVector = player.getLookAngle().scale(reachDistance);
         Vec3 reachPosition = eyePosition.add(lookVector);
 
-        BlockHitResult hitResult = player.level().clip(new net.minecraft.world.level.ClipContext(
+        BlockHitResult hitResult = player.level().clip(new ClipContext(
                 eyePosition, reachPosition,
-                net.minecraft.world.level.ClipContext.Block.OUTLINE,
-                net.minecraft.world.level.ClipContext.Fluid.NONE,
+                ClipContext.Block.OUTLINE,
+                ClipContext.Fluid.NONE,
                 player
         ));
 
-        if (hitResult.getType() == HitResult.Type.BLOCK) {
+        if (hitResult.getType() == HitResult.Type.BLOCK)
             return hitResult;
-        }
-
         return null;
     }
 
@@ -253,6 +260,7 @@ public class SelectionPlayerData {
         return cooldownData.getRemainingCooldown();
     }
 
+    @SuppressWarnings("all")
     public boolean isCooldownActive() {
         return !cooldownData.isCooldownNotActive();
     }
@@ -284,6 +292,10 @@ public class SelectionPlayerData {
 
     public BreakingUtils getBreakingUtils() {
         return breakingUtils;
+    }
+
+    public InteractionUtils getInteractionUtils() {
+        return interactionUtils;
     }
 
     public UUID getPlayerUUID() {

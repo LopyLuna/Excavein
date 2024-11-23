@@ -17,7 +17,11 @@ public class RenderTypes extends RenderStateShard {
         super(null, null, null);
     }
 
-    public static RenderType getOutline(ResourceLocation loc, boolean blur) {
+    public static RenderType getOutline(ResourceLocation loc, boolean blur, boolean additive) {
+        return additive ? getOutlineAdditive(loc, blur) : getOutlineGlow(loc, blur);
+    }
+
+    public static RenderType getOutlineGlow(ResourceLocation loc, boolean blur) {
         return RenderType.create(MOD_ID + ":outline", DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, false, true,
                 RenderType.CompositeState.builder()
                         .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_CULL_SHADER)
@@ -29,4 +33,19 @@ public class RenderTypes extends RenderStateShard {
                         .setDepthTestState(ServerConfig.XRAY_OUTLINE_SELECTION.get() && ClientConfig.XRAY_OUTLINE_SELECTION.get() ? NO_DEPTH_TEST : LEQUAL_DEPTH_TEST)
                         .createCompositeState(false));
     }
+
+    public static RenderType getOutlineAdditive(ResourceLocation loc, boolean blur) {
+        return RenderType.create(MOD_ID + ":outline", DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, true, true,
+                RenderType.CompositeState.builder()
+                        .setShaderState(RENDERTYPE_ENTITY_SOLID_SHADER)
+                        .setTextureState(new RenderStateShard.TextureStateShard(loc, blur, false))
+                        .setTransparencyState(ADDITIVE_TRANSPARENCY)
+                        .setCullState(CULL)
+                        .setLightmapState(LIGHTMAP)
+                        .setOverlayState(OVERLAY)
+                        .setDepthTestState(ServerConfig.XRAY_OUTLINE_SELECTION.get() && ClientConfig.XRAY_OUTLINE_SELECTION.get() ? NO_DEPTH_TEST : LEQUAL_DEPTH_TEST)
+                        .createCompositeState(true));
+    }
+
+
 }
