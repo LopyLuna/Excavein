@@ -18,8 +18,10 @@ import uwu.lopyluna.excavein.utils.Utils;
 
 import java.awt.*;
 
-import static uwu.lopyluna.excavein.client.BlockOutlineRenderer.*;
-import static uwu.lopyluna.excavein.client.ClientHandler.*;
+import static uwu.lopyluna.excavein.client.BlockOutlineRenderer.amountBreak;
+import static uwu.lopyluna.excavein.client.BlockOutlineRenderer.amountInteract;
+import static uwu.lopyluna.excavein.client.ClientHandler.SELECTION_ACTIVATION;
+import static uwu.lopyluna.excavein.client.ClientHandler.keyPressed;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 import static uwu.lopyluna.excavein.utils.Utils.OffsetTime.SECONDS;

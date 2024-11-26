@@ -1,6 +1,5 @@
 package uwu.lopyluna.excavein.config;
 
-
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class ClientConfig {
@@ -51,13 +50,13 @@ public class ClientConfig {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
         ADDITIVE_SHADER_SELECTION = builder
-                .comment("Whether to have selection render additive (default = true)")
-                .define("AdditiveShaderSelection", true);
+                .comment("Whether to have selection render additive (default = false)")
+                .define("AdditiveShaderSelection", false);
 
-        MIXED_SELECTION_COLOR_R = builder.comment("Outline Red color value (default = 232)").defineInRange("SelectionColorR", 232, 1, 255);
-        MIXED_SELECTION_COLOR_G = builder.comment("Outline Green color value (default = 232)").defineInRange("SelectionColorG", 232, 1, 255);
-        MIXED_SELECTION_COLOR_B = builder.comment("Outline Blue color value (default = 232)").defineInRange("SelectionColorB", 232, 1, 255);
-        MIXED_SELECTION_ALPHA = builder.comment("Outline alpha value (default = 32)").defineInRange("SelectionAlpha", 64, 1, 255);
+        MIXED_SELECTION_COLOR_R = builder.comment("Outline Red color value (default = 232)").defineInRange("MixedSelectionColorR", 232, 1, 255);
+        MIXED_SELECTION_COLOR_G = builder.comment("Outline Green color value (default = 232)").defineInRange("MixedSelectionColorG", 232, 1, 255);
+        MIXED_SELECTION_COLOR_B = builder.comment("Outline Blue color value (default = 232)").defineInRange("MixedSelectionColorB", 232, 1, 255);
+        MIXED_SELECTION_ALPHA = builder.comment("Outline alpha value (default = 32)").defineInRange("MixedSelectionAlpha", 64, 1, 255);
         MIXED_BLUR_FACE = builder.comment("Whether to blur the Face Texture of the Mixed Selection (default = false)").define("BlurFace", false);
 
         DESTROY_SELECTION_COLOR_R = builder.comment("Outline Red color value (default = 232)").defineInRange("DestroySelectionColorR", 232, 1, 255);
@@ -111,8 +110,8 @@ public class ClientConfig {
                 .define("RenderFace", true);
 
         XRAY_OUTLINE_SELECTION = builder
-                .comment("Ability to see your selection through Blocks whether the server allows it also (default = false)")
-                .define("XrayOutlineSelection", false);
+                .comment("Ability to see your selection through Blocks whether the server allows it also (default = true)")
+                .define("XrayOutlineSelection", true);
 
         SELECTION_OFFSET_Y = builder
                 .comment("Offset Y position of Selection Text (default = 0)")

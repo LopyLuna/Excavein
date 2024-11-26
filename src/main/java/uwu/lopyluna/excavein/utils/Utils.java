@@ -161,15 +161,15 @@ public class Utils {
         return validBlocks;
     }
 
-    public static int calculateTimeFromBlocks(int maxTime, int currentAmountBlocks) {
+    public static int calculateValueFromAmount(int maxTime, int currentAmountBlocks) {
         double multiplier = (double) currentAmountBlocks / SELECTION_MAX_BLOCK.get();
         return (int) (maxTime * multiplier);
     }
 
-    public static double calculatePercentage(double currentValue, double maxValue, double minOutputValue, double maxOutputValue, boolean invert) {
-        double ratio = Math.max(0, Math.min(currentValue / maxValue, 1));
-        return Math.round((invert ? maxOutputValue - ratio * (maxOutputValue - minOutputValue) : minOutputValue + ratio * (maxOutputValue - minOutputValue)) * 1000.0) / 1000.0;
-    }
+    //public static double calculatePercentage(double currentValue, double maxValue, double minOutputValue, double maxOutputValue, boolean invert) {*
+    //    double ratio = Math.max(0, Math.min(currentValue / maxValue, 1));
+    //    return Math.round((invert ? maxOutputValue - ratio * (maxOutputValue - minOutputValue) : minOutputValue + ratio * (maxOutputValue - minOutputValue)) * 1000.0) / 1000.0;
+    //}
 
     public static TagKey<Item> universalTag(String name) {
         return ItemTags.create(ResourceLocation.fromNamespaceAndPath("c", name));

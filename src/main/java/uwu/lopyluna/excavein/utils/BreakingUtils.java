@@ -38,6 +38,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
+import static uwu.lopyluna.excavein.utils.Utils.removingFuelItems;
 
 public class BreakingUtils {
     public Set<BlockPos> savedBlockPositions = new HashSet<>();
@@ -109,9 +110,14 @@ public class BreakingUtils {
     }
 
     public void end() {
-        if (breaking) player.resetCooldown(amount);
-        savedBlockPositions.clear();
-        breaking = false;
+        if (breaking) {
+            player.resetCooldown(amount);
+            Player pPlayer = player.getPlayer();
+            removingFuelItems(pPlayer, amount);
+            pPlayer.hurt(pPlayer.damageSources().inWall(), Utils.calculateValueFromAmount(HEART_CONSUME_AMOUNT.get(), amount) + HEART_CONSUME_ADDED_AMOUNT.get());
+            breaking = false;
+        }
+        if (!savedBlockPositions.isEmpty()) savedBlockPositions.clear();
         amount = 0;
     }
 

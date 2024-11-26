@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -22,6 +23,7 @@ import uwu.lopyluna.excavein.data.SelectionPlayerData;
 import java.util.*;
 
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
+import static uwu.lopyluna.excavein.utils.Utils.removingFuelItems;
 
 
 public class InteractionUtils {
@@ -40,6 +42,9 @@ public class InteractionUtils {
         if (interact == null) return;
         if (getBlockPositions() != null && !getBlockPositions().isEmpty()) {
             randomizePositions(getBlockPositions()).forEach(pos -> interactBlockPos(interact.pPlayer, interact.pLevel, interact.pStack, interact.pHand, interact.pHitResult.withPosition(pos), pos));
+            Player pPlayer = player.getPlayer();
+            removingFuelItems(pPlayer, amount);
+            pPlayer.hurt(pPlayer.damageSources().inWall(), Utils.calculateValueFromAmount(HEART_CONSUME_AMOUNT.get(), amount) + HEART_CONSUME_ADDED_AMOUNT.get());
             player.resetCooldown(amount);
             savedBlockPositions.clear();
             amount = 0;

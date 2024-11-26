@@ -1,7 +1,7 @@
 modLoader="javafml"
 loaderVersion="${loader_version_range}"
 license="${mod_license}"
-#issueTrackerURL="NA"
+issueTrackerURL="https://github.com/LopyLuna/Excavein/issues"
 
 [[mods]]
     modId="${mod_id}"

@@ -6,7 +6,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.NotNull;
-import uwu.lopyluna.excavein.Excavein;
 import uwu.lopyluna.excavein.client.ClientCooldownHandler;
 import uwu.lopyluna.excavein.utils.Utils;
 

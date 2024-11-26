@@ -97,25 +97,25 @@ public class BlockOutlineRenderer {
 
         float divide = additive ? 512f : 255f;
 
-        float redM = ClientConfig.MIXED_SELECTION_COLOR_R.get() / divide;
-        float greenM = ClientConfig.MIXED_SELECTION_COLOR_G.get() / divide;
-        float blueM = ClientConfig.MIXED_SELECTION_COLOR_B.get() / divide;
         float alphaM = ClientConfig.MIXED_SELECTION_ALPHA.get() / divide;
+        float redM = Mth.clamp(((ClientConfig.MIXED_SELECTION_COLOR_R.get() / divide) - (additive ? alphaM : 0)), 0, 1);
+        float greenM = Mth.clamp(((ClientConfig.MIXED_SELECTION_COLOR_G.get() / divide) - (additive ? alphaM : 0)), 0, 1);
+        float blueM = Mth.clamp(((ClientConfig.MIXED_SELECTION_COLOR_B.get() / divide) - (additive ? alphaM : 0)), 0, 1);
 
-        float redD = ClientConfig.DESTROY_SELECTION_COLOR_R.get() / divide;
-        float greenD = ClientConfig.DESTROY_SELECTION_COLOR_G.get() / divide;
-        float blueD = ClientConfig.DESTROY_SELECTION_COLOR_B.get() / divide;
         float alphaD = ClientConfig.DESTROY_SELECTION_ALPHA.get() / divide;
+        float redD = Mth.clamp(((ClientConfig.DESTROY_SELECTION_COLOR_R.get() / divide) - (additive ? alphaD : 0)), 0, 1);
+        float greenD = Mth.clamp(((ClientConfig.DESTROY_SELECTION_COLOR_G.get() / divide) - (additive ? alphaD : 0)), 0, 1);
+        float blueD = Mth.clamp(((ClientConfig.DESTROY_SELECTION_COLOR_B.get() / divide) - (additive ? alphaD : 0)), 0, 1);
 
-        float redI = ClientConfig.INTERACTION_SELECTION_COLOR_R.get() / divide;
-        float greenI = ClientConfig.INTERACTION_SELECTION_COLOR_G.get() / divide;
-        float blueI = ClientConfig.INTERACTION_SELECTION_COLOR_B.get() / divide;
         float alphaI = ClientConfig.INTERACTION_SELECTION_ALPHA.get() / divide;
+        float redI = Mth.clamp(((ClientConfig.INTERACTION_SELECTION_COLOR_R.get() / divide) - (additive ? alphaI : 0)), 0, 1);
+        float greenI = Mth.clamp(((ClientConfig.INTERACTION_SELECTION_COLOR_G.get() / divide) - (additive ? alphaI : 0)), 0, 1);
+        float blueI = Mth.clamp(((ClientConfig.INTERACTION_SELECTION_COLOR_B.get() / divide) - (additive ? alphaI : 0)), 0, 1);
 
-        float redW = ClientConfig.WARN_SELECTION_COLOR_R.get() / divide;
-        float greenW = ClientConfig.WARN_SELECTION_COLOR_G.get() / divide;
-        float blueW = ClientConfig.WARN_SELECTION_COLOR_B.get() / divide;
         float alphaW = ClientConfig.WARN_SELECTION_ALPHA.get() / divide;
+        float redW = Mth.clamp(((ClientConfig.WARN_SELECTION_COLOR_R.get() / divide) - (additive ? alphaW : 0)), 0, 1);
+        float greenW = Mth.clamp(((ClientConfig.WARN_SELECTION_COLOR_G.get() / divide) - (additive ? alphaW : 0)), 0, 1);
+        float blueW = Mth.clamp(((ClientConfig.WARN_SELECTION_COLOR_B.get() / divide) - (additive ? alphaW : 0)), 0, 1);
 
         boolean flagI = ClientHelper.flag;
         boolean flagB = (!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && ClientHelper.flag;

@@ -23,7 +23,7 @@ public class CooldownData {
     }
 
     public void resetCooldown(int amountOfBlocks) {
-        value = Mth.clamp(Utils.calculateTimeFromBlocks(SELECTION_COOLDOWN.get(), amountOfBlocks) + SELECTION_ADD_COOLDOWN.get(), 0, SELECTION_COOLDOWN.get());
+        value = Mth.clamp(Utils.calculateValueFromAmount(SELECTION_COOLDOWN.get(), amountOfBlocks) + SELECTION_ADD_COOLDOWN.get(), 0, SELECTION_COOLDOWN.get());
     }
 
     public boolean isCooldownNotActive() {

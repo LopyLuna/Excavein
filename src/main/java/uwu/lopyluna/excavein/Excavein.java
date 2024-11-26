@@ -21,7 +21,7 @@ import uwu.lopyluna.excavein.registry.ExcaveinModes;
 public class Excavein {
     public static final String NAME = "ExcaVein";
     public static final String MOD_ID = "excavein";
-    public static final String VERSION = "1.0a.Release";
+    public static final String VERSION = "2.0a.Release";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public Excavein(IEventBus modEventBus, Dist dist, ModContainer container) {

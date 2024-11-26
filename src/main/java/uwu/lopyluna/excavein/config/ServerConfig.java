@@ -11,6 +11,8 @@ public class ServerConfig {
     public static final ModConfigSpec.IntValue SELECTION_ADD_COOLDOWN;
     public static final ModConfigSpec.IntValue SELECTION_ADD_RANGE;
     public static final ModConfigSpec.IntValue SELECTION_MAX_BLOCK;
+    public static final ModConfigSpec.IntValue HEART_CONSUME_AMOUNT;
+    public static final ModConfigSpec.IntValue HEART_CONSUME_ADDED_AMOUNT;
     public static final ModConfigSpec.BooleanValue REQUIRES_FUEL_ITEM;
     public static final ModConfigSpec.IntValue FUEL_EXHAUSTION_AMOUNT;
     public static final ModConfigSpec.BooleanValue REQUIRES_HUNGER;
@@ -64,6 +66,14 @@ public class ServerConfig {
                 .comment("Causes Food Loss to be Multiplied when mining amount of  blocks (default = 2.0)")
                 .defineInRange("FoodExhaustionMultiplier", 2.0, 0.0, 1000.0);
 
+        HEART_CONSUME_AMOUNT = builder
+                .comment("Amount of ticks for block selection cooldown (default = 2)")
+                .defineInRange("SelectionCooldown", 2, 0, 10000);
+
+        HEART_CONSUME_ADDED_AMOUNT = builder
+                .comment("Amount of ticks that get added to the block selection cooldown (default = 0)")
+                .defineInRange("SelectionAddedCooldown", 0, 0, 10000);
+
         REQUIRES_XP = builder
                 .comment("Require XP for said selected blocks (default = false)")
                 .define("RequiresXP", false);
@@ -85,8 +95,8 @@ public class ServerConfig {
                 .defineInRange("ItemPickupDelay", 0, 0, 30000);
 
         DELAY_BETWEEN_BREAK = builder
-                .comment("Amount of ticks for till next block gets broken (default = 5)")
-                .defineInRange("DelayBetweenBreak", 5, 0, 100);
+                .comment("Amount of ticks for till next block gets broken (default = 2)")
+                .defineInRange("DelayBetweenBreak", 2, 0, 100);
 
         BLOCK_PER_BREAK = builder
                 .comment("Amount of blocks between broken blocks (default = 4)")
