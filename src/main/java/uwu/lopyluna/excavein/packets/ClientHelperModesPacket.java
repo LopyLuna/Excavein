@@ -21,5 +21,6 @@ public record ClientHelperModesPacket(String currentMode, String previousMode, S
     }
     public static void handle(ClientHelperModesPacket msg, Supplier<NetworkEvent.Context> context) {
         context.get().enqueueWork(() -> ClientHelper.update(msg.currentMode, msg.previousMode, msg.nextMode, msg.currentModifier, msg.previousModifier, msg.nextModifier));
+        context.get().setPacketHandled(true);
     }
 }

@@ -2,8 +2,11 @@ package uwu.lopyluna.excavein.client;
 
 import com.google.common.base.Strings;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.math.Matrix4f;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
@@ -38,7 +41,7 @@ public class ModeOverlay {
 
     @SubscribeEvent
     public static void onRenderGuiOverlay(RenderGuiEvent.Post event) {
-        PoseStack poseStack = event.getGuiGraphics().pose();
+        PoseStack poseStack = event.getPoseStack();
         if (mc.getConnection() == null || mc.player == null || mc.options.hideGui || mc.noRender || mc.showOnlyReducedInfo())
             return;
 
@@ -83,17 +86,17 @@ public class ModeOverlay {
 
         if (previousMode != null) {
             sideText(previousMode,
-                    scrollUp, "", leftSide, mode.length() - 1, order, true, event.getGuiGraphics());
+                    scrollUp, "", leftSide, mode.length() - 1, order, true, poseStack);
             order++;
         }
         if (currentMode != null) {
             sideText(currentMode,
-                    mode, "", leftSide, 0, order, false, event.getGuiGraphics());
+                    mode, "", leftSide, 0, order, false, poseStack);
             order++;
         }
         if (nextMode != null) {
             sideText(nextMode,
-                    scrollDown, "", leftSide, mode.length() - 1, order, true, event.getGuiGraphics());
+                    scrollDown, "", leftSide, mode.length() - 1, order, true, poseStack);
             order++;
         }
         boolean breaking = (!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get());
@@ -107,26 +110,26 @@ public class ModeOverlay {
             else if (REQUIRES_FUEL_ITEM.get() && !mc.player.isCreative() && Utils.findInInventory(mc.player) == 0)
                 tag = "fuel";
 
-            renderText(tag.isEmpty() ? "" : translateText("require_" + tag), order, xPos, yPos, event.getGuiGraphics(), leftSide, colorWarning, dropShadow, background);
+            renderText(tag.isEmpty() ? "" : translateText("require_" + tag), order, xPos, yPos, poseStack, leftSide, colorWarning, dropShadow, background);
             order++;
         } else if (breaking && ClientHelper.requiredFlags) {
             int breakCount = amountBreak;
             int interactCount = amountInteract;
             if (ClientCooldownHandler.isCooldownActive()) {
-                renderText(translateText("cooldown") + ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS), order, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+                renderText(translateText("cooldown") + ticksToTime(ClientCooldownHandler.getRemainingCooldown(), SECONDS), order, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
                 order++;
             } else {
                 if (breakCount > 0) {
-                    renderText(translateText("selecting") + breakCount + translateText("break_blocks"), order, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+                    renderText(translateText("selecting") + breakCount + translateText("break_blocks"), order, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
                     order++;
                 }
                 if (interactCount > 0) {
-                    renderText(translateText("selecting") + interactCount + translateText("interact_blocks"), order, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+                    renderText(translateText("selecting") + interactCount + translateText("interact_blocks"), order, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
                     order++;
                 }
             }
         } else if (breaking) {
-            renderText(translateText("breaking") + animatedDotsString(), order, xPos, yPos, event.getGuiGraphics(), leftSide, colorD, dropShadow, background);
+            renderText(translateText("breaking") + animatedDotsString(), order, xPos, yPos, poseStack, leftSide, colorD, dropShadow, background);
             order++;
         }
 
@@ -134,24 +137,24 @@ public class ModeOverlay {
 
         if (previousModifier != null) {
             sideText((previousModifier.isEmpty() ? "None" : previousModifier),
-                    scrollUp, "", leftSide, modifier.length() - 1, order, true, event.getGuiGraphics());
+                    scrollUp, "", leftSide, modifier.length() - 1, order, true, poseStack);
             order++;
         }
         if (currentModifier != null) {
             sideText((currentModifier.isEmpty() ? "None" : currentModifier),
-                    modifier, "", leftSide, 0, order, false, event.getGuiGraphics());
+                    modifier, "", leftSide, 0, order, false, poseStack);
             order++;
         }
         if (nextModifier != null) {
             sideText((nextModifier.isEmpty() ? "None" : nextModifier),
-                    scrollDown, "", leftSide, modifier.length() - 1, order, true, event.getGuiGraphics());
+                    scrollDown, "", leftSide, modifier.length() - 1, order, true, poseStack);
         }
 
         poseStack.popPose();
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static void sideText(String pText, String pPrefix, String pSuffix, boolean pLeftSide, int pSpaceAmount, int pOffsetOrder, boolean darken, GuiGraphics pGuiGraphics) {
+    private static void sideText(String pText, String pPrefix, String pSuffix, boolean pLeftSide, int pSpaceAmount, int pOffsetOrder, boolean darken, PoseStack pGuiGraphics) {
         boolean dropShadow = TEXT_SHADOW.get();
         boolean background = TEXT_BACKGROUND.get();
         int r = MIXED_SELECTION_COLOR_R.get();
@@ -185,41 +188,41 @@ public class ModeOverlay {
         boolean background = TEXT_BACKGROUND.get();
         boolean leftSide = !TEXT_LEFT_SIDE.get();
 
-        renderText("-Shapes-", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        renderText("-Shapes-", i, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
         i++;
         ExcaveinEntries.getShapeEntries().forEach((integer, shapeEntry) -> {
-            renderText(shapeEntry.getLang() + " :Entry | " + integer + " :ID", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(shapeEntry.getLang() + " :Entry | " + integer + " :ID", i, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
             i++;
         });
-        renderText("-Modifiers-", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        renderText("-Modifiers-", i, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
         i++;
         ExcaveinEntries.getShapeModifierEntries().forEach((integer, shapeEntry) -> {
-            renderText(shapeEntry.getLang() + " :Entry | " + integer + " :ID", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(shapeEntry.getLang() + " :Entry | " + integer + " :ID", i, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
             i++;
         });
-        renderText("-EntriesIDs-", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        renderText("-EntriesIDs-", i, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
         i++;
         ExcaveinEntries.getShapeValue().forEach((integer, resourceLocation) -> {
-            renderText(resourceLocation.toString() + " :Loc | " + integer + " :ID", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(resourceLocation.toString() + " :Loc | " + integer + " :ID", i, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
             i++;
         });
         ExcaveinEntries.getModifierValue().forEach((integer, resourceLocation) -> {
-            renderText(resourceLocation.toString() + " :Loc | " + integer + " :ID", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(resourceLocation.toString() + " :Loc | " + integer + " :ID", i, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
             i++;
         });
         ExcaveinEntries.getShapes().forEach((resourceLocation, shape) -> {
-            renderText(resourceLocation.toString() + " :Loc | " + shape.getName() + " :Shape", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(resourceLocation.toString() + " :Loc | " + shape.getName() + " :Shape", i, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
             i++;
         });
         ExcaveinEntries.getShapeModifiers().forEach((resourceLocation, shapeModifier) -> {
-            renderText(resourceLocation.toString() + " :Loc | " + shapeModifier.getName() + " :Modifier", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+            renderText(resourceLocation.toString() + " :Loc | " + shapeModifier.getName() + " :Modifier", i, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
             i++;
         });
-        renderText("-Others-", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        renderText("-Others-", i, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
         i++;
-        renderText(ExcaveinEntries.sizeShape + " :Shape Size", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        renderText(ExcaveinEntries.sizeShape + " :Shape Size", i, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
         i++;
-        renderText(ExcaveinEntries.sizeModifier + " :Modifier Size", i, xPos, yPos, event.getGuiGraphics(), leftSide, color, dropShadow, background);
+        renderText(ExcaveinEntries.sizeModifier + " :Modifier Size", i, xPos, yPos, poseStack, leftSide, color, dropShadow, background);
         i = 0;
     }
 
@@ -239,20 +242,26 @@ public class ModeOverlay {
         }
     }
 
-    private static void renderText(String pText, int pOffsetOrder, int pOffX, int pOffY, GuiGraphics pGuiGraphics, boolean pLeftSide, int pTextColor, boolean pDropShadow, boolean pBackground) {
+    private static void renderText(String pText, int pOffsetOrder, int pOffX, int pOffY, PoseStack pGuiGraphics, boolean pLeftSide, int pTextColor, boolean pDropShadow, boolean pBackground) {
         int i = 9;
         if (!Strings.isNullOrEmpty(pText) && pBackground) {
             int k = mc.font.width(pText);
-            int l = (pLeftSide ? 2 : pGuiGraphics.guiWidth() - 2 - k) + pOffX;
+            int l = (pLeftSide ? 2 : mc.getWindow().getGuiScaledWidth() - 2 - k) + pOffX;
             int i1 = (2 + i * pOffsetOrder) + pOffY;
-            pGuiGraphics.fill(l - 1, i1 - 1, l + k + 1, i1 + i - 1, -1873784752);
+            GuiComponent.fill(pGuiGraphics, l - 1, i1 - 1, l + k + 1, i1 + i - 1, -1873784752);
         }
         if (!Strings.isNullOrEmpty(pText)) {
             int k1 = mc.font.width(pText);
-            int l1 = (pLeftSide ? 2 : pGuiGraphics.guiWidth() - 2 - k1) + pOffX;
+            int l1 = (pLeftSide ? 2 : mc.getWindow().getGuiScaledWidth() - 2 - k1) + pOffX;
             int i2 = (2 + i * pOffsetOrder) + pOffY;
-            pGuiGraphics.drawString(mc.font, pText, l1, i2, pTextColor, pDropShadow);
+            drawInternal(pText, l1, i2, pTextColor, pGuiGraphics.last().pose(), pDropShadow);
         }
+    }
+
+    private static void drawInternal(String pText, float pX, float pY, int pColor, Matrix4f pMatrix, boolean pDrawShadow) {
+        MultiBufferSource.BufferSource multibuffersource$buffersource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+        int i = mc.font.drawInBatch(pText, pX, pY, pColor, pDrawShadow, pMatrix, multibuffersource$buffersource, false, 0, 15728880);
+        multibuffersource$buffersource.endBatch();
     }
 
     public static Color color(int r, int g, int b, int a) {

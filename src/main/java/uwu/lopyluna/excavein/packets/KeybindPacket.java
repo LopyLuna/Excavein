@@ -21,5 +21,6 @@ public record KeybindPacket(UUID playerID, boolean keyPressed, int id, String mo
     public static void handle(KeybindPacket msg, Supplier<NetworkEvent.Context> context) {
         ServerPlayer player = context.get().getSender();
         if (player != null) context.get().enqueueWork(() -> ExcaveinTacker.updateKey(player, player.getUUID().equals(msg.playerID) ? player.getUUID() : msg.playerID, msg.keyPressed, msg.id, msg.mode));
+        context.get().setPacketHandled(true);
     }
 }

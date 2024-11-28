@@ -61,7 +61,7 @@ public interface ShapeAdditions {
         if (isBottom) diagonalPos = diagonalPos.below();
         else diagonalPos = diagonalPos.above();
 
-        if (player.level().getBlockState(diagonalPos).isAir())
+        if (player.getLevel().getBlockState(diagonalPos).isAir())
             return neighbors;
         neighbors.add(diagonalPos);
         return neighbors;

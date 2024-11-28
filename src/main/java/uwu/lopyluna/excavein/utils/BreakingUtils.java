@@ -7,6 +7,7 @@ import net.minecraft.stats.Stats;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.piglin.PiglinAi;
@@ -20,7 +21,7 @@ import net.minecraft.world.level.block.GameMasterBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.ForgeEventFactory;
@@ -92,7 +93,7 @@ public class BreakingUtils {
             player.resetCooldown(amount);
             Player pPlayer = player.getPlayer();
             removingFuelItems(pPlayer, amount);
-            pPlayer.hurt(pPlayer.damageSources().inWall(), Utils.calculateValueFromAmount(HEART_CONSUME_AMOUNT.get(), amount) + HEART_CONSUME_ADDED_AMOUNT.get());
+            pPlayer.hurt(DamageSource.IN_WALL, Utils.calculateValueFromAmount(HEART_CONSUME_AMOUNT.get(), amount) + HEART_CONSUME_ADDED_AMOUNT.get());
             breaking = false;
         }
         if (!savedBlockPositions.isEmpty()) savedBlockPositions.clear();
@@ -183,7 +184,7 @@ public class BreakingUtils {
     }
 
     public List<ItemStack> getDrops(BlockState pState, ServerLevel pLevel, BlockPos pPos, @Nullable BlockEntity pBlockEntity, @Nullable Player pPlayer, ItemStack pTool) {
-        LootParams.Builder lootcontext$builder = (new LootParams.Builder(pLevel))
+        LootContext.Builder lootcontext$builder = (new LootContext.Builder(pLevel))
                 .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pPos))
                 .withParameter(LootContextParams.TOOL, pTool)
                 .withOptionalParameter(LootContextParams.THIS_ENTITY, pPlayer)

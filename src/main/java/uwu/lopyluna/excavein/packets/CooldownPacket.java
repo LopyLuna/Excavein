@@ -15,5 +15,6 @@ public record CooldownPacket(int cooldownTicks) {
     }
     public static void handle(CooldownPacket msg, Supplier<NetworkEvent.Context> context) {
         context.get().enqueueWork(() -> ClientCooldownHandler.setCooldown(msg.cooldownTicks));
+        context.get().setPacketHandled(true);
     }
 }

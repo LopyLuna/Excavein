@@ -21,6 +21,6 @@ public class SurfaceShapeModifier extends ShapeModifier {
         var axis = direction.getAxis();
         BlockPos offset = pCurrentPos.relative(direction);
         BlockState state = pLevel.getBlockState(offset);
-        return pStartPos.get(axis) == pCurrentPos.get(axis) && (state.isAir() || state.canBeReplaced() || state.getCollisionShape(pLevel, offset) == Shapes.empty());
+        return pStartPos.get(axis) == pCurrentPos.get(axis) && (state.isAir() || state.getMaterial().isReplaceable() || state.getCollisionShape(pLevel, offset) == Shapes.empty());
     }
 }

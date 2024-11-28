@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -42,7 +43,7 @@ public class InteractionUtils {
             randomizePositions(getBlockPositions()).forEach(pos -> interactBlockPos(interact.pPlayer, interact.pLevel, interact.pStack, interact.pHand, interact.pHitResult.withPosition(pos), pos));
             Player pPlayer = player.getPlayer();
             removingFuelItems(pPlayer, amount);
-            pPlayer.hurt(pPlayer.damageSources().inWall(), Utils.calculateValueFromAmount(HEART_CONSUME_AMOUNT.get(), amount) + HEART_CONSUME_ADDED_AMOUNT.get());
+            pPlayer.hurt(DamageSource.IN_WALL, Utils.calculateValueFromAmount(HEART_CONSUME_AMOUNT.get(), amount) + HEART_CONSUME_ADDED_AMOUNT.get());
             player.resetCooldown(amount);
             savedBlockPositions.clear();
             amount = 0;
@@ -108,7 +109,6 @@ public class InteractionUtils {
     public InteractionResult useItemOn(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand, BlockHitResult pHitResult) {
         BlockPos blockpos = pHitResult.getBlockPos();
         BlockState blockstate = pLevel.getBlockState(blockpos);
-        if (!blockstate.getBlock().isEnabled(pLevel.enabledFeatures())) return InteractionResult.FAIL;
         PlayerInteractEvent.RightClickBlock event = ForgeHooks.onRightClickBlock(pPlayer, pHand, blockpos, pHitResult);
         if (event.isCanceled()) return event.getCancellationResult();
         if (this.gameModeForPlayer != GameType.SPECTATOR) {

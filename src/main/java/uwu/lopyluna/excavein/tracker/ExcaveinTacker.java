@@ -93,28 +93,28 @@ public class ExcaveinTacker {
     public static void updateFixSelection(Level level, Player player) {
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             selectionDataMap.remove(serverPlayer.getUUID());
-            if (!selectionDataMap.containsKey(serverPlayer.getUUID())) selectionDataMap.put(serverPlayer.getUUID(), new SelectionPlayerData(serverPlayer.serverLevel(), serverPlayer.getUUID()));
+            if (!selectionDataMap.containsKey(serverPlayer.getUUID())) selectionDataMap.put(serverPlayer.getUUID(), new SelectionPlayerData(serverPlayer.getLevel(), serverPlayer.getUUID()));
         }
     }
 
     @SubscribeEvent
     public static void onChangeDim(PlayerEvent.PlayerChangedDimensionEvent event) {
-        updateFixSelection(event.getEntity().level(), event.getEntity());
+        updateFixSelection(event.getEntity().getLevel(), event.getEntity());
     }
 
     @SubscribeEvent
     public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        updateFixSelection(event.getEntity().level(), event.getEntity());
+        updateFixSelection(event.getEntity().getLevel(), event.getEntity());
     }
 
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        updateFixSelection(event.getEntity().level(), event.getEntity());
+        updateFixSelection(event.getEntity().getLevel(), event.getEntity());
     }
 
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof ServerPlayer player)
+        if (!event.getEntity().getLevel().isClientSide() && event.getEntity() instanceof ServerPlayer player)
             selectionDataMap.remove(player.getUUID());
     }
 }

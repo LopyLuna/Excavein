@@ -20,5 +20,6 @@ public record ExcaveinPacket(UUID playerID, boolean keyPressed, boolean displayC
     public static void handle(ExcaveinPacket msg, Supplier<NetworkEvent.Context> context) {
         ServerPlayer player = context.get().getSender();
         if (player != null) context.get().enqueueWork(() -> ExcaveinTacker.updateTick(player, player.getUUID().equals(msg.playerID) ? player.getUUID() : msg.playerID, msg.keyPressed, msg.displayChat));
+        context.get().setPacketHandled(true);
     }
 }

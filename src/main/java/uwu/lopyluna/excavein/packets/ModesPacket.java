@@ -20,5 +20,6 @@ public record ModesPacket(UUID playerID, boolean keyPressed, int switchMode) {
     public static void handle(ModesPacket msg, Supplier<NetworkEvent.Context> context) {
         ServerPlayer player = context.get().getSender();
         if (player != null) context.get().enqueueWork(() -> ExcaveinTacker.update(player, player.getUUID().equals(msg.playerID) ? player.getUUID() : msg.playerID, msg.keyPressed, msg.switchMode));
+        context.get().setPacketHandled(true);
     }
 }

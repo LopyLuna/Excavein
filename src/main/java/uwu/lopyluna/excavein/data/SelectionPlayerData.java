@@ -179,7 +179,7 @@ public class SelectionPlayerData {
         if (level == null || playerUUID == null || player == null || (!isBreaking && !BLOCK_PLACING.get() && !HAND_INTERACTION.get() && !ITEM_INTERACTION.get()))
             return Set.of();
         BlockHitResult rayTrace = getPlayerRayTraceToBlock(player);
-        AttributeInstance attribute = player.getAttribute(ForgeMod.BLOCK_REACH.get());
+        AttributeInstance attribute = player.getAttribute(ForgeMod.REACH_DISTANCE.get());
         int playerBlockRange = attribute == null ? 0 : (int) attribute.getValue();
         Vec3 eye = player.getEyePosition();
         return rayTrace != null ? Utils.constructSelection(isBreaking,
@@ -207,13 +207,13 @@ public class SelectionPlayerData {
     }
 
     public BlockHitResult getPlayerRayTraceToBlock(Player player) {
-        AttributeInstance attribute = player.getAttribute(ForgeMod.BLOCK_REACH.get());
+        AttributeInstance attribute = player.getAttribute(ForgeMod.REACH_DISTANCE.get());
         double reachDistance = attribute == null ? 0 : (int) attribute.getValue();
         Vec3 eyePosition = player.getEyePosition(1.0F);
         Vec3 lookVector = player.getLookAngle().scale(reachDistance);
         Vec3 reachPosition = eyePosition.add(lookVector);
 
-        BlockHitResult hitResult = player.level().clip(new ClipContext(
+        BlockHitResult hitResult = player.getLevel().clip(new ClipContext(
                 eyePosition, reachPosition,
                 ClipContext.Block.OUTLINE,
                 ClipContext.Fluid.NONE,

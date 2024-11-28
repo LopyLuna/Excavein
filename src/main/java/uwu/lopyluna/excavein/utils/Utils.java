@@ -28,7 +28,7 @@ import java.util.Set;
 import static uwu.lopyluna.excavein.Excavein.MOD_ID;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
-public class Utils {
+public class    Utils {
     public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("whitelist"));
 
     public static ResourceLocation asResource(String path) {
@@ -37,13 +37,13 @@ public class Utils {
 
     public static TagKey<Block> getBlockTagFromTool(ItemStack stack) {
         if (stack != null && stack.is(Tags.Items.TOOLS)) {
-            if ((stack.is(universalTag("tools/axes")) || stack.is(ItemTags.AXES)) || stack.getItem() instanceof AxeItem)
+            if ((stack.is(universalTag("tools/axes")) || stack.is(Tags.Items.TOOLS_AXES)) || stack.getItem() instanceof AxeItem)
                 return BlockTags.MINEABLE_WITH_AXE;
-            if ((stack.is(universalTag("tools/pickaxes")) || stack.is(ItemTags.PICKAXES)) || stack.getItem() instanceof PickaxeItem)
+            if ((stack.is(universalTag("tools/pickaxes")) || stack.is(Tags.Items.TOOLS_PICKAXES)) || stack.getItem() instanceof PickaxeItem)
                 return BlockTags.MINEABLE_WITH_PICKAXE;
-            if ((stack.is(universalTag("tools/shovels")) || stack.is(ItemTags.SHOVELS)) || stack.getItem() instanceof ShovelItem)
+            if ((stack.is(universalTag("tools/shovels")) || stack.is(Tags.Items.TOOLS_SHOVELS)) || stack.getItem() instanceof ShovelItem)
                 return BlockTags.MINEABLE_WITH_SHOVEL;
-            if ((stack.is(universalTag("tools/hoes")) || stack.is(ItemTags.HOES)) || stack.getItem() instanceof ShovelItem)
+            if ((stack.is(universalTag("tools/hoes")) || stack.is(Tags.Items.TOOLS_HOES)) || stack.getItem() instanceof ShovelItem)
                 return BlockTags.MINEABLE_WITH_HOE;
         }
         return null;

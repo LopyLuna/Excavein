@@ -21,5 +21,6 @@ public record SelectedBlocksPacket(Set<BlockPos> breaking, Set<BlockPos> interac
     }
     public static void handle(SelectedBlocksPacket msg, Supplier<NetworkEvent.Context> context) {
         context.get().enqueueWork(() -> BlockOutlineRenderer.updateBlocks(msg.breaking, msg.interaction));
+        context.get().setPacketHandled(true);
     }
 }
