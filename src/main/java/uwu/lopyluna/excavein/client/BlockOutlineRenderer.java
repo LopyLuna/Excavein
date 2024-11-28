@@ -3,9 +3,8 @@ package uwu.lopyluna.excavein.client;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.*;
+import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
@@ -18,20 +17,22 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderHighlightEvent;
-import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 import uwu.lopyluna.excavein.Excavein;
-import uwu.lopyluna.excavein.Utils;
 import uwu.lopyluna.excavein.config.ClientConfig;
+import uwu.lopyluna.excavein.utils.Utils;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static uwu.lopyluna.excavein.client.KeybindHandler.SELECTION_ACTIVATION;
-import static uwu.lopyluna.excavein.client.KeybindHandler.keyActivated;
+import static uwu.lopyluna.excavein.client.ClientHandler.keyPressed;
 import static uwu.lopyluna.excavein.config.ClientConfig.*;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
@@ -39,63 +40,122 @@ import static uwu.lopyluna.excavein.config.ServerConfig.*;
 @Mod.EventBusSubscriber(modid = Excavein.MOD_ID, value = Dist.CLIENT)
 public class BlockOutlineRenderer {
 
-    private static final Minecraft mc = Minecraft.getInstance();
-    public static Set<BlockPos> outlineBlocks = new HashSet<>();
-    private static boolean shouldRenderOutline = false;
-    public static boolean isBreaking = false;
+    protected static final Vector3f diffPosTemp = new Vector3f();
+    protected static final Vector3f minPosTemp = new Vector3f();
+    protected static final Vector3f maxPosTemp = new Vector3f();
+    protected static final Vector4f pPosTransformTemp = new Vector4f();
+    protected static final Vector3f pNormalTransformTemp = new Vector3f();
+    protected static final Vector3f pos0Temp = new Vector3f();
 
-    public static void setOutlineBlocks(Set<BlockPos> blocks) {
-        outlineBlocks = blocks;
+    //MOSTLY FROM CREATE'S OUTLINE.JAVA
+    protected static final Vector3f pos1Temp = new Vector3f();
+    protected static final Vector3f pos2Temp = new Vector3f();
+    protected static final Vector3f pos3Temp = new Vector3f();
+    protected static final Vector3f normalTemp = new Vector3f();
+    protected static final Vector3f originTemp = new Vector3f();
+    private static final Minecraft mc = Minecraft.getInstance();
+    private static final Cluster cluster = new Cluster();
+    public static int amountBreak = 0;
+    public static int amountInteract = 0;
+    public static Set<BlockPos> outlineBlocks = new HashSet<>();
+    public static Set<BlockPos> outlineBlocksPlacing = new HashSet<>();
+    public static Set<BlockPos> outlineBlocksMixed = new HashSet<>();
+    private static Set<BlockPos> pos;
+
+    public static void updateBlocks(Set<BlockPos> breaking, Set<BlockPos> interaction) {
+        boolean flag = BLOCK_PLACING.get() || HAND_INTERACTION.get() || ITEM_INTERACTION.get();
+        Set<BlockPos> breaks = fixBlocks(breaking);
+        Set<BlockPos> interactions = flag ? fixBlocks(interaction) : new HashSet<>();
+        Set<BlockPos> mixes = new HashSet<>();
+        breaks.forEach(position -> {if (position != null && interactions.contains(position)) mixes.add(position);});
+        breaks.removeAll(mixes);
+        interactions.removeAll(mixes);
+        outlineBlocksMixed = fixBlocks(mixes);
+        outlineBlocksPlacing = interactions;
+        outlineBlocks = breaks;
+        amountBreak = breaking.size();
+        amountInteract = flag ? interaction.size() : 0;
     }
 
-    public static void setBreaking(boolean breaking) {
-        isBreaking = breaking;
+    public static Set<BlockPos> fixBlocks(Set<BlockPos> blocks) {
+        Set<BlockPos> renderedBlocks = new HashSet<>();
+        if (blocks != null && (RENDER_OUTLINE.get() || RENDER_FACE.get() && !blocks.isEmpty()))
+            blocks.forEach(pos -> { if (mc.levelRenderer.isChunkCompiled(pos)) renderedBlocks.add(pos); });
+        return renderedBlocks;
     }
 
     @SubscribeEvent
     public static void onRenderWorld(RenderHighlightEvent.Block event) {
         PoseStack poseStack = event.getPoseStack();
-        if (mc.getConnection() == null || mc.player == null || requiredFlag(mc.player) || !shouldRenderOutline || outlineBlocks.isEmpty() || (isBreaking && WAIT_TILL_BROKEN.get()) || outlineBlocks.size() > MAX_BLOCK_VIEW.get() || ClientCooldownHandler.isCooldownActive()) {
+        if (mc.getConnection() == null || mc.player == null || (!RENDER_OUTLINE.get() && !RENDER_FACE.get()))
             return;
-        }
+
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.defaultBlendFunc();
-        VoxelShape selectionShape = convertSelectionToVoxelShape(outlineBlocks);
 
-        float red = ClientConfig.SELECTION_COLOR_R.get() / 255f;
-        float green = ClientConfig.SELECTION_COLOR_G.get() / 255f;
-        float blue = ClientConfig.SELECTION_COLOR_B.get() / 255f;
-        float alpha = ClientConfig.SELECTION_ALPHA.get() / 255f;
-        RenderType blank = RenderTypes.getOutline(Utils.asResource("textures/special/blank.png"), false);
-        RenderType selection = RenderTypes.getOutline(Utils.asResource("textures/special/selection.png"), BLUR_FACE.get());
+        boolean additive = ADDITIVE_SHADER_SELECTION.get();
 
-        if (RENDER_OUTLINE.get())
-            renderShape(poseStack, event.getMultiBufferSource().getBuffer(blank), selectionShape, event.getCamera().getPosition(), red, green, blue);
-        if (RENDER_FACE.get())
-            renderFaces(poseStack, event.getMultiBufferSource().getBuffer(selection), outlineBlocks, event.getCamera().getPosition(), new Vector4f(red, green, blue, alpha));
+        float divide = additive ? 512f : 255f;
+
+        float alphaM = ClientConfig.MIXED_SELECTION_ALPHA.get() / divide;
+        float redM = Mth.clamp(((ClientConfig.MIXED_SELECTION_COLOR_R.get() / divide) - (additive ? alphaM : 0)), 0, 1);
+        float greenM = Mth.clamp(((ClientConfig.MIXED_SELECTION_COLOR_G.get() / divide) - (additive ? alphaM : 0)), 0, 1);
+        float blueM = Mth.clamp(((ClientConfig.MIXED_SELECTION_COLOR_B.get() / divide) - (additive ? alphaM : 0)), 0, 1);
+
+        float alphaD = ClientConfig.DESTROY_SELECTION_ALPHA.get() / divide;
+        float redD = Mth.clamp(((ClientConfig.DESTROY_SELECTION_COLOR_R.get() / divide) - (additive ? alphaD : 0)), 0, 1);
+        float greenD = Mth.clamp(((ClientConfig.DESTROY_SELECTION_COLOR_G.get() / divide) - (additive ? alphaD : 0)), 0, 1);
+        float blueD = Mth.clamp(((ClientConfig.DESTROY_SELECTION_COLOR_B.get() / divide) - (additive ? alphaD : 0)), 0, 1);
+
+        float alphaI = ClientConfig.INTERACTION_SELECTION_ALPHA.get() / divide;
+        float redI = Mth.clamp(((ClientConfig.INTERACTION_SELECTION_COLOR_R.get() / divide) - (additive ? alphaI : 0)), 0, 1);
+        float greenI = Mth.clamp(((ClientConfig.INTERACTION_SELECTION_COLOR_G.get() / divide) - (additive ? alphaI : 0)), 0, 1);
+        float blueI = Mth.clamp(((ClientConfig.INTERACTION_SELECTION_COLOR_B.get() / divide) - (additive ? alphaI : 0)), 0, 1);
+
+        float alphaW = ClientConfig.WARN_SELECTION_ALPHA.get() / divide;
+        float redW = Mth.clamp(((ClientConfig.WARN_SELECTION_COLOR_R.get() / divide) - (additive ? alphaW : 0)), 0, 1);
+        float greenW = Mth.clamp(((ClientConfig.WARN_SELECTION_COLOR_G.get() / divide) - (additive ? alphaW : 0)), 0, 1);
+        float blueW = Mth.clamp(((ClientConfig.WARN_SELECTION_COLOR_B.get() / divide) - (additive ? alphaW : 0)), 0, 1);
+
+        boolean flagI = ClientHelper.flag;
+        boolean flagB = (!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get()) && ClientHelper.flag;
+
+        RenderType warn = RenderTypes.getOutline(Utils.asResource("textures/special/warn.png"), WARN_BLUR_FACE.get(), additive);
+        RenderType blank = RenderTypes.getOutline(Utils.asResource("textures/special/blank.png"), false, additive);
+        RenderType selection = flagB ? RenderTypes.getOutline(Utils.asResource("textures/special/hazard.png"), DESTROY_BLUR_FACE.get(), additive) : warn;
+        RenderType interaction = flagI ? RenderTypes.getOutline(Utils.asResource("textures/special/plated.png"), INTERACTION_BLUR_FACE.get(), additive) : warn;
+        RenderType mixed = flagI && flagB ? RenderTypes.getOutline(Utils.asResource("textures/special/checker.png"), MIXED_BLUR_FACE.get(), additive) : warn;
+        var multiBufferSource = event.getMultiBufferSource();
+        var camPos = event.getCamera().getPosition();
+
+        Vector4f wColor = new Vector4f(redW, greenW, blueW, alphaW);
+        Vector4f mColor = flagI && flagB ? new Vector4f(redM, greenM, blueM, alphaM) : wColor;
+        Vector4f dColor = flagB ? new Vector4f(redM, greenD, blueD, alphaD) : wColor;
+        Vector4f iColor = flagI ? new Vector4f(redI, greenI, blueI, alphaI) : wColor;
+
+        if (keyPressed) {
+            if (outlineBlocks != null && !outlineBlocks.isEmpty() && outlineBlocks.size() <= MAX_BLOCK_VIEW.get()) {
+                if (RENDER_OUTLINE.get()) renderShape(poseStack, multiBufferSource.getBuffer(blank), outlineBlocks, camPos, dColor, 0.9f);
+                if (RENDER_FACE.get()) renderFaces(poseStack, multiBufferSource.getBuffer(selection), outlineBlocks, camPos, dColor);
+            } if (outlineBlocksPlacing != null && !outlineBlocksPlacing.isEmpty() && outlineBlocksPlacing.size() <= MAX_BLOCK_VIEW.get()) {
+                if (RENDER_OUTLINE.get()) renderShape(poseStack, multiBufferSource.getBuffer(blank), outlineBlocksPlacing, camPos, iColor, 0.95f);
+                if (RENDER_FACE.get()) renderFaces(poseStack, multiBufferSource.getBuffer(interaction), outlineBlocksPlacing, camPos, iColor);
+            } if (outlineBlocksMixed != null && !outlineBlocksMixed.isEmpty() && outlineBlocksMixed.size() <= MAX_BLOCK_VIEW.get()) {
+                if (RENDER_OUTLINE.get()) renderShape(poseStack, multiBufferSource.getBuffer(blank), outlineBlocksMixed, camPos, mColor, 1f);
+                if (RENDER_FACE.get()) renderFaces(poseStack, multiBufferSource.getBuffer(mixed), outlineBlocksMixed, camPos, mColor);
+            }
+        }
 
         event.setCanceled(true);
     }
 
-    public static boolean requiredFlag(LocalPlayer player) {
-        return (REQUIRES_XP.get() && !player.isCreative() && player.totalExperience == 0) ||
-                (REQUIRES_HUNGER.get() && !player.isCreative() && player.getFoodData().getFoodLevel() == 0) ||
-                (REQUIRES_FUEL_ITEM.get() && !player.isCreative() && Utils.findInInventory(player) == 0);
-    }
-
-    @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (mc.getConnection() != null || event.phase == TickEvent.Phase.END) {
-            shouldRenderOutline = ((!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated));
-        }
-    }
+    //MOSTLY FROM CREATE'S BLOCKCLUSTEROUTLINE.JAVA
 
     private static VoxelShape convertSelectionToVoxelShape(Set<BlockPos> selectedBlocks) {
         VoxelShape combinedShape = Shapes.empty();
 
         for (BlockPos pos : selectedBlocks) {
             VoxelShape blockShape = Shapes.block();
-
             blockShape = blockShape.move(pos.getX(), pos.getY(), pos.getZ());
             combinedShape = Shapes.or(combinedShape, blockShape);
         }
@@ -103,21 +163,13 @@ public class BlockOutlineRenderer {
         return combinedShape;
     }
 
-    private static void renderShape(PoseStack pPoseStack, VertexConsumer pConsumer, VoxelShape pShape, Vec3 camPos, float pRed, float pGreen, float pBlue) {
-        pShape.forAllEdges((x1, y1, z1, x2, y2, z2) -> bufferCuboidLine(pPoseStack, pConsumer, camPos, new Vec3(x1, y1, z1), new Vec3(x2, y2, z2),
-                ClientConfig.OUTLINE_THICKNESS.get().floatValue() / 16.0f, new Vector4f(pRed, pGreen, pBlue, 1), LightTexture.FULL_BRIGHT, true));
+    private static void renderShape(PoseStack pPoseStack, VertexConsumer pConsumer, Set<BlockPos> pPositions, Vec3 camPos, Vector4f pColor, float pThicknessMultiplier) {
+        convertSelectionToVoxelShape(pPositions).optimize().forAllEdges((x1, y1, z1, x2, y2, z2) -> bufferCuboidLine(pPoseStack, pConsumer, camPos, new Vec3(x1, y1, z1), new Vec3(x2, y2, z2),
+                (ClientConfig.OUTLINE_THICKNESS.get().floatValue() / 16.0f) * pThicknessMultiplier, new Vector4f(pColor.x, pColor.y, pColor.z, 1), LightTexture.FULL_BRIGHT, true));
     }
 
-    //MOSTLY FROM CREATE'S OUTLINE.JAVA
-
-    protected static final Vector3f diffPosTemp = new Vector3f();
-    protected static final Vector3f minPosTemp = new Vector3f();
-    protected static final Vector3f maxPosTemp = new Vector3f();
-    protected static final Vector4f pPosTransformTemp = new Vector4f();
-    protected static final Vector3f pNormalTransformTemp = new Vector3f();
-
     public static void bufferCuboidLine(PoseStack poseStack, VertexConsumer consumer, Vec3 camera, Vec3 start, Vec3 end,
-                                 float width, Vector4f color, int lightmap, boolean disableNormals) {
+                                        float width, Vector4f color, int lightmap, boolean disableNormals) {
         Vector3f diff = diffPosTemp;
         diff.set((float) (end.x - start.x), (float) (end.y - start.y), (float) (end.z - start.z));
 
@@ -131,11 +183,11 @@ public class BlockOutlineRenderer {
         poseStack.pushPose();
         poseStack.translate(start.x - camera.x, start.y - camera.y, start.z - camera.z);
         if (hAngle != 0)
-            poseStack.mulPose(Vector3f.YP.rotationDegrees(hAngle));
+            poseStack.mulPose(Axis.YP.rotationDegrees(hAngle));
         if (vAngle != 0)
-            poseStack.mulPose(Vector3f.ZP.rotationDegrees(vAngle));
+            poseStack.mulPose(Axis.XP.rotationDegrees(vAngle));
 
-        bufferCuboidLine(poseStack.last(), consumer, Vector3f.ZERO, getAxisByVec3(start, end).isVertical() ? Direction.UP : Direction.SOUTH, length, width, color, lightmap,
+        bufferCuboidLine(poseStack.last(), consumer, new Vector3f(), getAxisByVec3(start, end).isVertical() ? Direction.UP : Direction.SOUTH, length, width, color, lightmap,
                 disableNormals);
         poseStack.popPose();
     }
@@ -157,7 +209,7 @@ public class BlockOutlineRenderer {
     }
 
     public static void bufferCuboidLine(PoseStack.Pose pose, VertexConsumer consumer, Vector3f origin, Direction direction,
-                                 float length, float width, Vector4f color, int lightmap, boolean disableNormals) {
+                                        float length, float width, Vector4f color, int lightmap, boolean disableNormals) {
         Vector3f minPos = minPosTemp;
         Vector3f maxPos = maxPosTemp;
 
@@ -178,7 +230,7 @@ public class BlockOutlineRenderer {
     }
 
     public static void bufferCuboid(PoseStack.Pose pose, VertexConsumer consumer, Vector3f minPos, Vector3f maxPos,
-                             Vector4f color, int lightmap, boolean disableNormals) {
+                                    Vector4f color, int lightmap, boolean disableNormals) {
         Vector4f posTransformTemp = pPosTransformTemp;
         Vector3f normalTransformTemp = pNormalTransformTemp;
 
@@ -192,52 +244,52 @@ public class BlockOutlineRenderer {
         Matrix4f posMatrix = pose.pose();
 
         posTransformTemp.set(minX, minY, maxZ, 1);
-        posTransformTemp.transform(posMatrix);
-        double x0 = posTransformTemp.x();
-        double y0 = posTransformTemp.y();
-        double z0 = posTransformTemp.z();
+        posTransformTemp.mul(posMatrix);
+        float x0 = posTransformTemp.x();
+        float y0 = posTransformTemp.y();
+        float z0 = posTransformTemp.z();
 
         posTransformTemp.set(minX, minY, minZ, 1);
-        posTransformTemp.transform(posMatrix);
-        double x1 = posTransformTemp.x();
-        double y1 = posTransformTemp.y();
-        double z1 = posTransformTemp.z();
+        posTransformTemp.mul(posMatrix);
+        float x1 = posTransformTemp.x();
+        float y1 = posTransformTemp.y();
+        float z1 = posTransformTemp.z();
 
         posTransformTemp.set(maxX, minY, minZ, 1);
-        posTransformTemp.transform(posMatrix);
-        double x2 = posTransformTemp.x();
-        double y2 = posTransformTemp.y();
-        double z2 = posTransformTemp.z();
+        posTransformTemp.mul(posMatrix);
+        float x2 = posTransformTemp.x();
+        float y2 = posTransformTemp.y();
+        float z2 = posTransformTemp.z();
 
         posTransformTemp.set(maxX, minY, maxZ, 1);
-        posTransformTemp.transform(posMatrix);
-        double x3 = posTransformTemp.x();
-        double y3 = posTransformTemp.y();
-        double z3 = posTransformTemp.z();
+        posTransformTemp.mul(posMatrix);
+        float x3 = posTransformTemp.x();
+        float y3 = posTransformTemp.y();
+        float z3 = posTransformTemp.z();
 
         posTransformTemp.set(minX, maxY, minZ, 1);
-        posTransformTemp.transform(posMatrix);
-        double x4 = posTransformTemp.x();
-        double y4 = posTransformTemp.y();
-        double z4 = posTransformTemp.z();
+        posTransformTemp.mul(posMatrix);
+        float x4 = posTransformTemp.x();
+        float y4 = posTransformTemp.y();
+        float z4 = posTransformTemp.z();
 
         posTransformTemp.set(minX, maxY, maxZ, 1);
-        posTransformTemp.transform(posMatrix);
-        double x5 = posTransformTemp.x();
-        double y5 = posTransformTemp.y();
-        double z5 = posTransformTemp.z();
+        posTransformTemp.mul(posMatrix);
+        float x5 = posTransformTemp.x();
+        float y5 = posTransformTemp.y();
+        float z5 = posTransformTemp.z();
 
         posTransformTemp.set(maxX, maxY, maxZ, 1);
-        posTransformTemp.transform(posMatrix);
-        double x6 = posTransformTemp.x();
-        double y6 = posTransformTemp.y();
-        double z6 = posTransformTemp.z();
+        posTransformTemp.mul(posMatrix);
+        float x6 = posTransformTemp.x();
+        float y6 = posTransformTemp.y();
+        float z6 = posTransformTemp.z();
 
         posTransformTemp.set(maxX, maxY, minZ, 1);
-        posTransformTemp.transform(posMatrix);
-        double x7 = posTransformTemp.x();
-        double y7 = posTransformTemp.y();
-        double z7 = posTransformTemp.z();
+        posTransformTemp.mul(posMatrix);
+        float x7 = posTransformTemp.x();
+        float y7 = posTransformTemp.y();
+        float z7 = posTransformTemp.z();
 
         float r = color.x();
         float g = color.y();
@@ -253,7 +305,7 @@ public class BlockOutlineRenderer {
         } else {
             normalTransformTemp.set(0, -1, 0);
         }
-        normalTransformTemp.transform(normalMatrix);
+        normalTransformTemp.mul(normalMatrix);
         float nx0 = normalTransformTemp.x();
         float ny0 = normalTransformTemp.y();
         float nz0 = normalTransformTemp.z();
@@ -293,7 +345,7 @@ public class BlockOutlineRenderer {
         // up
 
         normalTransformTemp.set(0, 1, 0);
-        normalTransformTemp.transform(normalMatrix);
+        normalTransformTemp.mul(normalMatrix);
         float nx1 = normalTransformTemp.x();
         float ny1 = normalTransformTemp.y();
         float nz1 = normalTransformTemp.z();
@@ -337,7 +389,7 @@ public class BlockOutlineRenderer {
         } else {
             normalTransformTemp.set(0, 0, -1);
         }
-        normalTransformTemp.transform(normalMatrix);
+        normalTransformTemp.mul(normalMatrix);
         float nx2 = normalTransformTemp.x();
         float ny2 = normalTransformTemp.y();
         float nz2 = normalTransformTemp.z();
@@ -381,7 +433,7 @@ public class BlockOutlineRenderer {
         } else {
             normalTransformTemp.set(0, 0, 1);
         }
-        normalTransformTemp.transform(normalMatrix);
+        normalTransformTemp.mul(normalMatrix);
         float nx3 = normalTransformTemp.x();
         float ny3 = normalTransformTemp.y();
         float nz3 = normalTransformTemp.z();
@@ -425,7 +477,7 @@ public class BlockOutlineRenderer {
         } else {
             normalTransformTemp.set(-1, 0, 0);
         }
-        normalTransformTemp.transform(normalMatrix);
+        normalTransformTemp.mul(normalMatrix);
         float nx4 = normalTransformTemp.x();
         float ny4 = normalTransformTemp.y();
         float nz4 = normalTransformTemp.z();
@@ -469,7 +521,7 @@ public class BlockOutlineRenderer {
         } else {
             normalTransformTemp.set(1, 0, 0);
         }
-        normalTransformTemp.transform(normalMatrix);
+        normalTransformTemp.mul(normalMatrix);
         float nx5 = normalTransformTemp.x();
         float ny5 = normalTransformTemp.y();
         float nz5 = normalTransformTemp.z();
@@ -508,48 +560,48 @@ public class BlockOutlineRenderer {
     }
 
     public static void bufferQuad(PoseStack.Pose pose, VertexConsumer consumer, Vector3f pos0, Vector3f pos1, Vector3f pos2,
-                           Vector3f pos3, Vector4f color, int lightmap, Vector3f normal) {
+                                  Vector3f pos3, Vector4f color, int lightmap, Vector3f normal) {
         bufferQuad(pose, consumer, pos0, pos1, pos2, pos3, color, 0, 0, 1, 1, lightmap, normal);
     }
 
     public static void bufferQuad(PoseStack.Pose pose, VertexConsumer consumer, Vector3f pos0, Vector3f pos1, Vector3f pos2,
-                           Vector3f pos3, Vector4f color, float minU, float minV, float maxU, float maxV, int lightmap, Vector3f normal) {
+                                  Vector3f pos3, Vector4f color, float minU, float minV, float maxU, float maxV, int lightmap, Vector3f normal) {
         Vector4f posTransformTemp = pPosTransformTemp;
         Vector3f normalTransformTemp = pNormalTransformTemp;
 
         Matrix4f posMatrix = pose.pose();
 
         posTransformTemp.set(pos0.x(), pos0.y(), pos0.z(), 1);
-        posTransformTemp.transform(posMatrix);
-        double x0 = posTransformTemp.x();
-        double y0 = posTransformTemp.y();
-        double z0 = posTransformTemp.z();
+        posTransformTemp.mul(posMatrix);
+        float x0 = posTransformTemp.x();
+        float y0 = posTransformTemp.y();
+        float z0 = posTransformTemp.z();
 
         posTransformTemp.set(pos1.x(), pos1.y(), pos1.z(), 1);
-        posTransformTemp.transform(posMatrix);
-        double x1 = posTransformTemp.x();
-        double y1 = posTransformTemp.y();
-        double z1 = posTransformTemp.z();
+        posTransformTemp.mul(posMatrix);
+        float x1 = posTransformTemp.x();
+        float y1 = posTransformTemp.y();
+        float z1 = posTransformTemp.z();
 
         posTransformTemp.set(pos2.x(), pos2.y(), pos2.z(), 1);
-        posTransformTemp.transform(posMatrix);
-        double x2 = posTransformTemp.x();
-        double y2 = posTransformTemp.y();
-        double z2 = posTransformTemp.z();
+        posTransformTemp.mul(posMatrix);
+        float x2 = posTransformTemp.x();
+        float y2 = posTransformTemp.y();
+        float z2 = posTransformTemp.z();
 
         posTransformTemp.set(pos3.x(), pos3.y(), pos3.z(), 1);
-        posTransformTemp.transform(posMatrix);
-        double x3 = posTransformTemp.x();
-        double y3 = posTransformTemp.y();
-        double z3 = posTransformTemp.z();
+        posTransformTemp.mul(posMatrix);
+        float x3 = posTransformTemp.x();
+        float y3 = posTransformTemp.y();
+        float z3 = posTransformTemp.z();
 
         float r = color.x();
         float g = color.y();
         float b = color.z();
         float a = color.w();
 
-        normalTransformTemp.load(normal);
-        normalTransformTemp.transform(pose.normal());
+        normalTransformTemp.set(normal);
+        normalTransformTemp.mul(pose.normal());
         float nx = normalTransformTemp.x();
         float ny = normalTransformTemp.y();
         float nz = normalTransformTemp.z();
@@ -586,18 +638,6 @@ public class BlockOutlineRenderer {
                 .normal(nx, ny, nz)
                 .endVertex();
     }
-    
-    //MOSTLY FROM CREATE'S BLOCKCLUSTEROUTLINE.JAVA
-
-    private static final Cluster cluster = new Cluster();
-    private static Set<BlockPos> pos;
-
-    protected static final Vector3f pos0Temp = new Vector3f();
-    protected static final Vector3f pos1Temp = new Vector3f();
-    protected static final Vector3f pos2Temp = new Vector3f();
-    protected static final Vector3f pos3Temp = new Vector3f();
-    protected static final Vector3f normalTemp = new Vector3f();
-    protected static final Vector3f originTemp = new Vector3f();
 
     protected static void renderFaces(PoseStack ms, VertexConsumer consumer, Set<BlockPos> blocks, Vec3 camera, Vector4f color) {
         blocks.forEach(cluster::include);
@@ -619,7 +659,7 @@ public class BlockOutlineRenderer {
             cluster.visibleFaces.clear();
         ms.popPose();
     }
-    
+
     public static void loadFaceData(Direction face, Vector3f pos0, Vector3f pos1, Vector3f pos2, Vector3f pos3, Vector3f normal) {
         switch (face) {
             case DOWN -> {
@@ -695,10 +735,11 @@ public class BlockOutlineRenderer {
 
         bufferQuad(pose, consumer, pos0, pos1, pos2, pos3, color, LightTexture.FULL_BRIGHT, normal);
     }
+
     private static class Cluster {
 
-        private BlockPos anchor;
         private final Map<MergeEntry, Direction.AxisDirection> visibleFaces;
+        private BlockPos anchor;
 
         public Cluster() {
             visibleFaces = new HashMap<>();
@@ -717,7 +758,7 @@ public class BlockOutlineRenderer {
             // 6 FACES
             for (Direction.Axis axis : Direction.Axis.values()) {
                 Direction direction = Direction.get(Direction.AxisDirection.POSITIVE, axis);
-                for (int offset :  new int[]{0, 1}) {
+                for (int offset : new int[]{0, 1}) {
                     MergeEntry entry = new MergeEntry(axis, pos.relative(direction, offset));
                     if (visibleFaces.remove(entry) == null)
                         visibleFaces.put(entry, offset == 0 ? Direction.AxisDirection.NEGATIVE : Direction.AxisDirection.POSITIVE);
@@ -728,18 +769,18 @@ public class BlockOutlineRenderer {
 
     private record MergeEntry(Direction.Axis axis, BlockPos pos) {
         @Override
-            public boolean equals(Object o) {
-                if (this == o)
-                    return true;
-                if (!(o instanceof MergeEntry other))
-                    return false;
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (!(o instanceof MergeEntry other))
+                return false;
 
-                return this.axis == other.axis && this.pos.equals(other.pos);
-            }
-
-            @Override
-            public int hashCode() {
-                return this.pos.hashCode() * 31 + axis.ordinal();
-            }
+            return this.axis == other.axis && this.pos.equals(other.pos);
         }
+
+        @Override
+        public int hashCode() {
+            return this.pos.hashCode() * 31 + axis.ordinal();
+        }
+    }
 }

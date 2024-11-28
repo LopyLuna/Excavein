@@ -5,34 +5,34 @@ import net.minecraftforge.common.ForgeConfigSpec;
 import java.util.List;
 
 public class ServerConfig {
-
     public static final ForgeConfigSpec.IntValue SELECTION_COOLDOWN;
     public static final ForgeConfigSpec.IntValue SELECTION_ADD_COOLDOWN;
     public static final ForgeConfigSpec.IntValue SELECTION_ADD_RANGE;
     public static final ForgeConfigSpec.IntValue SELECTION_MAX_BLOCK;
-    public static final ForgeConfigSpec.BooleanValue REQUIRES_FUEL_ITEM; //NEW
-    public static final ForgeConfigSpec.IntValue FUEL_EXHAUSTION_AMOUNT; //NEW
+    public static final ForgeConfigSpec.IntValue HEART_CONSUME_AMOUNT;
+    public static final ForgeConfigSpec.IntValue HEART_CONSUME_ADDED_AMOUNT;
+    public static final ForgeConfigSpec.BooleanValue REQUIRES_FUEL_ITEM;
+    public static final ForgeConfigSpec.IntValue FUEL_EXHAUSTION_AMOUNT;
     public static final ForgeConfigSpec.BooleanValue REQUIRES_HUNGER;
     public static final ForgeConfigSpec.DoubleValue FOOD_EXHAUSTION_MULTIPLIER;
-    public static final ForgeConfigSpec.BooleanValue REQUIRES_XP; //NEW
-    public static final ForgeConfigSpec.IntValue XP_EXHAUSTION_AMOUNT; //NEW
+    public static final ForgeConfigSpec.BooleanValue REQUIRES_XP;
+    public static final ForgeConfigSpec.IntValue XP_EXHAUSTION_AMOUNT;
     public static final ForgeConfigSpec.IntValue ITEM_PICKUP_DELAY;
-    public static final ForgeConfigSpec.BooleanValue XRAY_OUTLINE_SELECTION; //NEW
-    public static final ForgeConfigSpec.BooleanValue NO_DURABILITY_LOSS; //NEW
-    public static final ForgeConfigSpec.IntValue DELAY_BETWEEN_BREAK; //NEW
-    public static final ForgeConfigSpec.IntValue BLOCK_PER_BREAK; //NEW
-    public static final ForgeConfigSpec.BooleanValue WAIT_TILL_BROKEN; //NEW
+    public static final ForgeConfigSpec.BooleanValue XRAY_OUTLINE_SELECTION;
+    public static final ForgeConfigSpec.BooleanValue NO_DURABILITY_LOSS;
+    public static final ForgeConfigSpec.IntValue DELAY_BETWEEN_BREAK;
+    public static final ForgeConfigSpec.IntValue BLOCK_PER_BREAK;
+    public static final ForgeConfigSpec.BooleanValue WAIT_TILL_BROKEN;
     public static final ForgeConfigSpec.BooleanValue INVERT_WHITELIST;
     public static final ForgeConfigSpec.BooleanValue REQUIRES_MINEABLE;
     public static final ForgeConfigSpec.BooleanValue REQUIRES_TOOLS;
-    public static final ForgeConfigSpec.BooleanValue PREVENT_BREAKING_TOOL; //NEW
+    public static final ForgeConfigSpec.BooleanValue PREVENT_BREAKING_TOOL;
     public static final ForgeConfigSpec.BooleanValue BLOCKS_AT_PLAYER;
     public static final ForgeConfigSpec.BooleanValue BLOCK_PLACING;
     public static final ForgeConfigSpec.BooleanValue HAND_INTERACTION;
     public static final ForgeConfigSpec.BooleanValue ITEM_INTERACTION;
-    public static ForgeConfigSpec.ConfigValue<List<? extends String>> VEIN_BLOCK_TAGS;
-
     public static final ForgeConfigSpec SERVER_SPEC;
+    public static ForgeConfigSpec.ConfigValue<List<? extends String>> VEIN_BLOCK_TAGS;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -61,6 +61,14 @@ public class ServerConfig {
                 .comment("Causes Food Loss to be Multiplied when mining amount of  blocks (default = 2.0)")
                 .defineInRange("FoodExhaustionMultiplier", 2.0, 0.0, 1000.0);
 
+        HEART_CONSUME_AMOUNT = builder
+                .comment("Amount of ticks for block selection cooldown (default = 2)")
+                .defineInRange("SelectionCooldown", 2, 0, 10000);
+
+        HEART_CONSUME_ADDED_AMOUNT = builder
+                .comment("Amount of ticks that get added to the block selection cooldown (default = 0)")
+                .defineInRange("SelectionAddedCooldown", 0, 0, 10000);
+
         REQUIRES_XP = builder
                 .comment("Require XP for said selected blocks (default = false)")
                 .define("RequiresXP", false);
@@ -82,8 +90,8 @@ public class ServerConfig {
                 .defineInRange("ItemPickupDelay", 0, 0, 30000);
 
         DELAY_BETWEEN_BREAK = builder
-                .comment("Amount of ticks for till next block gets broken (default = 5)")
-                .defineInRange("DelayBetweenBreak", 5, 0, 100);
+                .comment("Amount of ticks for till next block gets broken (default = 2)")
+                .defineInRange("DelayBetweenBreak", 2, 0, 100);
 
         BLOCK_PER_BREAK = builder
                 .comment("Amount of blocks between broken blocks (default = 4)")
@@ -98,9 +106,9 @@ public class ServerConfig {
                 .define("InvertWhitelist", true);
 
         REQUIRES_MINEABLE = builder
-                .comment("Require Hand/Tools for said selected blocks that requires hand/tools to drop (default = true)")
+                .comment("Require Hand/Tools for said selected blocks that requires hand/tools to drop //Highly Recommended (default = true)")
                 .define("RequiresMineable", true);
-        
+
         REQUIRES_TOOLS = builder
                 .comment("Require Tools for said selected blocks (default = false)")
                 .define("RequiresTools", false);
@@ -142,21 +150,21 @@ public class ServerConfig {
 
     private static List<String> defaultVeinTags() {
         return List.of(
-                "forge:ores",
-                "forge:glass",
-                "forge:glass_panes",
-                "forge:sands",
-                "forge:end_stones",
-                "forge:cobblestones",
-                "forge:gravels",
-                "forge:netherracks",
-                "forge:obsidians",
-                "forge:ropes",
-                "forge:stones",
-                "forge:chests",
-                "forge:barrels",
-                "forge:villager_job_sites",
-                "forge:skulls",
+                "c:ores",
+                "c:glass_blocks",
+                "c:glass_panes",
+                "c:sands",
+                "c:end_stones",
+                "c:cobblestones",
+                "c:gravels",
+                "c:netherracks",
+                "c:obsidians",
+                "c:ropes",
+                "c:stones",
+                "c:chests",
+                "c:barrels",
+                "c:villager_job_sites",
+                "c:skulls",
                 "minecraft:planks",
                 "minecraft:wool",
                 "minecraft:terracotta",

@@ -1,9 +1,9 @@
 package uwu.lopyluna.excavein.client;
 
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
-@Mod.EventBusSubscriber(value = Dist.CLIENT)
+@OnlyIn(Dist.CLIENT)
 public class ClientCooldownHandler {
 
     private static int remainingCooldown = 0;
