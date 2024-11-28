@@ -17,5 +17,6 @@ public record ClientHelperBoolsPacket(boolean currentlyBreaking, boolean require
     }
     public static void handle(ClientHelperBoolsPacket msg, Supplier<NetworkEvent.Context> context) {
         context.get().enqueueWork(() -> ClientHelper.update(msg.currentlyBreaking, msg.requiredFlags, msg.flag));
+        context.get().setPacketHandled(true);
     }
 }
