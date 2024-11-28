@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
+import static uwu.lopyluna.excavein.utils.Utils.calculatePercentage;
 import static uwu.lopyluna.excavein.utils.Utils.findInInventory;
 
 @SuppressWarnings("unused")
@@ -51,6 +52,7 @@ public class SelectionPlayerData {
     private int modifierMode;
     private boolean keyPressed;
     private boolean displayChat;
+    private boolean simpleCheck = false;
 
     public SelectionPlayerData(ServerLevel pLevel, UUID uuid) {
         shapeMode = 0;
@@ -160,6 +162,30 @@ public class SelectionPlayerData {
     public void tick() {
         getBreakingUtils().preformBreak();
         getBreakingUtils().tick();
+
+        if (keyPressed) {
+            if (MINING_SPEED_NERF_MAX.get() != 0 && getBreakingUtils().savedBlockPositions != null) {
+                harvestCheck(!flag(), player);
+                if (!simpleCheck) simpleCheck = true;
+            } else if (simpleCheck) {
+                AttributeInstance speed = player.getAttribute(Attributes.BLOCK_BREAK_SPEED);
+                if (speed != null) {
+                    speed.setBaseValue(speed.getAttribute().value().getDefaultValue());
+                    simpleCheck = false;
+                }
+            }
+        }
+    }
+
+    public void harvestCheck(boolean reset, Player player) {
+        AttributeInstance speed = player.getAttribute(Attributes.BLOCK_BREAK_SPEED);
+        double v = calculatePercentage(getBreakingUtils().savedBlockPositions.size(), SELECTION_MAX_BLOCK.get(), MINING_SPEED_NERF_MIN.get(), MINING_SPEED_NERF_MAX.get(), true);
+        assert speed != null;
+        if (reset) {
+            speed.setBaseValue(speed.getAttribute().value().getDefaultValue());
+        } else {
+            speed.setBaseValue(v);
+        }
     }
 
     public boolean blockBreak(GameType gameModeForPlayer, BlockPos pos) {

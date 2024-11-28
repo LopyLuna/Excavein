@@ -30,7 +30,7 @@ import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
 public class Utils {
 
-    public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("vein_whitelist"));
+    public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("whitelist"));
 
     public static ResourceLocation asResource(String path) {
         return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
@@ -166,10 +166,10 @@ public class Utils {
         return (int) (maxTime * multiplier);
     }
 
-    //public static double calculatePercentage(double currentValue, double maxValue, double minOutputValue, double maxOutputValue, boolean invert) {*
-    //    double ratio = Math.max(0, Math.min(currentValue / maxValue, 1));
-    //    return Math.round((invert ? maxOutputValue - ratio * (maxOutputValue - minOutputValue) : minOutputValue + ratio * (maxOutputValue - minOutputValue)) * 1000.0) / 1000.0;
-    //}
+    public static double calculatePercentage(double currentValue, double maxValue, double minOutputValue, double maxOutputValue, boolean invert) {
+        double ratio = Math.max(0, Math.min(currentValue / maxValue, 1));
+        return Math.round((invert ? maxOutputValue - ratio * (maxOutputValue - minOutputValue) : minOutputValue + ratio * (maxOutputValue - minOutputValue)) * 1000.0) / 1000.0;
+    }
 
     public static TagKey<Item> universalTag(String name) {
         return ItemTags.create(ResourceLocation.fromNamespaceAndPath("c", name));
@@ -188,12 +188,12 @@ public class Utils {
 
         int preferredSlot = player.getInventory().selected;
         ItemStack itemstack = player.getInventory().getItem(preferredSlot);
-        if (itemstack.is(Utils.tag("vein_fuels"))) {
+        if (itemstack.is(Utils.tag("fuels"))) {
             amountFound = amountFound + itemstack.getCount();
         }
         for (int i = 0; i < player.getInventory().getContainerSize(); ++i) {
             ItemStack itemstack2 = player.getInventory().getItem(i);
-            if (itemstack2.is(Utils.tag("vein_fuels"))) {
+            if (itemstack2.is(Utils.tag("fuels"))) {
                 amountFound = amountFound + itemstack2.getCount();
             }
         }
@@ -208,7 +208,7 @@ public class Utils {
         int preferredSlot = player.getInventory().selected;
         ItemStack itemstack = player.getInventory().getItem(preferredSlot);
         int count = itemstack.getCount();
-        if (itemstack.is(Utils.tag("vein_fuels")) && count > 0) {
+        if (itemstack.is(Utils.tag("fuels")) && count > 0) {
             int taken = Math.min(count, amount - amountFound);
             player.getInventory().setItem(preferredSlot, new ItemStack(itemstack.getItem(), count - taken));
             amountFound += taken;
@@ -218,7 +218,7 @@ public class Utils {
                 break;
             ItemStack itemstack2 = player.getInventory().getItem(i);
             int count2 = itemstack2.getCount();
-            if (itemstack2.is(Utils.tag("vein_fuels")) && count2 > 0) {
+            if (itemstack2.is(Utils.tag("fuels")) && count2 > 0) {
                 int taken = Math.min(count2, amount - amountFound);
                 player.getInventory().setItem(i, new ItemStack(itemstack2.getItem(), count2 - taken));
                 amountFound += taken;
