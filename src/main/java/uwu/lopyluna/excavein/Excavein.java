@@ -16,14 +16,15 @@ import net.minecraftforge.network.simple.SimpleChannel;
 import org.slf4j.Logger;
 import uwu.lopyluna.excavein.config.ClientConfig;
 import uwu.lopyluna.excavein.config.ServerConfig;
-import uwu.lopyluna.excavein.network.*;
+import uwu.lopyluna.excavein.packets.*;
+import uwu.lopyluna.excavein.registry.ExcaveinModes;
 
 @SuppressWarnings("unused")
 @Mod(Excavein.MOD_ID)
 public class Excavein {
     public static final String NAME = "ExcaVein";
     public static final String MOD_ID = "excavein";
-    public static final String VERSION = "1.0a.Release";
+    public static final String VERSION = "2.0a.Release";
     public static final Logger LOGGER = LogUtils.getLogger();
     private static final String PROTOCOL_VERSION = "1";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
@@ -41,36 +42,27 @@ public class Excavein {
         modLoadingContext.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_SPEC);
         modLoadingContext.registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_SPEC);
 
+        ExcaveinModes.register();
+
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ExcaveinClient.client(modEventBus));
         modEventBus.addListener(this::commonSetup);
         MinecraftForge.EVENT_BUS.register(this);
     }
 
 
+    int packetId = 0;
+
     @SuppressWarnings("all")
     private void commonSetup(final FMLCommonSetupEvent event) {
-        int packetId = 0;
-        CHANNEL.registerMessage(packetId++, SelectionInspectionPacket.class,
-                SelectionInspectionPacket::encode,
-                SelectionInspectionPacket::decode,
-                SelectionInspectionPacket::handle);
-        CHANNEL.registerMessage(packetId++, SelectionOutlinePacket.class,
-                SelectionOutlinePacket::encode,
-                SelectionOutlinePacket::decode,
-                SelectionOutlinePacket::handle);
-        CHANNEL.registerMessage(packetId++, CooldownPacket.class,
-                CooldownPacket::encode,
-                CooldownPacket::decode,
-                CooldownPacket::handle);
-        CHANNEL.registerMessage(packetId++, KeybindPacket.class,
-                KeybindPacket::encode,
-                KeybindPacket::decode,
-                KeybindPacket::handle);
-        CHANNEL.registerMessage(packetId++, IsBreakingPacket.class,
-                IsBreakingPacket::encode,
-                IsBreakingPacket::decode,
-                IsBreakingPacket::handle);
+        CHANNEL.registerMessage(packetId++, ExcaveinPacket.class, ExcaveinPacket::encode, ExcaveinPacket::decode, ExcaveinPacket::handle);
+        CHANNEL.registerMessage(packetId++, ModesPacket.class, ModesPacket::encode, ModesPacket::decode, ModesPacket::handle);
+        CHANNEL.registerMessage(packetId++, KeybindPacket.class, KeybindPacket::encode, KeybindPacket::decode, KeybindPacket::handle);
 
+        CHANNEL.registerMessage(packetId++, SelectedBlocksPacket.class, SelectedBlocksPacket::encode, SelectedBlocksPacket::decode, SelectedBlocksPacket::handle);
+        CHANNEL.registerMessage(packetId++, CooldownPacket.class, CooldownPacket::encode, CooldownPacket::decode, CooldownPacket::handle);
+
+        CHANNEL.registerMessage(packetId++, ClientHelperModesPacket.class, ClientHelperModesPacket::encode, ClientHelperModesPacket::decode, ClientHelperModesPacket::handle);
+        CHANNEL.registerMessage(packetId++, ClientHelperBoolsPacket.class, ClientHelperBoolsPacket::encode, ClientHelperBoolsPacket::decode, ClientHelperBoolsPacket::handle);
     }
 
 }
