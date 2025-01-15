@@ -35,7 +35,7 @@ import static net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER;
 public class Excavein {
     public static final String NAME = "ExcaVein";
     public static final String MOD_ID = "excavein";
-    public static final String VERSION = "2.0a.Release";
+    public static final String VERSION = "2.1a.Release";
     public static final Logger LOGGER = LogUtils.getLogger();
     private static final String PROTOCOL_VERSION = "1";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(

@@ -9,19 +9,21 @@ import net.minecraft.world.phys.BlockHitResult;
 
 import java.util.Set;
 
-public class ExcavateShape extends Shape {
-    public ExcavateShape(ResourceLocation id) {
+import static uwu.lopyluna.excavein.utils.Utils.EXTENDED_WHITELIST;
+
+public class ExtendedShapelessShape extends Shape {
+    public ExtendedShapelessShape(ResourceLocation id) {
         super(id);
     }
 
     @Override
     public boolean shapeFilter(Level pLevel, Player pPlayer, BlockHitResult pRayTrace, Set<BlockPos> pValidBlocks, Set<BlockPos> pCheckedBlocks, BlockPos pStartPos, BlockPos pCurrentPos, BlockState pStartState, BlockState pCurrentState, int pMaxBlocks, int pMaxRange, int pDirectionRange) {
-        return true;
+        return pStartState.is(EXTENDED_WHITELIST) && pCurrentState.is(EXTENDED_WHITELIST);
     }
 
     @Override
     public Set<BlockPos> shapeBuild(Level pLevel, Player pPlayer, BlockHitResult pRayTrace, BlockPos pStartPos, BlockPos pCurrentPos, BlockState pStartState, BlockState pCurrentState, int pMaxBlocks, int pMaxRange, int pDirectionRange) {
-        return getNeighborsIncludingDiagonals(pCurrentPos);
+        return getNeighborsIncludingDiagonalsExtended(pCurrentPos);
     }
 
 }
