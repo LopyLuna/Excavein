@@ -51,8 +51,8 @@ public class ServerConfig {
                 .defineInRange("TPSLagThreshold", 10, 1, 20);
 
         SELECTION_COOLDOWN = builder
-                .comment("Amount of ticks for block selection cooldown (default = 10 Ticks)")
-                .defineInRange("SelectionCooldown", 10, 0, 20 * 60 * 60 * 24 * 7);
+                .comment("Amount of ticks for block selection cooldown (default = 0 Ticks)")
+                .defineInRange("SelectionCooldown", 0, 0, 20 * 60 * 60 * 24 * 7);
 
         SELECTION_ADD_COOLDOWN = builder
                 .comment("Amount of ticks that get added to the block selection cooldown (default = 0 Ticks)")
@@ -107,11 +107,11 @@ public class ServerConfig {
                 .defineInRange("ItemPickupDelay", 0, 0, 30000);
 
         DELAY_BETWEEN_BREAK = builder
-                .comment("Amount of ticks for till next block gets broken (default = 2)")
-                .defineInRange("DelayBetweenBreak", 2, 0, 100);
+                .comment("Amount of ticks for till next block gets broken (default = 0)")
+                .defineInRange("DelayBetweenBreak", 0, 0, 100);
 
         BLOCK_PER_BREAK = builder
-                .comment("Amount of blocks between broken blocks (default = 4)")
+                .comment("Amount of blocks between broken blocks 'invalidates if DelayBetweenBreak is 0' (default = 4)")
                 .defineInRange("BlockPerBreak", 4, 1, 256);
 
         WAIT_TILL_BROKEN = builder
