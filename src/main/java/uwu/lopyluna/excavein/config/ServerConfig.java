@@ -7,6 +7,7 @@ import java.util.List;
 @SuppressWarnings("deprecation")
 public class ServerConfig {
 
+    public static final ModConfigSpec.IntValue TPS_THRESHOLD;
     public static final ModConfigSpec.IntValue SELECTION_COOLDOWN;
     public static final ModConfigSpec.IntValue SELECTION_ADD_COOLDOWN;
     public static final ModConfigSpec.IntValue SELECTION_ADD_RANGE;
@@ -45,12 +46,16 @@ public class ServerConfig {
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
+        TPS_THRESHOLD = builder
+                .comment("Voids player activation if below the TPS threshold (default = 10)")
+                .defineInRange("TPSLagThreshold", 10, 1, 20);
+
         SELECTION_COOLDOWN = builder
-                .comment("Amount of ticks for block selection cooldown (default = 2s - " + (20 * 2) + ")")
-                .defineInRange("SelectionCooldown", 20 * 2, 0, 20 * 60 * 60 * 24 * 7);
+                .comment("Amount of ticks for block selection cooldown (default = 10 Ticks)")
+                .defineInRange("SelectionCooldown", 10, 0, 20 * 60 * 60 * 24 * 7);
 
         SELECTION_ADD_COOLDOWN = builder
-                .comment("Amount of ticks that get added to the block selection cooldown (default = 0)")
+                .comment("Amount of ticks that get added to the block selection cooldown (default = 0 Ticks)")
                 .defineInRange("SelectionAddedCooldown", 0, 0, 20 * 60 * 60 * 24 * 7);
 
         SELECTION_ADD_RANGE = builder
@@ -70,15 +75,15 @@ public class ServerConfig {
                 .define("RequiresHunger", true);
 
         FOOD_EXHAUSTION_MULTIPLIER = builder
-                .comment("Causes Food Loss to be Multiplied when mining amount of  blocks (default = 2.0)")
+                .comment("Causes Food Loss to be Multiplied when mining amount of blocks (default = 2.0)")
                 .defineInRange("FoodExhaustionMultiplier", 2.0, 0.0, 1000.0);
 
         HEART_CONSUME_AMOUNT = builder
-                .comment("Amount of ticks for block selection cooldown (default = 0)")
+                .comment("Amount of Hearts to be taken when mining for said block in selection (default = 0)")
                 .defineInRange("HealthConsumeAmount", 0, 0, 10000);
 
         HEART_CONSUME_ADDED_AMOUNT = builder
-                .comment("Amount of ticks that get added to the block selection cooldown (default = 0)")
+                .comment("Amount of Hearts to be taken after mining (default = 0)")
                 .defineInRange("HealthConsumeAddedAmount", 0, 0, 10000);
 
         REQUIRES_XP = builder
@@ -166,7 +171,7 @@ public class ServerConfig {
                 .defineInRange("MiningSpeedNerfMin", 0.1, 0.0, 1);
 
         MINING_SPEED_NERF_MAX = builder
-                .comment("Causes to multiply the Mining Speed for every block it accounted for 'Max Speed Multiplier (Set this to 0 to disable the speed nerf)' (default = 0.1)")
+                .comment("Causes to multiply the Mining Speed for every block it accounted for 'Max Speed Multiplier (Set this to 0 to disable the speed nerf)' (default = 0.9)")
                 .defineInRange("MiningSpeedNerfMax", 0.9, 0.0, 1);
 
         VEIN_BLOCK_TAGS = builder

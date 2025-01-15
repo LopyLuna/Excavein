@@ -71,7 +71,7 @@ public class SelectionPlayerData {
     }
 
     public boolean check() {
-        return level != null && player != null && playerUUID != null && !(player instanceof FakePlayer);
+        return level != null && player != null && playerUUID != null && !(player instanceof FakePlayer) && tickCheck(level);
     }
 
     //SHAPE MODE
@@ -164,22 +164,25 @@ public class SelectionPlayerData {
     //OVERALL CLASS
 
     public void tick() {
-        getBreakingUtils().preformBreak();
-        getBreakingUtils().tick();
+        if (tickCheck(level)) {
+            getBreakingUtils().preformBreak();
+            getBreakingUtils().tick();
 
-        if (keyPressed) {
-            if (MINING_SPEED_NERF_MAX.get() != 0 && getBreakingUtils().savedBlockPositions != null) {
-                harvestCheck(!flag(), player);
-                if (!simpleCheck) simpleCheck = true;
-            } else if (simpleCheck) {
-                AttributeInstance speed = player.getAttribute(Attributes.BLOCK_BREAK_SPEED);
-                if (speed != null) {
-                    speed.setBaseValue(speed.getAttribute().value().getDefaultValue());
-                    simpleCheck = false;
+            if (keyPressed) {
+                if (MINING_SPEED_NERF_MAX.get() != 0 && getBreakingUtils().savedBlockPositions != null) {
+                    harvestCheck(!flag(), player);
+                    if (!simpleCheck) simpleCheck = true;
+                } else if (simpleCheck) {
+                    AttributeInstance speed = player.getAttribute(Attributes.BLOCK_BREAK_SPEED);
+                    if (speed != null) {
+                        speed.setBaseValue(speed.getAttribute().value().getDefaultValue());
+                        simpleCheck = false;
+                    }
                 }
             }
         }
     }
+
 
     public void harvestCheck(boolean reset, Player player) {
         AttributeInstance speed = player.getAttribute(Attributes.BLOCK_BREAK_SPEED);
@@ -193,13 +196,13 @@ public class SelectionPlayerData {
     }
 
     public boolean blockBreak(GameType gameModeForPlayer, BlockPos pos) {
-        if (isKeyPressed())
+        if (isKeyPressed() && tickCheck(level))
             return getBreakingUtils().breakBlocks(gameModeForPlayer, pos);
         return false;
     }
 
     public List<InteractionResult> blockInteract(GameType gameModeForPlayer, Interact interact) {
-        if (isKeyPressed())
+        if (isKeyPressed() && tickCheck(level))
             return getInteractionUtils().interactBlocks(gameModeForPlayer, interact);
         return List.of();
     }
@@ -256,7 +259,7 @@ public class SelectionPlayerData {
     }
 
     public boolean flag() {
-        return requiredFlags() && !isCooldownActive() && isKeyPressed();
+        return requiredFlags() && !isCooldownActive() && isKeyPressed() && tickCheck(level);
     }
 
     public boolean requiredFlags() {

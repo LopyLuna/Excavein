@@ -1,5 +1,6 @@
 package uwu.lopyluna.excavein.utils;
 
+import com.google.common.math.Stats;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -7,6 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
+import net.minecraft.util.TimeUtil;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
@@ -126,6 +128,18 @@ public class Utils {
             return bool;
         }
         return true;
+    }
+
+    private static final long[] UNLOADED = new long[] { 0 };
+
+    public static boolean tickCheck(ServerLevel level) {
+        var server = level.getServer();
+        var dimensionTimes = server.getTickTime(level.dimension());
+        var times = dimensionTimes == null ? UNLOADED : dimensionTimes;
+        var tickRateManager = level.tickRateManager();
+        var tickTime = Stats.meanOf(times) / TimeUtil.NANOSECONDS_PER_MILLISECOND;
+        var tps = TimeUtil.MILLISECONDS_PER_SECOND / Math.max(tickTime, tickRateManager.millisecondsPerTick());
+        return TPS_THRESHOLD.get() < tps;
     }
 
     public static boolean isNotFakePlayer(Player player) {
