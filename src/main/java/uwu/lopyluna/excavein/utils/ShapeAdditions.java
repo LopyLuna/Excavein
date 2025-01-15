@@ -67,8 +67,8 @@ public interface ShapeAdditions {
         BlockPos diagonalPos = currentPosition;
         diagonalPos = diagonalPos.relative(horizontalDirection);
 
-        if (isBottom) diagonalPos = diagonalPos.below();
-        else diagonalPos = diagonalPos.above();
+        if (isBottom) diagonalPos = (player.isShiftKeyDown() ? diagonalPos.above() : diagonalPos.below());
+        else diagonalPos = (player.isShiftKeyDown() ? diagonalPos.below() : diagonalPos.above());
 
         if (player.level().getBlockState(diagonalPos).isAir())
             return neighbors;
