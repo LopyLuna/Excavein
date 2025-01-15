@@ -37,8 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
-import static uwu.lopyluna.excavein.utils.Utils.calculatePercentage;
-import static uwu.lopyluna.excavein.utils.Utils.findInInventory;
+import static uwu.lopyluna.excavein.utils.Utils.*;
 
 @SuppressWarnings("unused")
 public class SelectionPlayerData {
@@ -206,18 +205,19 @@ public class SelectionPlayerData {
     }
 
     public Set<BlockPos> getBlocks(boolean isBreaking) {
-        if (level == null || playerUUID == null || player == null || (!isBreaking && !BLOCK_PLACING.get() && !HAND_INTERACTION.get() && !ITEM_INTERACTION.get()))
+        if (!check() || (!isBreaking && !BLOCK_PLACING.get() && !HAND_INTERACTION.get() && !ITEM_INTERACTION.get()))
             return Set.of();
         BlockHitResult rayTrace = getPlayerRayTraceToBlock(player);
         AttributeInstance attribute = player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE);
         int playerBlockRange = attribute == null ? 0 : (int) attribute.getValue();
+        int maxRange = playerBlockRange + ServerConfig.SELECTION_ADD_RANGE.get() + (extendedTools(player) ? ServerConfig.SELECTION_EXTENDED_RANGE.get() : 0);
         Vec3 eye = player.getEyePosition();
         return rayTrace != null ? Utils.constructSelection(isBreaking,
                 this,
                 rayTrace,
                 new BlockPos(new Vec3i((int) eye.x, (int) eye.y, (int) eye.z)),
                 ServerConfig.SELECTION_MAX_BLOCK.get(),
-                playerBlockRange + ServerConfig.SELECTION_ADD_RANGE.get(),
+                maxRange,
                 getShape().getShape(),
                 getModifier().getShapeModifier()) : Set.of();
     }

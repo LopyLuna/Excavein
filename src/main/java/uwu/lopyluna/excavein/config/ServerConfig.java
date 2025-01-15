@@ -10,6 +10,7 @@ public class ServerConfig {
     public static final ModConfigSpec.IntValue SELECTION_COOLDOWN;
     public static final ModConfigSpec.IntValue SELECTION_ADD_COOLDOWN;
     public static final ModConfigSpec.IntValue SELECTION_ADD_RANGE;
+    public static final ModConfigSpec.IntValue SELECTION_EXTENDED_RANGE;
     public static final ModConfigSpec.IntValue SELECTION_MAX_BLOCK;
     public static final ModConfigSpec.IntValue HEART_CONSUME_AMOUNT;
     public static final ModConfigSpec.IntValue HEART_CONSUME_ADDED_AMOUNT;
@@ -56,6 +57,10 @@ public class ServerConfig {
                 .comment("Add range for block selection (default = 12)")
                 .defineInRange("SelectionMaxRange", 12, -8, 128);
 
+        SELECTION_EXTENDED_RANGE = builder
+                .comment("Extends the selection range for certain tools that uses excavein extended_tools item tag (default = 16)")
+                .defineInRange("SelectionMaxRange", 16, -8, 128);
+
         SELECTION_MAX_BLOCK = builder
                 .comment("Maximum number of blocks that can be selected (default = 64)")
                 .defineInRange("SelectionMaxBlock", 64, 1, 2048);
@@ -69,8 +74,8 @@ public class ServerConfig {
                 .defineInRange("FoodExhaustionMultiplier", 2.0, 0.0, 1000.0);
 
         HEART_CONSUME_AMOUNT = builder
-                .comment("Amount of ticks for block selection cooldown (default = 2)")
-                .defineInRange("HealthConsumeAmount", 2, 0, 10000);
+                .comment("Amount of ticks for block selection cooldown (default = 0)")
+                .defineInRange("HealthConsumeAmount", 0, 0, 10000);
 
         HEART_CONSUME_ADDED_AMOUNT = builder
                 .comment("Amount of ticks that get added to the block selection cooldown (default = 0)")
@@ -113,7 +118,7 @@ public class ServerConfig {
                 .define("InvertVeinWhitelist", true);
 
         INVERT_TOOLS_WHITELIST = builder
-                .comment("Invert the tools whitelist behavior (default = false)")
+                .comment("Invert the tools whitelist behavior 'only works if ToolsWhitelist is true' (default = false)")
                 .define("InvertToolsWhitelist", false);
 
         REQUIRES_MINEABLE = builder
@@ -125,7 +130,7 @@ public class ServerConfig {
                 .define("RequiresTools", false);
 
         TOOLS_WHITELIST = builder
-                .comment("Tools Whitelist basically whitelist items n such using the excavein:tool_whitelist item tag (default = false)")
+                .comment("Tools Whitelist basically whitelist items n such using the excavein tool_whitelist item tag (default = false)")
                 .define("ToolsWhitelist", false);
 
         PREVENT_BREAKING_TOOL = builder

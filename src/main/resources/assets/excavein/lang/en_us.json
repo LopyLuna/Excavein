@@ -4,16 +4,19 @@
   "key.excavein.next_mode": "Next Selection",
   "key.excavein.prev_mode": "Previous Selection",
 
-  "excavein.shape.selection": "Selection",
-  "excavein.shape.vein": "Vein",
-  "excavein.shape.excavate": "Excavate",
+  "excavein.shape.shapeless": "Shapeless",
   "excavein.shape.tunnel": "Tunnel",
   "excavein.shape.large_tunnel": "Large Tunnel",
   "excavein.shape.diagonal_tunnel": "Diagonal Tunnel",
+  "excavein.shape.bore": "Bore",
+  "excavein.shape.extended_shapeless": "Extended Shapeless",
 
   "excavein.modifier.none": "",
   "excavein.modifier.side": "Side",
   "excavein.modifier.surface": "Surface",
+  "excavein.modifier.selection": "Selection",
+  "excavein.modifier.vein": "Vein",
+  "excavein.modifier.excavate": "Excavate",
 
   "excavein.key.active": "Active: ",
 

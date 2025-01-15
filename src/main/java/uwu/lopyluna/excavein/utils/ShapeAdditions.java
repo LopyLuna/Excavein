@@ -49,6 +49,15 @@ public interface ShapeAdditions {
         return neighbors;
     }
 
+    default Set<BlockPos> getNeighborsIncludingDiagonalsExtended(BlockPos pos) {
+        Set<BlockPos> neighbors = new HashSet<>();
+        for (int dx = -2; dx <= 2; dx++)
+            for (int dy = -2; dy <= 2; dy++)
+                for (int dz = -2; dz <= 2; dz++)
+                    if (dx != 0 || dy != 0 || dz != 0) neighbors.add(pos.offset(dx, dy, dz));
+        return neighbors;
+    }
+
     default Set<BlockPos> getDiagonalTunnel(ServerPlayer player, BlockPos startPosition, BlockPos currentPosition, BlockHitResult rayTrace) {
         Set<BlockPos> neighbors = new HashSet<>();
         Direction direction = rayTrace.getDirection();

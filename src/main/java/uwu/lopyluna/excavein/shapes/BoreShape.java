@@ -9,19 +9,18 @@ import net.minecraft.world.phys.BlockHitResult;
 
 import java.util.Set;
 
-public class VeinShape extends Shape {
-    public VeinShape(ResourceLocation id) {
+public class BoreShape extends Shape {
+    public BoreShape(ResourceLocation id) {
         super(id);
     }
 
     @Override
     public boolean shapeFilter(Level pLevel, Player pPlayer, BlockHitResult pRayTrace, Set<BlockPos> pValidBlocks, Set<BlockPos> pCheckedBlocks, BlockPos pStartPos, BlockPos pCurrentPos, BlockState pStartState, BlockState pCurrentState, int pMaxBlocks, int pMaxRange, int pDirectionRange) {
-        return isBlockInTag(pStartState, pCurrentState, getTagsFromState(pStartState));
+        return makeTunnel(pStartPos, pCurrentPos, pRayTrace.getDirection().getOpposite(), 1, 0);
     }
 
     @Override
     public Set<BlockPos> shapeBuild(Level pLevel, Player pPlayer, BlockHitResult pRayTrace, BlockPos pStartPos, BlockPos pCurrentPos, BlockState pStartState, BlockState pCurrentState, int pMaxBlocks, int pMaxRange, int pDirectionRange) {
         return getNeighborsIncludingDiagonals(pCurrentPos);
     }
-
 }

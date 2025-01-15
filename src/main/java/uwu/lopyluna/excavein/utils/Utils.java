@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
@@ -32,8 +31,10 @@ import static uwu.lopyluna.excavein.config.ServerConfig.*;
 public class Utils {
 
     public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("vein_whitelist"));
+    public static final TagKey<Block> EXTENDED_WHITELIST = BlockTags.create(asResource("extended_whitelist"));
     public static final TagKey<Item> TOOL_WHITELIST = ItemTags.create(asResource("tool_whitelist"));
     public static final TagKey<Item> INVALID = ItemTags.create(asResource("invalid_tools"));
+    public static final TagKey<Item> EXTENDED_TOOLS = ItemTags.create(asResource("extended_tools"));
 
     public static ResourceLocation asResource(String path) {
         return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
@@ -71,9 +72,10 @@ public class Utils {
 
 
     public static boolean isNotValidForSelection(ServerPlayer player, Level pLevel, BlockPos pos, BlockState state, ItemStack mainStack) {
+        boolean bool = REQUIRES_MINEABLE.get();
         if (REQUIRES_TOOLS.get())
-            return !isBlockInTag(state, getBlockTagFromTool(mainStack)) || (REQUIRES_MINEABLE.get() && !player.hasCorrectToolForDrops(state, pLevel, pos));
-        if (REQUIRES_MINEABLE.get())
+            return !isBlockInTag(state, getBlockTagFromTool(mainStack)) || (bool && !player.hasCorrectToolForDrops(state, pLevel, pos));
+        if (bool)
             return !player.hasCorrectToolForDrops(state, pLevel, pos);
         return false;
     }
@@ -110,6 +112,22 @@ public class Utils {
         return (eyePos.distManhattan(currentPos) > maxRange) || startState.isAir() || isNotValidBlock(pLevel, currentPos, currentState);
     }
 
+    public static boolean extendedTools(ServerPlayer player) {
+        return player.getUseItem().is(EXTENDED_TOOLS) || (player.getMainHandItem().is(EXTENDED_TOOLS) && !player.isUsingItem());
+    }
+
+    public static boolean toolWhitelist(ServerPlayer player) {
+        if (player.getUseItem().is(INVALID) || (player.getMainHandItem().is(INVALID) && !player.isUsingItem()))
+            return false;
+        if (TOOLS_WHITELIST.get()) {
+            boolean bool = INVERT_TOOLS_WHITELIST.get();
+            if (player.getUseItem().is(TOOL_WHITELIST) || (player.getMainHandItem().is(TOOL_WHITELIST) && !player.isUsingItem()))
+                return !bool;
+            return bool;
+        }
+        return true;
+    }
+
     public static boolean isNotFakePlayer(Player player) {
         return player != null && !(player instanceof FakePlayer);
     }
@@ -118,8 +136,7 @@ public class Utils {
         if (data == null || shape == null || modifier == null || rayTrace == null || eyePos == null || !data.check()) return new HashSet<>();
         ServerPlayer player = data.getPlayer();
         ServerLevel pLevel = data.getLevel();
-        if (!(TOOLS_WHITELIST.get() && (INVERT_TOOLS_WHITELIST.get() != (player.getUseItem().is(TOOL_WHITELIST) || (player.getMainHandItem().is(TOOL_WHITELIST) && player.getUsedItemHand() != InteractionHand.OFF_HAND))))) return new HashSet<>();
-        if ((player.getUseItem().is(INVALID) || (player.getMainHandItem().is(INVALID) && player.getUsedItemHand() != InteractionHand.OFF_HAND))) return new HashSet<>();
+        if (!toolWhitelist(player)) return new HashSet<>();
         Set<BlockPos> validBlocks = new HashSet<>();
         Set<BlockPos> checkedBlocks = new HashSet<>();
         Queue<BlockPos> toCheck = new LinkedList<>();

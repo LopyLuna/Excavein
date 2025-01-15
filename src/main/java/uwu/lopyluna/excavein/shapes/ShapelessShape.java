@@ -9,14 +9,14 @@ import net.minecraft.world.phys.BlockHitResult;
 
 import java.util.Set;
 
-public class SelectionShape extends Shape {
-    public SelectionShape(ResourceLocation id) {
+public class ShapelessShape extends Shape {
+    public ShapelessShape(ResourceLocation id) {
         super(id);
     }
 
     @Override
     public boolean shapeFilter(Level pLevel, Player pPlayer, BlockHitResult pRayTrace, Set<BlockPos> pValidBlocks, Set<BlockPos> pCheckedBlocks, BlockPos pStartPos, BlockPos pCurrentPos, BlockState pStartState, BlockState pCurrentState, int pMaxBlocks, int pMaxRange, int pDirectionRange) {
-        return pCurrentState.is(pStartState.getBlock());
+        return true;
     }
 
     @Override
