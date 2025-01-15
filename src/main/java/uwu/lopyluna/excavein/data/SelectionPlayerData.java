@@ -15,6 +15,7 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import uwu.lopyluna.excavein.config.ServerConfig;
 import uwu.lopyluna.excavein.entries.ExcaveinEntries;
@@ -68,6 +69,10 @@ public class SelectionPlayerData {
     public void updateKey(boolean keyPressed, boolean displayChat) {
         this.keyPressed = keyPressed;
         this.displayChat = displayChat;
+    }
+
+    public boolean check() {
+        return level != null && player != null && playerUUID != null && !(player instanceof FakePlayer);
     }
 
     //SHAPE MODE

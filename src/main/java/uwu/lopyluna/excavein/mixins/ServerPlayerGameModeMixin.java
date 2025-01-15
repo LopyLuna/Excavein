@@ -10,12 +10,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
+import net.neoforged.neoforge.common.util.FakePlayer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import uwu.lopyluna.excavein.data.SelectionPlayerData;
 import uwu.lopyluna.excavein.utils.Interact;
 
 import java.util.List;
@@ -31,14 +33,17 @@ public class ServerPlayerGameModeMixin {
 
     @Inject(method = "destroyBlock", at = @At("HEAD"), cancellable = true)
     public void destroyBlock(BlockPos pPos, CallbackInfoReturnable<Boolean> cir) {
-        if (getSelectionData(player.getUUID()).blockBreak(gameModeForPlayer, pPos)) {
-            cir.setReturnValue(true);
-        }
+        ServerPlayer pPlayer = player;
+        SelectionPlayerData data = getSelectionData(pPlayer.getUUID());
+        if (data != null && data.check()) if (data.blockBreak(gameModeForPlayer, pPos)) cir.setReturnValue(true);
     }
 
     @Inject(method = "useItemOn", at = @At("HEAD"), cancellable = true)
     public void useItemOn(ServerPlayer pPlayer, Level pLevel, ItemStack pStack, InteractionHand pHand, BlockHitResult pHitResult, CallbackInfoReturnable<InteractionResult> cir) {
-        List<InteractionResult> results = getSelectionData(pPlayer.getUUID()).blockInteract(gameModeForPlayer, new Interact(pPlayer, pLevel, pStack, pHand, pHitResult));
-        if (!results.isEmpty()) results.forEach(cir::setReturnValue);
+        SelectionPlayerData data = getSelectionData(pPlayer.getUUID());
+        if (data != null && data.check()) {
+            List<InteractionResult> results = data.blockInteract(gameModeForPlayer, new Interact(pPlayer, pLevel, pStack, pHand, pHitResult));
+            if (!results.isEmpty()) results.forEach(cir::setReturnValue);
+        }
     }
 }

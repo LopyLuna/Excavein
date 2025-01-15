@@ -115,7 +115,7 @@ public class Utils {
     }
 
     public static <T extends Shape, I extends ShapeModifier> Set<BlockPos> constructSelection(boolean isBreaking, SelectionPlayerData data, BlockHitResult rayTrace, BlockPos eyePos, int maxBlocks, int maxRange, T shape, I modifier) {
-        if (data == null || shape == null || modifier == null || rayTrace == null || eyePos == null) return new HashSet<>();
+        if (data == null || shape == null || modifier == null || rayTrace == null || eyePos == null || !data.check()) return new HashSet<>();
         ServerPlayer player = data.getPlayer();
         ServerLevel pLevel = data.getLevel();
         if (!(TOOLS_WHITELIST.get() && (INVERT_TOOLS_WHITELIST.get() != (player.getUseItem().is(TOOL_WHITELIST) || (player.getMainHandItem().is(TOOL_WHITELIST) && player.getUsedItemHand() != InteractionHand.OFF_HAND))))) return new HashSet<>();
