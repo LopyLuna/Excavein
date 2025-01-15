@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
@@ -30,7 +31,9 @@ import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
 public class Utils {
 
-    public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("whitelist"));
+    public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("vein_whitelist"));
+    public static final TagKey<Item> TOOL_WHITELIST = ItemTags.create(asResource("tool_whitelist"));
+    public static final TagKey<Item> INVALID = ItemTags.create(asResource("invalid_tools"));
 
     public static ResourceLocation asResource(String path) {
         return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
@@ -115,6 +118,8 @@ public class Utils {
         if (data == null || shape == null || modifier == null || rayTrace == null || eyePos == null) return new HashSet<>();
         ServerPlayer player = data.getPlayer();
         ServerLevel pLevel = data.getLevel();
+        if (!(TOOLS_WHITELIST.get() && (INVERT_TOOLS_WHITELIST.get() != (player.getUseItem().is(TOOL_WHITELIST) || (player.getMainHandItem().is(TOOL_WHITELIST) && player.getUsedItemHand() != InteractionHand.OFF_HAND))))) return new HashSet<>();
+        if ((player.getUseItem().is(INVALID) || (player.getMainHandItem().is(INVALID) && player.getUsedItemHand() != InteractionHand.OFF_HAND))) return new HashSet<>();
         Set<BlockPos> validBlocks = new HashSet<>();
         Set<BlockPos> checkedBlocks = new HashSet<>();
         Queue<BlockPos> toCheck = new LinkedList<>();

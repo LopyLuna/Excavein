@@ -28,6 +28,8 @@ public class ServerConfig {
     public static final ModConfigSpec.IntValue BLOCK_PER_BREAK;
     public static final ModConfigSpec.BooleanValue WAIT_TILL_BROKEN;
     public static final ModConfigSpec.BooleanValue INVERT_WHITELIST;
+    public static final ModConfigSpec.BooleanValue INVERT_TOOLS_WHITELIST;
+    public static final ModConfigSpec.BooleanValue TOOLS_WHITELIST;
     public static final ModConfigSpec.BooleanValue REQUIRES_MINEABLE;
     public static final ModConfigSpec.BooleanValue REQUIRES_TOOLS;
     public static final ModConfigSpec.BooleanValue PREVENT_BREAKING_TOOL;
@@ -107,8 +109,12 @@ public class ServerConfig {
                 .define("WaitTillBroken", true);
 
         INVERT_WHITELIST = builder
-                .comment("Invert the whitelist behavior (default = true)")
-                .define("InvertWhitelist", true);
+                .comment("Invert the vein tags whitelist behavior (default = true)")
+                .define("InvertVeinWhitelist", true);
+
+        INVERT_TOOLS_WHITELIST = builder
+                .comment("Invert the tools whitelist behavior (default = false)")
+                .define("InvertToolsWhitelist", false);
 
         REQUIRES_MINEABLE = builder
                 .comment("Require Hand/Tools for said selected blocks that requires hand/tools to drop //Highly Recommended (default = true)")
@@ -117,6 +123,10 @@ public class ServerConfig {
         REQUIRES_TOOLS = builder
                 .comment("Require Tools for said selected blocks (default = false)")
                 .define("RequiresTools", false);
+
+        TOOLS_WHITELIST = builder
+                .comment("Tools Whitelist basically whitelist items n such using the excavein:tool_whitelist item tag (default = false)")
+                .define("ToolsWhitelist", false);
 
         PREVENT_BREAKING_TOOL = builder
                 .comment("Prevents Tools being broke when mining/interaction (default = true)")
