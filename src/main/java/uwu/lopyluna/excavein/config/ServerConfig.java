@@ -68,11 +68,11 @@ public class ServerConfig {
 
         HEART_CONSUME_AMOUNT = builder
                 .comment("Amount of ticks for block selection cooldown (default = 2)")
-                .defineInRange("SelectionCooldown", 2, 0, 10000);
+                .defineInRange("HealthConsumeAmount", 2, 0, 10000);
 
         HEART_CONSUME_ADDED_AMOUNT = builder
                 .comment("Amount of ticks that get added to the block selection cooldown (default = 0)")
-                .defineInRange("SelectionAddedCooldown", 0, 0, 10000);
+                .defineInRange("HealthConsumeAddedAmount", 0, 0, 10000);
 
         REQUIRES_XP = builder
                 .comment("Require XP for said selected blocks (default = false)")
