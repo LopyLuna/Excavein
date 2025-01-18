@@ -29,7 +29,11 @@ import static uwu.lopyluna.excavein.Excavein.MOD_ID;
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 
 public class Utils {
-    public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("whitelist"));
+    public static final TagKey<Block> VEIN_MINE_WHITELIST = BlockTags.create(asResource("vein_whitelist"));
+    public static final TagKey<Block> EXTENDED_WHITELIST = BlockTags.create(asResource("extended_whitelist"));
+    public static final TagKey<Item> TOOL_WHITELIST = ItemTags.create(asResource("tool_whitelist"));
+    public static final TagKey<Item> INVALID = ItemTags.create(asResource("invalid_tools"));
+    public static final TagKey<Item> EXTENDED_TOOLS = ItemTags.create(asResource("extended_tools"));
 
     public static ResourceLocation asResource(String path) {
         return new ResourceLocation(MOD_ID, path);
@@ -106,6 +110,35 @@ public class Utils {
         return (eyePos.distManhattan(currentPos) > maxRange) || startState.isAir() || isNotValidBlock(pLevel, currentPos, currentState);
     }
 
+    public static boolean extendedTools(ServerPlayer player) {
+        return player.getUseItem().is(EXTENDED_TOOLS) || (player.getMainHandItem().is(EXTENDED_TOOLS) && !player.isUsingItem());
+    }
+
+    public static boolean toolWhitelist(ServerPlayer player) {
+        if (player.getUseItem().is(INVALID) || (player.getMainHandItem().is(INVALID) && !player.isUsingItem()))
+            return false;
+        if (TOOLS_WHITELIST.get()) {
+            boolean bool = INVERT_TOOLS_WHITELIST.get();
+            if (player.getUseItem().is(TOOL_WHITELIST) || (player.getMainHandItem().is(TOOL_WHITELIST) && !player.isUsingItem()))
+                return !bool;
+            return bool;
+        }
+        return true;
+    }
+
+    private static final long[] UNLOADED = new long[] { 0 };
+
+    public static boolean tickCheck(ServerLevel level) {
+        //var server = level.getServer();
+        //var dimensionTimes = server.getTickTime(level.dimension());
+        //var times = dimensionTimes == null ? UNLOADED : dimensionTimes;
+        //var tickRateManager = server.tick();
+        //var tickTime = Stats.meanOf(times) / TimeUtil.NANOSECONDS_PER_MILLISECOND;
+        //var tps = TimeUtil.MILLISECONDS_PER_SECOND / Math.max(tickTime, server.millisecondsPerTick());
+        //return TPS_THRESHOLD.get() < tps;
+        return true;
+    }
+
     public static boolean isNotFakePlayer(Player player) {
         return player != null && !(player instanceof FakePlayer);
     }
@@ -114,6 +147,7 @@ public class Utils {
         if (data == null || shape == null || modifier == null || rayTrace == null || eyePos == null || !data.check()) return new HashSet<>();
         ServerPlayer player = data.getPlayer();
         ServerLevel pLevel = data.getLevel();
+        if (!toolWhitelist(player)) return new HashSet<>();
         Set<BlockPos> validBlocks = new HashSet<>();
         Set<BlockPos> checkedBlocks = new HashSet<>();
         Queue<BlockPos> toCheck = new LinkedList<>();

@@ -5,9 +5,12 @@ import net.minecraftforge.common.ForgeConfigSpec;
 import java.util.List;
 
 public class ServerConfig {
+
+    public static final ForgeConfigSpec.IntValue TPS_THRESHOLD;
     public static final ForgeConfigSpec.IntValue SELECTION_COOLDOWN;
     public static final ForgeConfigSpec.IntValue SELECTION_ADD_COOLDOWN;
     public static final ForgeConfigSpec.IntValue SELECTION_ADD_RANGE;
+    public static final ForgeConfigSpec.IntValue SELECTION_EXTENDED_RANGE;
     public static final ForgeConfigSpec.IntValue SELECTION_MAX_BLOCK;
     public static final ForgeConfigSpec.IntValue HEART_CONSUME_AMOUNT;
     public static final ForgeConfigSpec.IntValue HEART_CONSUME_ADDED_AMOUNT;
@@ -24,6 +27,8 @@ public class ServerConfig {
     public static final ForgeConfigSpec.IntValue BLOCK_PER_BREAK;
     public static final ForgeConfigSpec.BooleanValue WAIT_TILL_BROKEN;
     public static final ForgeConfigSpec.BooleanValue INVERT_WHITELIST;
+    public static final ForgeConfigSpec.BooleanValue INVERT_TOOLS_WHITELIST;
+    public static final ForgeConfigSpec.BooleanValue TOOLS_WHITELIST;
     public static final ForgeConfigSpec.BooleanValue REQUIRES_MINEABLE;
     public static final ForgeConfigSpec.BooleanValue REQUIRES_TOOLS;
     public static final ForgeConfigSpec.BooleanValue PREVENT_BREAKING_TOOL;
@@ -37,9 +42,13 @@ public class ServerConfig {
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
+        TPS_THRESHOLD = builder
+                .comment("Voids player activation if below the TPS threshold (default = 10)")
+                .defineInRange("TPSLagThreshold", 10, 1, 20);
+
         SELECTION_COOLDOWN = builder
-                .comment("Amount of ticks for block selection cooldown (default = 2s - " + (20 * 2) + ")")
-                .defineInRange("SelectionCooldown", 20 * 2, 0, 20 * 60 * 60 * 24 * 7);
+                .comment("Amount of ticks for block selection cooldown (default = 0 Ticks)")
+                .defineInRange("SelectionCooldown", 0, 0, 20 * 60 * 60 * 24 * 7);
 
         SELECTION_ADD_COOLDOWN = builder
                 .comment("Amount of ticks that get added to the block selection cooldown (default = 0)")
@@ -48,6 +57,10 @@ public class ServerConfig {
         SELECTION_ADD_RANGE = builder
                 .comment("Add range for block selection (default = 12)")
                 .defineInRange("SelectionMaxRange", 12, -8, 128);
+
+        SELECTION_EXTENDED_RANGE = builder
+                .comment("Extends the selection range for certain tools that uses excavein extended_tools item tag (default = 16)")
+                .defineInRange("SelectionMaxRange", 16, -8, 128);
 
         SELECTION_MAX_BLOCK = builder
                 .comment("Maximum number of blocks that can be selected (default = 64)")
@@ -62,11 +75,11 @@ public class ServerConfig {
                 .defineInRange("FoodExhaustionMultiplier", 2.0, 0.0, 1000.0);
 
         HEART_CONSUME_AMOUNT = builder
-                .comment("Amount of ticks for block selection cooldown (default = 2)")
-                .defineInRange("HealthConsumeAmount", 2, 0, 10000);
+                .comment("Amount of Hearts to be taken when mining for said block in selection (default = 0)")
+                .defineInRange("HealthConsumeAmount", 0, 0, 10000);
 
         HEART_CONSUME_ADDED_AMOUNT = builder
-                .comment("Amount of ticks that get added to the block selection cooldown (default = 0)")
+                .comment("Amount of Hearts to be taken after mining (default = 0)")
                 .defineInRange("HealthConsumeAddedAmount", 0, 0, 10000);
 
         REQUIRES_XP = builder
@@ -90,11 +103,11 @@ public class ServerConfig {
                 .defineInRange("ItemPickupDelay", 0, 0, 30000);
 
         DELAY_BETWEEN_BREAK = builder
-                .comment("Amount of ticks for till next block gets broken (default = 2)")
-                .defineInRange("DelayBetweenBreak", 2, 0, 100);
+                .comment("Amount of ticks for till next block gets broken (default = 0)")
+                .defineInRange("DelayBetweenBreak", 0, 0, 100);
 
         BLOCK_PER_BREAK = builder
-                .comment("Amount of blocks between broken blocks (default = 4)")
+                .comment("Amount of blocks between broken blocks 'invalidates if DelayBetweenBreak is 0' (default = 4)")
                 .defineInRange("BlockPerBreak", 4, 1, 256);
 
         WAIT_TILL_BROKEN = builder
@@ -102,8 +115,12 @@ public class ServerConfig {
                 .define("WaitTillBroken", true);
 
         INVERT_WHITELIST = builder
-                .comment("Invert the whitelist behavior (default = true)")
-                .define("InvertWhitelist", true);
+                .comment("Invert the vein tags whitelist behavior (default = true)")
+                .define("InvertVeinWhitelist", true);
+
+        INVERT_TOOLS_WHITELIST = builder
+                .comment("Invert the tools whitelist behavior 'only works if ToolsWhitelist is true' (default = false)")
+                .define("InvertToolsWhitelist", false);
 
         REQUIRES_MINEABLE = builder
                 .comment("Require Hand/Tools for said selected blocks that requires hand/tools to drop //Highly Recommended (default = true)")
@@ -112,6 +129,10 @@ public class ServerConfig {
         REQUIRES_TOOLS = builder
                 .comment("Require Tools for said selected blocks (default = false)")
                 .define("RequiresTools", false);
+
+        TOOLS_WHITELIST = builder
+                .comment("Tools Whitelist basically whitelist items n such using the excavein tool_whitelist item tag (default = false)")
+                .define("ToolsWhitelist", false);
 
         PREVENT_BREAKING_TOOL = builder
                 .comment("Prevents Tools being broke when mining/interaction (default = true)")
@@ -154,6 +175,7 @@ public class ServerConfig {
                 "c:glass_blocks",
                 "c:glass_panes",
                 "c:sands",
+                "c:sandstone",
                 "c:end_stones",
                 "c:cobblestones",
                 "c:gravels",
@@ -163,8 +185,23 @@ public class ServerConfig {
                 "c:stones",
                 "c:chests",
                 "c:barrels",
+                "c:bookshelves",
                 "c:villager_job_sites",
                 "c:skulls",
+                "forge:ores",
+                "forge:glass",
+                "forge:glass_panes",
+                "forge:sand",
+                "forge:sandstone",
+                "forge:end_stones",
+                "forge:cobblestone",
+                "forge:gravel",
+                "forge:netherrack",
+                "forge:obsidian",
+                "forge:stone",
+                "forge:chests",
+                "forge:barrels",
+                "forge:bookshelves",
                 "minecraft:planks",
                 "minecraft:wool",
                 "minecraft:terracotta",
@@ -190,7 +227,8 @@ public class ServerConfig {
                 "minecraft:dirt",
                 "minecraft:logs",
                 "minecraft:base_stone_overworld",
-                "minecraft:base_stone_nether"
+                "minecraft:base_stone_nether",
+                "minecraft:beacon_base_blocks"
         );
     }
 }

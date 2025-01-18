@@ -15,6 +15,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
+import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.network.PacketDistributor;
 import uwu.lopyluna.excavein.Excavein;
 import uwu.lopyluna.excavein.config.ServerConfig;
@@ -38,6 +39,7 @@ import java.util.UUID;
 
 import static uwu.lopyluna.excavein.config.ServerConfig.*;
 import static uwu.lopyluna.excavein.utils.Utils.findInInventory;
+import static uwu.lopyluna.excavein.utils.Utils.tickCheck;
 
 @SuppressWarnings("unused")
 public class SelectionPlayerData {
@@ -52,6 +54,7 @@ public class SelectionPlayerData {
     private int modifierMode;
     private boolean keyPressed;
     private boolean displayChat;
+    private boolean actionText;
 
     public SelectionPlayerData(ServerLevel pLevel, UUID uuid) {
         shapeMode = 0;
@@ -64,9 +67,14 @@ public class SelectionPlayerData {
         cooldownData = new CooldownData(this);
     }
 
-    public void updateKey(boolean keyPressed, boolean displayChat) {
+    public void updateKey(boolean keyPressed, boolean displayChat, boolean actionText) {
         this.keyPressed = keyPressed;
         this.displayChat = displayChat;
+        this.actionText = actionText;
+    }
+
+    public boolean check() {
+        return level != null && player != null && playerUUID != null && !(player instanceof FakePlayer) && tickCheck(level);
     }
 
     //SHAPE MODE
@@ -159,8 +167,10 @@ public class SelectionPlayerData {
     //OVERALL CLASS
 
     public void tick() {
-        getBreakingUtils().preformBreak();
-        getBreakingUtils().tick();
+        if (tickCheck(level)) {
+            getBreakingUtils().preformBreak();
+            getBreakingUtils().tick();
+        }
     }
 
     public boolean blockBreak(GameType gameModeForPlayer, BlockPos pos) {
@@ -176,7 +186,7 @@ public class SelectionPlayerData {
     }
 
     public Set<BlockPos> getBlocks(boolean isBreaking) {
-        if (level == null || playerUUID == null || player == null || (!isBreaking && !BLOCK_PLACING.get() && !HAND_INTERACTION.get() && !ITEM_INTERACTION.get()))
+        if (!check() || (!isBreaking && !BLOCK_PLACING.get() && !HAND_INTERACTION.get() && !ITEM_INTERACTION.get()))
             return Set.of();
         BlockHitResult rayTrace = getPlayerRayTraceToBlock(player);
         AttributeInstance attribute = player.getAttribute(ForgeMod.BLOCK_REACH.get());
@@ -226,7 +236,7 @@ public class SelectionPlayerData {
     }
 
     public boolean flag() {
-        return requiredFlags() && !isCooldownActive() && isKeyPressed();
+        return requiredFlags() && !isCooldownActive() && isKeyPressed() && tickCheck(level);
     }
 
     public boolean requiredFlags() {
@@ -272,8 +282,7 @@ public class SelectionPlayerData {
         String string = getModifier().getShapeModifier().getName();
         Component text = Component.literal(Component.translatable("excavein.overlay.current_mode").getString().replaceAll("_", " ") +
                 (!string.isEmpty() ? string + " " : "") + getShape().getShape().getName());
-
-        player.sendSystemMessage(text, !displayChat);
+        if (actionText) player.sendSystemMessage(text, !displayChat);
     }
 
     // GET VARIABLES

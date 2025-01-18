@@ -114,7 +114,7 @@ public class ClientHandler {
                     tickCounter = 0;
                     keyPressed = (!TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION != null && SELECTION_ACTIVATION.isDown()) || (TOGGLEABLE_KEY.get() && keyActivated);
 
-                    if (uuid != null) Excavein.CHANNEL.sendToServer(new ExcaveinPacket(uuid, keyPressed, DISPLAY_SELECTION_CHAT.get()));
+                    if (uuid != null) Excavein.CHANNEL.sendToServer(new ExcaveinPacket(uuid, keyPressed, DISPLAY_SELECTION_CHAT.get(), SELECTION_ACTION_TEXT.get()));
                 }
                 if (TOGGLEABLE_KEY.get() && SELECTION_ACTIVATION.consumeClick()) keyActivated = !keyActivated;
             }

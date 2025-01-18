@@ -6,6 +6,9 @@ public class ClientConfig {
 
     public static final ForgeConfigSpec.BooleanValue ADDITIVE_SHADER_SELECTION;
 
+    public static final ForgeConfigSpec.BooleanValue RGB;
+    public static final ForgeConfigSpec.DoubleValue RGB_TRANSITION_SPEED;
+
     public static final ForgeConfigSpec.IntValue MIXED_SELECTION_COLOR_R;
     public static final ForgeConfigSpec.IntValue MIXED_SELECTION_COLOR_G;
     public static final ForgeConfigSpec.IntValue MIXED_SELECTION_COLOR_B;
@@ -40,6 +43,7 @@ public class ClientConfig {
     public static final ForgeConfigSpec.IntValue SELECTION_OFFSET_Y;
     public static final ForgeConfigSpec.IntValue SELECTION_OFFSET_X;
     public static final ForgeConfigSpec.BooleanValue DISPLAY_SELECTION_CHAT;
+    public static final ForgeConfigSpec.BooleanValue SELECTION_ACTION_TEXT;
     public static final ForgeConfigSpec.IntValue MAX_BLOCK_VIEW;
     public static final ForgeConfigSpec.IntValue COSMETIC_TYPE;
     public static final ForgeConfigSpec.BooleanValue DEBUG;
@@ -53,28 +57,35 @@ public class ClientConfig {
                 .comment("Whether to have selection render additive (default = false)")
                 .define("AdditiveShaderSelection", false);
 
+        RGB = builder
+                .comment("RGB Gayming with style :3 (default = false)")
+                .define("RGB", false);
+        RGB_TRANSITION_SPEED = builder
+                .comment("Color Fading between Transitions (default = 0.5)")
+                .defineInRange("RGBTransitionSpeed", 0.5, 0.1, 16.0);
+
         MIXED_SELECTION_COLOR_R = builder.comment("Outline Red color value (default = 232)").defineInRange("MixedSelectionColorR", 232, 1, 255);
         MIXED_SELECTION_COLOR_G = builder.comment("Outline Green color value (default = 232)").defineInRange("MixedSelectionColorG", 232, 1, 255);
         MIXED_SELECTION_COLOR_B = builder.comment("Outline Blue color value (default = 232)").defineInRange("MixedSelectionColorB", 232, 1, 255);
-        MIXED_SELECTION_ALPHA = builder.comment("Outline alpha value (default = 32)").defineInRange("MixedSelectionAlpha", 64, 1, 255);
+        MIXED_SELECTION_ALPHA = builder.comment("Outline alpha value (default = 64)").defineInRange("MixedSelectionAlpha", 64, 1, 255);
         MIXED_BLUR_FACE = builder.comment("Whether to blur the Face Texture of the Mixed Selection (default = false)").define("BlurFace", false);
 
         DESTROY_SELECTION_COLOR_R = builder.comment("Outline Red color value (default = 232)").defineInRange("DestroySelectionColorR", 232, 1, 255);
-        DESTROY_SELECTION_COLOR_G = builder.comment("Outline Green color value (default = 232)").defineInRange("DestroySelectionColorG", 128, 1, 255);
-        DESTROY_SELECTION_COLOR_B = builder.comment("Outline Blue color value (default = 232)").defineInRange("DestroySelectionColorB", 128, 1, 255);
-        DESTROY_SELECTION_ALPHA = builder.comment("Outline alpha value (default = 32)").defineInRange("DestroySelectionAlpha", 96, 1, 255);
+        DESTROY_SELECTION_COLOR_G = builder.comment("Outline Green color value (default = 128)").defineInRange("DestroySelectionColorG", 128, 1, 255);
+        DESTROY_SELECTION_COLOR_B = builder.comment("Outline Blue color value (default = 128)").defineInRange("DestroySelectionColorB", 128, 1, 255);
+        DESTROY_SELECTION_ALPHA = builder.comment("Outline alpha value (default = 96)").defineInRange("DestroySelectionAlpha", 96, 1, 255);
         DESTROY_BLUR_FACE = builder.comment("Whether to blur the Face Texture of the Destroy Selection (default = true)").define("DestroyBlurFace", true);
 
-        INTERACTION_SELECTION_COLOR_R = builder.comment("Outline Red color value (default = 232)").defineInRange("InteractionSelectionColorR", 96, 1, 255);
+        INTERACTION_SELECTION_COLOR_R = builder.comment("Outline Red color value (default = 96)").defineInRange("InteractionSelectionColorR", 96, 1, 255);
         INTERACTION_SELECTION_COLOR_G = builder.comment("Outline Green color value (default = 232)").defineInRange("InteractionSelectionColorG", 232, 1, 255);
-        INTERACTION_SELECTION_COLOR_B = builder.comment("Outline Blue color value (default = 232)").defineInRange("InteractionSelectionColorB", 128, 1, 255);
-        INTERACTION_SELECTION_ALPHA = builder.comment("Outline alpha value (default = 32)").defineInRange("InteractionSelectionAlpha", 96, 1, 255);
+        INTERACTION_SELECTION_COLOR_B = builder.comment("Outline Blue color value (default = 128)").defineInRange("InteractionSelectionColorB", 128, 1, 255);
+        INTERACTION_SELECTION_ALPHA = builder.comment("Outline alpha value (default = 96)").defineInRange("InteractionSelectionAlpha", 96, 1, 255);
         INTERACTION_BLUR_FACE = builder.comment("Whether to blur the Face Texture of the Interaction Selection (default = true)").define("InteractionBlurFace", true);
 
         WARN_SELECTION_COLOR_R = builder.comment("Outline Red color value (default = 232)").defineInRange("WarnSelectionColorR", 232, 1, 255);
-        WARN_SELECTION_COLOR_G = builder.comment("Outline Green color value (default = 232)").defineInRange("WarnSelectionColorG", 96, 1, 255);
-        WARN_SELECTION_COLOR_B = builder.comment("Outline Blue color value (default = 232)").defineInRange("WarnSelectionColorB", 96, 1, 255);
-        WARN_SELECTION_ALPHA = builder.comment("Outline alpha value (default = 32)").defineInRange("WarnSelectionAlpha", 96, 1, 255);
+        WARN_SELECTION_COLOR_G = builder.comment("Outline Green color value (default = 96)").defineInRange("WarnSelectionColorG", 96, 1, 255);
+        WARN_SELECTION_COLOR_B = builder.comment("Outline Blue color value (default = 96)").defineInRange("WarnSelectionColorB", 96, 1, 255);
+        WARN_SELECTION_ALPHA = builder.comment("Outline alpha value (default = 96)").defineInRange("WarnSelectionAlpha", 96, 1, 255);
         WARN_BLUR_FACE = builder.comment("Whether to blur the Face Texture of the Warn Selection (default = true)").define("WarnBlurFace", true);
 
         TEXT_SHADOW = builder
@@ -124,6 +135,10 @@ public class ClientConfig {
         DISPLAY_SELECTION_CHAT = builder
                 .comment("Whether to display Current Mode Text above the hotbar or in chat (default = false)")
                 .define("DisplaySelectionInChat", false);
+
+        SELECTION_ACTION_TEXT = builder
+                .comment("Whether to display Current Mode Text (default = true)")
+                .define("SelectionActionText", true);
 
         MAX_BLOCK_VIEW = builder
                 .comment("Maximum of Selection Blocks that can be viewed (default = 128)")

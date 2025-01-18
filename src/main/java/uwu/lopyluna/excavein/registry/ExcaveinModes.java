@@ -31,9 +31,6 @@ public class ExcaveinModes {
             .register();
 
     //MODIFIERS
-    public static ShapeModifierEntry<NoneShapeModifier> NONE = ExcaveinEntries.registerShapeModifier(new NoneShapeModifier(Utils.asResource("none")))
-            .keybind()
-            .register();
     public static ShapeModifierEntry<SelectionShapeModifier> SELECTION = ExcaveinEntries.registerShapeModifier(new SelectionShapeModifier(Utils.asResource("selection")))
             .keybind()
             .register();
@@ -44,6 +41,9 @@ public class ExcaveinModes {
             .keybind()
             .register();
     public static ShapeModifierEntry<SurfaceShapeModifier> SURFACE = ExcaveinEntries.registerShapeModifier(new SurfaceShapeModifier(Utils.asResource("surface")))
+            .keybind()
+            .register();
+    public static ShapeModifierEntry<NoneShapeModifier> NONE = ExcaveinEntries.registerShapeModifier(new NoneShapeModifier(Utils.asResource("none")))
             .keybind()
             .register();
 

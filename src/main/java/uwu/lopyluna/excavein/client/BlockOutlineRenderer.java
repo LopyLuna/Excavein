@@ -94,7 +94,7 @@ public class BlockOutlineRenderer {
         RenderSystem.defaultBlendFunc();
 
         boolean additive = ADDITIVE_SHADER_SELECTION.get();
-
+        //MAKE RGB GAYMING COLOR METHOD :3
         float divide = additive ? 512f : 255f;
 
         float alphaM = ClientConfig.MIXED_SELECTION_ALPHA.get() / divide;
@@ -128,10 +128,20 @@ public class BlockOutlineRenderer {
         var multiBufferSource = event.getMultiBufferSource();
         var camPos = event.getCamera().getPosition();
 
-        Vector4f wColor = new Vector4f(redW, greenW, blueW, alphaW);
-        Vector4f mColor = flagI && flagB ? new Vector4f(redM, greenM, blueM, alphaM) : wColor;
-        Vector4f dColor = flagB ? new Vector4f(redM, greenD, blueD, alphaD) : wColor;
-        Vector4f iColor = flagI ? new Vector4f(redI, greenI, blueI, alphaI) : wColor;
+        Vector4f wColorDefault = new Vector4f(redW, greenW, blueW, alphaW);
+        Vector4f mColorDefault = flagI && flagB ? new Vector4f(redM, greenM, blueM, alphaM) : wColorDefault;
+        Vector4f dColorDefault = flagB ? new Vector4f(redM, greenD, blueD, alphaD) : wColorDefault;
+        Vector4f iColorDefault = flagI ? new Vector4f(redI, greenI, blueI, alphaI) : wColorDefault;
+
+        var mil = System.currentTimeMillis();
+        var speed = RGB_TRANSITION_SPEED.get();
+        var rgb = RGB.get();
+
+        Vector4f wColor = getRGBColor(wColorDefault, mil, speed, rgb, additive);
+        Vector4f mColor = getRGBColor(mColorDefault, mil, speed, rgb, additive);
+        Vector4f dColor = getRGBColor(dColorDefault, mil, speed, rgb, additive);
+        Vector4f iColor = getRGBColor(iColorDefault, mil, speed, rgb, additive);
+
 
         if (keyPressed) {
             if (outlineBlocks != null && !outlineBlocks.isEmpty() && outlineBlocks.size() <= MAX_BLOCK_VIEW.get()) {
@@ -148,6 +158,26 @@ public class BlockOutlineRenderer {
 
         event.setCanceled(true);
     }
+
+    private static Vector4f getRGBColor(Vector4f defaultColor, long currentTimeMillis, double speed, boolean enabled, boolean additive) {
+        if (!enabled) return defaultColor;
+        double time = currentTimeMillis / 1000.0 * speed;
+        float r = (float) (Math.sin(time) * 0.5 + 0.5) + (defaultColor.x * 0.5F);
+        float g = (float) (Math.sin(time + 2 * Math.PI / 3) * 0.5 + 0.5) + (defaultColor.y * 0.5F);
+        float b = (float) (Math.sin(time + 4 * Math.PI / 3) * 0.5 + 0.5) + (defaultColor.z * 0.5F);
+        float max = additive ? 0.75F : 1.0F;
+        float min = 0.0F;
+        float mul = additive ? 0.25F : 1.0F;
+        return new Vector4f(Mth.clamp(r * mul, min, max), Mth.clamp(g * mul, min, max), Mth.clamp(b * mul, min, max), defaultColor.w);
+    }
+
+    //private static float[] getRGBColor(long currentTimeMillis, double speed) {
+    //    double time = currentTimeMillis / 1000.0 * speed;
+    //    float r = (float) (Math.sin(time) * 0.5 + 0.5);
+    //    float g = (float) (Math.sin(time + 2 * Math.PI / 3) * 0.5 + 0.5);
+    //    float b = (float) (Math.sin(time + 4 * Math.PI / 3) * 0.5 + 0.5);
+    //    return new float[]{r, g, b};
+    //}
 
     //MOSTLY FROM CREATE'S BLOCKCLUSTEROUTLINE.JAVA
 

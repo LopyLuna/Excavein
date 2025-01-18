@@ -8,18 +8,19 @@ import uwu.lopyluna.excavein.tracker.ExcaveinTacker;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-public record ExcaveinPacket(UUID playerID, boolean keyPressed, boolean displayChat) {
+public record ExcaveinPacket(UUID playerID, boolean keyPressed, boolean displayChat, boolean actionText) {
     public static void encode(ExcaveinPacket msg, FriendlyByteBuf buffer) {
         buffer.writeUUID(msg.playerID);
         buffer.writeBoolean(msg.keyPressed);
         buffer.writeBoolean(msg.displayChat);
+        buffer.writeBoolean(msg.actionText);
     }
     public static ExcaveinPacket decode(FriendlyByteBuf buffer) {
-        return new ExcaveinPacket(buffer.readUUID(), buffer.readBoolean(), buffer.readBoolean());
+        return new ExcaveinPacket(buffer.readUUID(), buffer.readBoolean(), buffer.readBoolean(), buffer.readBoolean());
     }
     public static void handle(ExcaveinPacket msg, Supplier<NetworkEvent.Context> context) {
         ServerPlayer player = context.get().getSender();
-        if (player != null) context.get().enqueueWork(() -> ExcaveinTacker.updateTick(player, player.getUUID().equals(msg.playerID) ? player.getUUID() : msg.playerID, msg.keyPressed, msg.displayChat));
+        if (player != null) context.get().enqueueWork(() -> ExcaveinTacker.updateTick(player, player.getUUID().equals(msg.playerID) ? player.getUUID() : msg.playerID, msg.keyPressed, msg.displayChat, msg.actionText));
         context.get().setPacketHandled(true);
     }
 }

@@ -21,11 +21,11 @@ import java.util.UUID;
 public class ExcaveinTacker {
     private static final Map<UUID, SelectionPlayerData> selectionDataMap = new HashMap<>();
 
-    public static void updateTick(ServerPlayer player, UUID uuid, boolean keyPressed, boolean displayChat) {
+    public static void updateTick(ServerPlayer player, UUID uuid, boolean keyPressed, boolean displayChat, boolean actionText) {
         if (player != null && uuid != null && player.getUUID().equals(uuid)) {
             SelectionPlayerData data = getSelectionData(uuid);
-            if (data != null && data.getPlayer() != null && data.getLevel() != null && data.getPlayerUUID() != null)
-                data.updateKey(keyPressed, displayChat);
+            if (data != null && data.check())
+                data.updateKey(keyPressed, displayChat, actionText);
             else selectionDataMap.remove(uuid);
         } else {
             boolean equals = selectionDataMap.remove(uuid) == null;
@@ -36,7 +36,7 @@ public class ExcaveinTacker {
     public static void update(ServerPlayer player, UUID uuid, boolean keyPressed, int switchMode) {
         if (player != null && uuid != null && player.getUUID().equals(uuid)) {
             SelectionPlayerData data = getSelectionData(uuid);
-            if (data != null && data.getPlayer() != null && data.getLevel() != null && data.getPlayerUUID() != null) {
+            if (data != null && data.check()) {
                 if (switchMode == 4) {
                     data.nextModifierMode();
                 } else if (switchMode == 3) {
@@ -53,7 +53,7 @@ public class ExcaveinTacker {
     public static void updateKey(ServerPlayer player, UUID uuid, boolean keyPressed, int id, String type) {
         if (player != null && uuid != null && player.getUUID().equals(uuid)) {
             SelectionPlayerData data = getSelectionData(uuid);
-            if (data != null && data.getPlayer() != null && data.getLevel() != null && data.getPlayerUUID() != null) {
+            if (data != null && data.check()) {
                 if (keyPressed) {
                     if (type.equals("shape"))
                         data.setShapeMode(id);
@@ -80,7 +80,7 @@ public class ExcaveinTacker {
                     if (!(pPlayer instanceof ServerPlayer player))
                         return;
                     SelectionPlayerData selectionData = getSelectionData(player.getUUID());
-                    if (selectionData != null && selectionData.getPlayer() != null && selectionData.getLevel() != null && selectionData.getPlayerUUID() != null) {
+                    if (selectionData != null && selectionData.check()) {
                         selectionData.tick();
                         selectionData.updateCheck();
                         if (selectionData.getCooldownData() != null) selectionData.getCooldownData().tick();

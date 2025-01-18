@@ -12,6 +12,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.event.TickEvent.ClientTickEvent;
 import net.minecraftforge.client.event.RenderGuiEvent;
+import org.joml.Vector4f;
 import uwu.lopyluna.excavein.Excavein;
 import uwu.lopyluna.excavein.config.ClientConfig;
 import uwu.lopyluna.excavein.entries.ExcaveinEntries;
@@ -66,9 +67,18 @@ public class ModeOverlay {
         int g = MIXED_SELECTION_COLOR_G.get();
         int b = MIXED_SELECTION_COLOR_B.get();
 
-        int color = color(r, g, b, 255).getRGB();
-        int colorD = color((int) (r * 0.9), (int) (g * 0.9), (int) (b * 0.9), 255).getRGB();
-        int colorWarning = color(r, (int) (g * 0.75), (int) (b * 0.75), 255).getRGB();
+        Color colorDefault = color(r, g, b, 255);
+        Color colorDDefault = color((int) (r * 0.9), (int) (g * 0.9), (int) (b * 0.9), 255);
+        Color colorWarningDefault = color(r, (int) (g * 0.75), (int) (b * 0.75), 255);
+
+        var mil = System.currentTimeMillis();
+        var speed = RGB_TRANSITION_SPEED.get();
+        var rgb = RGB.get();
+        var additive = ADDITIVE_SHADER_SELECTION.get();
+
+        int color = color(getRGBColor(colorDefault, mil, speed, rgb, additive)).getRGB();
+        int colorD = color(getRGBColor(colorDDefault, mil, speed, rgb, additive)).getRGB();
+        int colorWarning = color(getRGBColor(colorWarningDefault, mil, speed, rgb, additive)).getRGB();
 
         boolean dropShadow = TEXT_SHADOW.get();
         boolean background = TEXT_BACKGROUND.get();
@@ -83,17 +93,17 @@ public class ModeOverlay {
 
         if (previousMode != null) {
             sideText(previousMode,
-                    scrollUp, "", leftSide, mode.length() - 1, order, true, event.getGuiGraphics());
+                    scrollUp, "", leftSide, mode.length() - 1, order, true, color, colorD, event.getGuiGraphics());
             order++;
         }
         if (currentMode != null) {
             sideText(currentMode,
-                    mode, "", leftSide, 0, order, false, event.getGuiGraphics());
+                    mode, "", leftSide, 0, order, false, color, colorD, event.getGuiGraphics());
             order++;
         }
         if (nextMode != null) {
             sideText(nextMode,
-                    scrollDown, "", leftSide, mode.length() - 1, order, true, event.getGuiGraphics());
+                    scrollDown, "", leftSide, mode.length() - 1, order, true, color, colorD, event.getGuiGraphics());
             order++;
         }
         boolean breaking = (!ClientHelper.currentlyBreaking || DELAY_BETWEEN_BREAK.get() == 0 || !WAIT_TILL_BROKEN.get());
@@ -134,31 +144,26 @@ public class ModeOverlay {
 
         if (previousModifier != null) {
             sideText((previousModifier.isEmpty() ? "None" : previousModifier),
-                    scrollUp, "", leftSide, modifier.length() - 1, order, true, event.getGuiGraphics());
+                    scrollUp, "", leftSide, modifier.length() - 1, order, true, color, colorD, event.getGuiGraphics());
             order++;
         }
         if (currentModifier != null) {
             sideText((currentModifier.isEmpty() ? "None" : currentModifier),
-                    modifier, "", leftSide, 0, order, false, event.getGuiGraphics());
+                    modifier, "", leftSide, 0, order, false, color, colorD, event.getGuiGraphics());
             order++;
         }
         if (nextModifier != null) {
             sideText((nextModifier.isEmpty() ? "None" : nextModifier),
-                    scrollDown, "", leftSide, modifier.length() - 1, order, true, event.getGuiGraphics());
+                    scrollDown, "", leftSide, modifier.length() - 1, order, true, color, colorD, event.getGuiGraphics());
         }
 
         poseStack.popPose();
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static void sideText(String pText, String pPrefix, String pSuffix, boolean pLeftSide, int pSpaceAmount, int pOffsetOrder, boolean darken, GuiGraphics pGuiGraphics) {
+    private static void sideText(String pText, String pPrefix, String pSuffix, boolean pLeftSide, int pSpaceAmount, int pOffsetOrder, boolean darken, int color, int colorD, GuiGraphics pGuiGraphics) {
         boolean dropShadow = TEXT_SHADOW.get();
         boolean background = TEXT_BACKGROUND.get();
-        int r = MIXED_SELECTION_COLOR_R.get();
-        int g = MIXED_SELECTION_COLOR_G.get();
-        int b = MIXED_SELECTION_COLOR_B.get();
-        int color = color(r, g, b, 255).getRGB();
-        int colorD = color((int) (r * 0.9), (int) (g * 0.9), (int) (b * 0.9), 255).getRGB();
         int xPos = SELECTION_OFFSET_X.get();
         int yPos = SELECTION_OFFSET_Y.get();
 
@@ -166,6 +171,19 @@ public class ModeOverlay {
             renderText(" ".repeat(pSpaceAmount) + pPrefix + pText + pSuffix, pOffsetOrder, xPos, yPos, pGuiGraphics, true, darken ? colorD : color, dropShadow, background);
         else
             renderText(pSuffix + pText + pPrefix + " ".repeat(pSpaceAmount), pOffsetOrder, xPos, yPos, pGuiGraphics, false, darken ? colorD : color, dropShadow, background);
+    }
+
+    private static Vector4f getRGBColor(Color color, long currentTimeMillis, double speed, boolean enabled, boolean additive) {
+        Vector4f defaultColor = new Vector4f(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, color.getAlpha() / 255f);
+        if (!enabled) return defaultColor;
+        double time = currentTimeMillis / 1000.0 * speed;
+        float r = (float) (Math.sin(time) * 0.5 + 0.5) + (defaultColor.x * 0.75F);
+        float g = (float) (Math.sin(time + 2 * Math.PI / 3) * 0.5 + 0.5) + (defaultColor.y * 0.75F);
+        float b = (float) (Math.sin(time + 4 * Math.PI / 3) * 0.5 + 0.5) + (defaultColor.z * 0.75F);
+        float max = 1.0F;
+        float min = 0.0F;
+        float mul = additive ? 0.75F : 1.0F;
+        return new Vector4f(Mth.clamp(r * mul, min, max), Mth.clamp(g * mul, min, max), Mth.clamp(b * mul, min, max), defaultColor.w);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -257,6 +275,10 @@ public class ModeOverlay {
 
     public static Color color(int r, int g, int b, int a) {
         return new Color(Mth.clamp(r, 0, 255), Mth.clamp(g, 0, 255), Mth.clamp(b, 0, 255), Mth.clamp(a, 0, 255));
+    }
+
+    public static Color color(Vector4f color) {
+        return new Color((int)Mth.clamp(color.x * 255, 0, 255), (int)Mth.clamp(color.y * 255, 0, 255), (int)Mth.clamp(color.z * 255, 0, 255), (int)Mth.clamp(color.w * 255, 0, 255));
     }
 
     public static String translateText(String translate) {
