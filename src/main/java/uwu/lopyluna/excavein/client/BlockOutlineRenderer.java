@@ -154,9 +154,8 @@ public class BlockOutlineRenderer {
                 if (RENDER_OUTLINE.get()) renderShape(poseStack, multiBufferSource.getBuffer(blank), outlineBlocksMixed, camPos, mColor, 1f);
                 if (RENDER_FACE.get()) renderFaces(poseStack, multiBufferSource.getBuffer(mixed), outlineBlocksMixed, camPos, mColor);
             }
+            event.setCanceled(true);
         }
-
-        event.setCanceled(true);
     }
 
     private static Vector4f getRGBColor(Vector4f defaultColor, long currentTimeMillis, double speed, boolean enabled, boolean additive) {
