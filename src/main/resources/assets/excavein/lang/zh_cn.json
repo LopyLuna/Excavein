@@ -1,0 +1,43 @@
+{
+  "key.excavein.selection_activation": "激活连锁挖掘",
+
+  "key.excavein.next_mode": "下一模式",
+  "key.excavein.prev_mode": "上一模式",
+
+  "excavein.shape.shapeless": "不定形",
+  "excavein.shape.tunnel": "隧道",
+  "excavein.shape.large_tunnel": "大型隧道",
+  "excavein.shape.diagonal_tunnel": "斜向隧道",
+  "excavein.shape.bore": "采矿隧道",
+  "excavein.shape.extended_shapeless": "拓展不定形",
+
+  "excavein.modifier.none": "",
+  "excavein.modifier.side": "侧面",
+  "excavein.modifier.surface": "表面",
+  "excavein.modifier.selection": "选区",
+  "excavein.modifier.vein": "矿脉",
+
+  "excavein.key.active": "激活：",
+
+  "key.categories.excavein": "ExcaVein",
+
+  "excavein.overlay.mode": "模式",
+  "excavein.overlay.modifier": "形态",
+  "excavein.overlay.selecting": "已选中：_",
+  "excavein.overlay.cooldown": "冷却中：_",
+  "excavein.overlay.break_blocks": "_ 个可破坏_方块",
+  "excavein.overlay.interact_blocks": "_ 个可交互_方块",
+  "excavein.overlay.scroll_up": "↑",
+  "excavein.overlay.scroll_down": "↓",
+  "excavein.overlay.current_mode": "当前_模式：_",
+  "excavein.overlay.current_modifier": "当前_形态：_",
+  "excavein.overlay.breaking": "破坏_方块中",
+
+  "excavein.overlay.require_xp": "需要经验",
+  "excavein.overlay.require_hunger": "需要食物",
+  "excavein.overlay.require_fuel": "需要燃料",
+
+  "excavein.warning.require_xp": "需要经验以继续",
+  "excavein.warning.require_hunger": "需要食物以继续",
+  "excavein.warning.require_fuel": "需要燃料以继续"
+}
